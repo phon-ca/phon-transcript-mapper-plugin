@@ -1,8 +1,10 @@
 package ca.phon.session.alignedMorpheme;
 
+import ca.phon.app.Main;
 import ca.phon.extensions.*;
+import ca.phon.ipa.IPATranscript;
 import ca.phon.orthography.*;
-import ca.phon.session.Word;
+import ca.phon.session.*;
 
 import java.lang.ref.WeakReference;
 
@@ -28,7 +30,16 @@ public class AlignedMorphemes implements ExtensionProvider {
 		final MorphemeParser morphemeParser = new MorphemeParser();
 		if(alignedWord != null) {
 			OrthoElement[] orthoMorphemes = morphemeParser.parseOrthography(alignedWord.getOrthography());
+			retVal = Math.max(retVal, orthoMorphemes.length);
+			IPATranscript[] ipaTargets = morphemeParser.parseIPA(alignedWord.getIPATarget());
+			retVal = Math.max(retVal, ipaTargets.length);
+			IPATranscript[] ipaActuals = morphemeParser.parseIPA(alignedWord.getIPAActual());
+			retVal = Math.max(retVal, ipaActuals.length);
 
+			for(String userTierName:alignedWord.getGroup().getRecord().getExtraTierNames()) {
+				TierString[] tierMorphemes = morphemeParser.parseTier((TierString)alignedWord.getTier(userTierName));
+				retVal = Math.max(retVal, tierMorphemes.length);
+			}
 		}
 		return retVal;
 	}
