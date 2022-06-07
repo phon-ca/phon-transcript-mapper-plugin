@@ -33,6 +33,11 @@
 			<artifactId>phon-app</artifactId>
 			<version>${ca.phon.phon-app.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>ca.hedlund</groupId>
+			<artifactId>tst</artifactId>
+			<version>0.8</version>
+		</dependency>
 	</dependencies>
 
 	<build>
