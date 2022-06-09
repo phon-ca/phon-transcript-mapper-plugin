@@ -7,13 +7,13 @@ import ca.phon.session.*;
 
 import java.util.*;
 
-public class MorphemeTaggerDatabase {
+public class AlignedMorphemeDatabase {
 
 	private TernaryTree<TierDescription> tierDescriptionTree;
 
 	private TernaryTree<Collection<MorphemeTaggerEntry>> tree;
 
-	public MorphemeTaggerDatabase(Project project) {
+	public AlignedMorphemeDatabase(Project project) {
 		super();
 
 		tierDescriptionTree = new TernaryTree<>();

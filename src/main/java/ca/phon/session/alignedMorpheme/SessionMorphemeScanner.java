@@ -9,14 +9,14 @@ import java.util.*;
 
 public class SessionMorphemeScanner {
 
-	private final MorphemeTaggerDatabase db;
+	private final AlignedMorphemeDatabase db;
 
-	public SessionMorphemeScanner(MorphemeTaggerDatabase db) {
+	public SessionMorphemeScanner(AlignedMorphemeDatabase db) {
 		super();
 		this.db = db;
 	}
 
-	public MorphemeTaggerDatabase getMorphemeTaggerDatabase() {
+	public AlignedMorphemeDatabase getMorphemeTaggerDatabase() {
 		return this.db;
 	}
 
