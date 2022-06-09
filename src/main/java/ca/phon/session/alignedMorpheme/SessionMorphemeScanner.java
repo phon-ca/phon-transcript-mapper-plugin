@@ -1,5 +1,7 @@
 package ca.phon.session.alignedMorpheme;
 
+import ca.phon.ipa.IPATranscript;
+import ca.phon.orthography.OrthoElement;
 import ca.phon.session.*;
 import ca.phon.session.Record;
 
@@ -32,21 +34,24 @@ public class SessionMorphemeScanner {
 							for(SystemTierType systemTier:SystemTierType.values()) {
 								switch(systemTier) {
 								case Orthography:
-									final String ortho = am.getOrthography().toString().trim();
+									final OrthoElement orthoElement = am.getOrthography();
+									final String ortho = orthoElement == null ? "" : orthoElement.toString().trim();
 									if(ortho.length() > 0 && !"*".equals(ortho)) {
 										alignedMorphemeMap.put(systemTier.getName(), ortho);
 									}
 									break;
 
 								case IPATarget:
-									final String target = am.getIPATarget().toString();
+									final IPATranscript ipaT = am.getIPATarget();
+									final String target = ipaT == null ? "" : ipaT.toString();
 									if(target.length() > 0 && !"*".equals(target)) {
 										alignedMorphemeMap.put(systemTier.name(), target);
 									}
 									break;
 
 								case IPAActual:
-									final String actual = am.getIPAActual().toString();
+									final IPATranscript ipaA = am.getIPAActual();
+									final String actual = ipaA == null ? "" : am.getIPAActual().toString();
 									if(actual.length() > 0 && !"*".equals(actual)) {
 										alignedMorphemeMap.put(systemTier.name(), actual);
 									}
@@ -59,7 +64,7 @@ public class SessionMorphemeScanner {
 
 							for(String userTierName: record.getExtraTierNames()) {
 								TierString userTierVal = am.getUserTier(userTierName);
-								if(userTierVal.length() > 0 && !"*".equals(userTierVal.toString())) {
+								if(userTierVal != null && userTierVal.length() > 0 && !"*".equals(userTierVal.toString())) {
 									alignedMorphemeMap.put(userTierName, userTierVal.toString());
 								}
 							}

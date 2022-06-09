@@ -33,6 +33,11 @@
 			<artifactId>phon-app</artifactId>
 			<version>${ca.phon.phon-app.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>ca.phon</groupId>
+			<artifactId>phon-groovy-plugin</artifactId>
+			<version>5</version>
+		</dependency>
 	</dependencies>
 
 	<build>

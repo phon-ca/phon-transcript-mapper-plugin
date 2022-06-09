@@ -29,15 +29,21 @@ public class AlignedMorphemes implements ExtensionProvider {
 		final Word alignedWord = getAlignedWord();
 		final MorphemeParser morphemeParser = new MorphemeParser();
 		if(alignedWord != null) {
-			OrthoElement[] orthoMorphemes = morphemeParser.parseOrthography(alignedWord.getOrthography());
+			OrthoElement orthoWord = alignedWord.getOrthography();
+			OrthoElement[] orthoMorphemes = orthoWord == null ? new OrthoElement[0] : morphemeParser.parseOrthography(alignedWord.getOrthography());
 			retVal = Math.max(retVal, orthoMorphemes.length);
-			IPATranscript[] ipaTargets = morphemeParser.parseIPA(alignedWord.getIPATarget());
+
+			IPATranscript ipaTarget = alignedWord.getIPATarget();
+			IPATranscript[] ipaTargets = ipaTarget == null ? new IPATranscript[0] : morphemeParser.parseIPA(alignedWord.getIPATarget());
 			retVal = Math.max(retVal, ipaTargets.length);
-			IPATranscript[] ipaActuals = morphemeParser.parseIPA(alignedWord.getIPAActual());
+
+			IPATranscript ipaActual = alignedWord.getIPAActual();
+			IPATranscript[] ipaActuals = ipaActual == null ? new IPATranscript[0] : morphemeParser.parseIPA(alignedWord.getIPAActual());
 			retVal = Math.max(retVal, ipaActuals.length);
 
 			for(String userTierName:alignedWord.getGroup().getRecord().getExtraTierNames()) {
-				TierString[] tierMorphemes = morphemeParser.parseTier((TierString)alignedWord.getTier(userTierName));
+				TierString tierVal = (TierString)alignedWord.getTier(userTierName);
+				TierString[] tierMorphemes = tierVal == null ? new TierString[0] : morphemeParser.parseTier((TierString)alignedWord.getTier(userTierName));
 				retVal = Math.max(retVal, tierMorphemes.length);
 			}
 		}

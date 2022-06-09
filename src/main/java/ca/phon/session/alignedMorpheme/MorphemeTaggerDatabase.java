@@ -100,12 +100,41 @@ public class MorphemeTaggerDatabase {
 					Optional<MorphemeTaggerLinkedEntry> linkedEntryOpt =
 							morphemeEntryForTier.alignedTierLinkedEntries.stream().filter((e) -> e.getTierName().equals(otherEntry.getKey())).findAny();
 
-					MorphemeTaggerLinkedEntry linkedEntry =
-							(linkedEntryOpt.isPresent() ? linkedEntryOpt.get() : new MorphemeTaggerLinkedEntry(tierNodeRef));
-					linkedEntry.linkedTierRefs.add(otherNodeRef);
+					if(linkedEntryOpt.isEmpty()) {
+						MorphemeTaggerLinkedEntry linkedEntry = new MorphemeTaggerLinkedEntry(tierNodeRef);
+						morphemeEntryForTier.alignedTierLinkedEntries.add(linkedEntry);
+						linkedEntry.linkedTierRefs.add(otherNodeRef);
+					} else {
+						linkedEntryOpt.get().linkedTierRefs.add(otherNodeRef);
+					}
 				}
 			}
 		}
+	}
+
+	public Map<String, String[]> lookupMorphemeForTier(String tierName, String morpheme) {
+		Map<String, String[]> retVal = new LinkedHashMap<>();
+
+		TernaryTreeNode<Collection<MorphemeTaggerEntry>> morphemeNodeRef = tree.findNode(morpheme);
+		if(morphemeNodeRef != null) {
+			retVal.put(tierName, new String[]{morpheme});
+			Optional<MorphemeTaggerEntry> entryOpt =
+					morphemeNodeRef.getValue().stream().filter((e) -> e.getTierName().equals(tierName)).findAny();
+			if(entryOpt.isPresent()) {
+				MorphemeTaggerEntry entry = entryOpt.get();
+				for(MorphemeTaggerLinkedEntry linkedEntry:entry.alignedTierLinkedEntries) {
+					String alignedTierName = linkedEntry.getTierName();
+					String alignedTierVals[] = new String[linkedEntry.linkedTierRefs.size()];
+					int i = 0;
+					for(TernaryTreeNode<Collection<MorphemeTaggerEntry>> alignedEntry:linkedEntry.linkedTierRefs) {
+						alignedTierVals[i++] = alignedEntry.getPrefix();
+					}
+					retVal.put(alignedTierName, alignedTierVals);
+				}
+			}
+		}
+
+		return retVal;
 	}
 
 	public Collection<String> tierNames() {
