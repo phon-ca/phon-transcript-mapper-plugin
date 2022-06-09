@@ -65,14 +65,16 @@ public class MorphemeTaggerDatabase {
 			throw new IllegalStateException("Unable to add tier name to database");
 
 		TernaryTreeNode<Collection<MorphemeTaggerEntry>> morphemeNode = tree.findNode(morpheme, true, true);
-
 		if(!morphemeNode.isTerminated()) {
 			List<MorphemeTaggerEntry> entryList = new ArrayList<>();
 			morphemeNode.setValue(entryList);
 		}
-		MorphemeTaggerEntry entry = new MorphemeTaggerEntry(tierNameRef, new LinkedHashMap<>());
-		morphemeNode.getValue().add(entry);
-
+		Optional<MorphemeTaggerEntry> entryOpt =
+				morphemeNode.getValue().stream().filter((e) -> e.getTierName().equals(tierName)).findAny();
+		if(entryOpt.isEmpty()) {
+			MorphemeTaggerEntry entry = new MorphemeTaggerEntry(tierNameRef);
+			morphemeNode.getValue().add(entry);
+		}
 		return morphemeNode;
 	}
 
@@ -92,9 +94,15 @@ public class MorphemeTaggerDatabase {
 				for(int j = 0; j < entryList.length; j++) {
 					if(j == i) continue;
 					var otherEntry = (Map.Entry<String, String>)entryList[j];
-					TernaryTreeNode<TierDescription> tierNodeRef = tierDescriptionTree.findNode(otherEntry.getValue());
+					TernaryTreeNode<TierDescription> tierNodeRef = tierDescriptionTree.findNode(otherEntry.getKey());
 					TernaryTreeNode<Collection<MorphemeTaggerEntry>> otherNodeRef = tree.findNode(otherEntry.getValue());
-					morphemeEntryForTier.alignedTierMap.put(tierNodeRef, otherNodeRef);
+
+					Optional<MorphemeTaggerLinkedEntry> linkedEntryOpt =
+							morphemeEntryForTier.alignedTierLinkedEntries.stream().filter((e) -> e.getTierName().equals(otherEntry.getKey())).findAny();
+
+					MorphemeTaggerLinkedEntry linkedEntry =
+							(linkedEntryOpt.isPresent() ? linkedEntryOpt.get() : new MorphemeTaggerLinkedEntry(tierNodeRef));
+					linkedEntry.linkedTierRefs.add(otherNodeRef);
 				}
 			}
 		}
@@ -131,14 +139,42 @@ public class MorphemeTaggerDatabase {
 		TernaryTreeNode<TierDescription> tierNameRef;
 
 		// map of links to aligned tier data
-		Map<TernaryTreeNode<TierDescription>, TernaryTreeNode<Collection<MorphemeTaggerEntry>>> alignedTierMap;
+		List<MorphemeTaggerLinkedEntry> alignedTierLinkedEntries;
+
+		public MorphemeTaggerEntry(TernaryTreeNode<TierDescription> tierNameRef) {
+			this(tierNameRef, new ArrayList<>());
+		}
 
 		public MorphemeTaggerEntry(TernaryTreeNode<TierDescription> tierNameRef,
-		                           Map<TernaryTreeNode<TierDescription>, TernaryTreeNode<Collection<MorphemeTaggerEntry>>> alignedTierMap) {
+		                           List<MorphemeTaggerLinkedEntry> alignedTierLinkedEntries) {
 			super();
 
 			this.tierNameRef = tierNameRef;
-			this.alignedTierMap = alignedTierMap;
+			this.alignedTierLinkedEntries = alignedTierLinkedEntries;
+		}
+
+		public String getTierName() {
+			return this.tierNameRef.getPrefix();
+		}
+
+	}
+
+	private class MorphemeTaggerLinkedEntry {
+
+		TernaryTreeNode<TierDescription> tierNameRef;
+
+		Set<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> linkedTierRefs;
+
+		public MorphemeTaggerLinkedEntry(TernaryTreeNode<TierDescription> tierNameRef) {
+			this(tierNameRef, new LinkedHashSet<>());
+		}
+
+		public MorphemeTaggerLinkedEntry(TernaryTreeNode<TierDescription> tierNameRef,
+		                                 Set<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> linkedTierRefs) {
+			super();
+
+			this.tierNameRef = tierNameRef;
+			this.linkedTierRefs = linkedTierRefs;
 		}
 
 		public String getTierName() {
