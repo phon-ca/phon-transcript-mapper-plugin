@@ -5,9 +5,10 @@ import ca.phon.app.log.LogUtil;
 import ca.phon.project.Project;
 import ca.phon.session.*;
 
+import java.io.Serializable;
 import java.util.*;
 
-public class AlignedMorphemeDatabase {
+public class AlignedMorphemeDatabase implements Serializable {
 
 	private TernaryTree<TierDescription> tierDescriptionTree;
 
@@ -52,30 +53,36 @@ public class AlignedMorphemeDatabase {
 	 */
 	public TernaryTreeNode<Collection<MorphemeTaggerEntry>> addMorphemeForTier(String tierName, String morpheme) {
 		// ensure tier exists
-		TernaryTreeNode<TierDescription> tierNameRef = tierDescriptionTree.findNode(tierName);
-		if(tierNameRef == null) {
+		Optional<TernaryTreeNode<TierDescription>> tierNameRefOpt = tierDescriptionTree.findNode(tierName);
+		if(tierNameRefOpt.isEmpty()) {
 			try {
 				addUserTier(tierName);
 			} catch (Exception e) {
 				LogUtil.warning(e);
 			}
-			tierNameRef = tierDescriptionTree.findNode(tierName);
+			tierNameRefOpt = tierDescriptionTree.findNode(tierName);
 		}
-		if(tierNameRef == null)
+		if(tierNameRefOpt.isEmpty())
 			throw new IllegalStateException("Unable to add tier name to database");
+		final TernaryTreeNode<TierDescription> tierNameRef = tierNameRefOpt.get();
 
-		TernaryTreeNode<Collection<MorphemeTaggerEntry>> morphemeNode = tree.findNode(morpheme, true, true);
-		if(!morphemeNode.isTerminated()) {
-			List<MorphemeTaggerEntry> entryList = new ArrayList<>();
-			morphemeNode.setValue(entryList);
+		Optional<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> morphemeNodeOpt = tree.findNode(morpheme, true, true);
+		if(morphemeNodeOpt.isPresent()) {
+			final TernaryTreeNode<Collection<MorphemeTaggerEntry>> morphemeNode = morphemeNodeOpt.get();
+			if(!morphemeNode.isTerminated()) {
+				List<MorphemeTaggerEntry> entryList = new ArrayList<>();
+				morphemeNode.setValue(entryList);
+			}
+			Optional<MorphemeTaggerEntry> entryOpt =
+					morphemeNode.getValue().stream().filter((e) -> e.getTierName().equals(tierName)).findAny();
+			if(entryOpt.isEmpty()) {
+				MorphemeTaggerEntry entry = new MorphemeTaggerEntry(tierNameRef);
+				morphemeNode.getValue().add(entry);
+			}
+			return morphemeNode;
+		} else {
+			throw new IllegalStateException("Unable to add morpheme to database");
 		}
-		Optional<MorphemeTaggerEntry> entryOpt =
-				morphemeNode.getValue().stream().filter((e) -> e.getTierName().equals(tierName)).findAny();
-		if(entryOpt.isEmpty()) {
-			MorphemeTaggerEntry entry = new MorphemeTaggerEntry(tierNameRef);
-			morphemeNode.getValue().add(entry);
-		}
-		return morphemeNode;
 	}
 
 	public void addAlignedMorphemes(Map<String, String> alignedMorphemes) {
@@ -86,20 +93,23 @@ public class AlignedMorphemeDatabase {
 		var entryList = alignedMorphemes.entrySet().toArray();
 		for(int i = 0; i < entryList.length; i++) {
 			var entry = (Map.Entry<String, String>)entryList[i];
-			TernaryTreeNode<Collection<MorphemeTaggerEntry>> morphemeNodeRef = tree.findNode(entry.getValue());
+			TernaryTreeNode<Collection<MorphemeTaggerEntry>> morphemeNodeRef = tree.findNode(entry.getValue()).get();
 			Optional<MorphemeTaggerEntry> morphemeEntryOpt =
-					morphemeNodeRef.getValue().stream().filter((e) -> e.getTierName().equals(entry.getKey())).findAny();
+					morphemeNodeRef.getValue()
+							.stream()
+							.filter((e) -> e.getTierName().equals(entry.getKey())).findAny();
 			if (morphemeEntryOpt.isPresent()) {
 				MorphemeTaggerEntry morphemeEntryForTier = morphemeEntryOpt.get();
 				for(int j = 0; j < entryList.length; j++) {
 					if(j == i) continue;
 					var otherEntry = (Map.Entry<String, String>)entryList[j];
-					TernaryTreeNode<TierDescription> tierNodeRef = tierDescriptionTree.findNode(otherEntry.getKey());
-					TernaryTreeNode<Collection<MorphemeTaggerEntry>> otherNodeRef = tree.findNode(otherEntry.getValue());
+					TernaryTreeNode<TierDescription> tierNodeRef = tierDescriptionTree.findNode(otherEntry.getKey()).get();
+					TernaryTreeNode<Collection<MorphemeTaggerEntry>> otherNodeRef = tree.findNode(otherEntry.getValue()).get();
 
 					Optional<MorphemeTaggerLinkedEntry> linkedEntryOpt =
-							morphemeEntryForTier.alignedTierLinkedEntries.stream().filter((e) -> e.getTierName().equals(otherEntry.getKey())).findAny();
-
+							morphemeEntryForTier.alignedTierLinkedEntries
+									.stream()
+									.filter((e) -> e.getTierName().equals(otherEntry.getKey())).findAny();
 					if(linkedEntryOpt.isEmpty()) {
 						MorphemeTaggerLinkedEntry linkedEntry = new MorphemeTaggerLinkedEntry(tierNodeRef);
 						morphemeEntryForTier.alignedTierLinkedEntries.add(linkedEntry);
@@ -112,11 +122,21 @@ public class AlignedMorphemeDatabase {
 		}
 	}
 
-	public Map<String, String[]> lookupMorphemeForTier(String tierName, String morpheme) {
+	/**
+	 * Return a set of aligned morphemes given a tier name and morpheme
+	 * that exists for that tier.
+	 *
+	 * @param tierName
+	 * @param morpheme
+	 *
+	 * @return a map of aligned tier values for the given tier and morpheme
+	 */
+	public Map<String, String[]> alignedMorphemesForTier(String tierName, String morpheme) {
 		Map<String, String[]> retVal = new LinkedHashMap<>();
 
-		TernaryTreeNode<Collection<MorphemeTaggerEntry>> morphemeNodeRef = tree.findNode(morpheme);
-		if(morphemeNodeRef != null) {
+		Optional<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> morphemeNodeRefOpt = tree.findNode(morpheme);
+		if(morphemeNodeRefOpt.isPresent()) {
+			final TernaryTreeNode<Collection<MorphemeTaggerEntry>> morphemeNodeRef = morphemeNodeRefOpt.get();
 			retVal.put(tierName, new String[]{morpheme});
 			Optional<MorphemeTaggerEntry> entryOpt =
 					morphemeNodeRef.getValue().stream().filter((e) -> e.getTierName().equals(tierName)).findAny();
@@ -156,19 +176,19 @@ public class AlignedMorphemeDatabase {
 	}
 
 	private Collection<MorphemeTaggerEntry> morphemeEntries(String key) {
-		final TernaryTreeNode<Collection<MorphemeTaggerEntry>> node = tree.findNode(key);
-		if(node == null) return new ArrayList<>();
+		final Optional<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> node = tree.findNode(key);
+		if(node.isEmpty()) return new ArrayList<>();
 
-		return node.getValue();
+		return node.get().getValue();
 	}
 
-	private class MorphemeTaggerEntry {
+	private class MorphemeTaggerEntry implements Serializable {
 		// reference to tier name node, tier names are stored frequently
 		// and storing a reference to the tree node reduces memory footprint
-		TernaryTreeNode<TierDescription> tierNameRef;
+		transient TernaryTreeNode<TierDescription> tierNameRef;
 
 		// map of links to aligned tier data
-		List<MorphemeTaggerLinkedEntry> alignedTierLinkedEntries;
+		transient List<MorphemeTaggerLinkedEntry> alignedTierLinkedEntries;
 
 		public MorphemeTaggerEntry(TernaryTreeNode<TierDescription> tierNameRef) {
 			this(tierNameRef, new ArrayList<>());

@@ -21,6 +21,7 @@
 		<project.build.targetVersion>15</project.build.targetVersion>
 
 		<ca.phon.phon-app.version>3.4.3-SNAPSHOT</ca.phon.phon-app.version>
+		<ca.hedlund.tst.version>0.11</ca.hedlund.tst.version>
 
 		<!-- Plugin versions -->
 		<org.apache.maven.plugins.maven-compiler-plugin.version>3.8.0</org.apache.maven.plugins.maven-compiler-plugin.version>
@@ -32,6 +33,11 @@
 			<groupId>ca.phon</groupId>
 			<artifactId>phon-app</artifactId>
 			<version>${ca.phon.phon-app.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>ca.hedlund</groupId>
+			<artifactId>tst</artifactId>
+			<version>0.11</version>
 		</dependency>
 		<dependency>
 			<groupId>ca.phon</groupId>
