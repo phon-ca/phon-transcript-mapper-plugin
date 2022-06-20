@@ -57,6 +57,12 @@ public class TestAlignedMorphemeDatabase {
 		Assert.assertTrue(db.getTierInfo().stream().filter((info) -> "MorphemeType".equals(info.tierName)).findAny().isPresent());
 		Assert.assertTrue(db.getTierInfo().stream().filter((info) -> "MorphemeMeaning".equals(info.tierName)).findAny().isPresent());
 
+		final String[] expectedTypes = {"p,quest","vai.fin","vii.fin","medial","subjunctive","vai+o.fin","spatial","thm(vta)","thm(vti.non3)","2.sg","2.sg>0","OK"};
+		final String[] expectedMeanings = {"p,quest","vai.fin","vii.fin","medial","subjunctive","vai+o.fin","vintr.fin","thm(vta)","thm(vti.non3)","imp","p,aff"};
+		Map<String, String[]> alignedVals = db.alignedMorphemesForTier("Orthography", "â");
+		Assert.assertArrayEquals(expectedTypes, alignedVals.get("MorphemeType"));
+		Assert.assertArrayEquals(expectedMeanings, alignedVals.get("MorphemeMeaning"));
+
 		ByteArrayOutputStream bout = new ByteArrayOutputStream();
 		ObjectOutputStream oout = new ObjectOutputStream(bout);
 		oout.writeObject(db);
@@ -68,6 +74,10 @@ public class TestAlignedMorphemeDatabase {
 
 		Assert.assertTrue(testDb.getTierInfo().stream().filter((info) -> "MorphemeType".equals(info.tierName)).findAny().isPresent());
 		Assert.assertTrue(testDb.getTierInfo().stream().filter((info) -> "MorphemeMeaning".equals(info.tierName)).findAny().isPresent());
+
+		alignedVals = testDb.alignedMorphemesForTier("Orthography", "â");
+		Assert.assertArrayEquals(expectedTypes, alignedVals.get("MorphemeType"));
+		Assert.assertArrayEquals(expectedMeanings, alignedVals.get("MorphemeMeaning"));
 	}
 
 }
