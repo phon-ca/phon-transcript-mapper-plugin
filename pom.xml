@@ -37,7 +37,7 @@
 		<dependency>
 			<groupId>ca.hedlund</groupId>
 			<artifactId>tst</artifactId>
-			<version>0.11</version>
+			<version>0.13</version>
 		</dependency>
 		<dependency>
 			<groupId>ca.phon</groupId>

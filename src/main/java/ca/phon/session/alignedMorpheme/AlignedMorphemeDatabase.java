@@ -2,19 +2,21 @@ package ca.phon.session.alignedMorpheme;
 
 import ca.hedlund.tst.*;
 import ca.phon.app.log.LogUtil;
-import ca.phon.project.Project;
 import ca.phon.session.*;
 
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 
 public class AlignedMorphemeDatabase implements Serializable {
 
-	private TernaryTree<TierDescription> tierDescriptionTree;
+	@Serial
+	private static final long serialVersionUID = 1L;
+
+	private TernaryTree<TierInfo> tierDescriptionTree;
 
 	private TernaryTree<Collection<MorphemeTaggerEntry>> tree;
 
-	public AlignedMorphemeDatabase(Project project) {
+	public AlignedMorphemeDatabase() {
 		super();
 
 		tierDescriptionTree = new TernaryTree<>();
@@ -24,12 +26,10 @@ public class AlignedMorphemeDatabase implements Serializable {
 	}
 
 	private void setupTierDescriptionTree() {
-		SessionFactory factory = SessionFactory.newFactory();
 		for(SystemTierType systemTier:SystemTierType.values()) {
 			if(systemTier.isGrouped())
 				tierDescriptionTree.put(systemTier.getName(),
-						factory.createTierDescription(systemTier.getName(), systemTier.isGrouped(),
-								systemTier.getDeclaredType()));
+						new TierInfo(systemTier.getName()));
 		}
 	}
 
@@ -43,8 +43,7 @@ public class AlignedMorphemeDatabase implements Serializable {
 		if(tierDescriptionTree.containsKey(tierName)) {
 			throw new DuplicateTierEntry(tierName);
 		}
-		SessionFactory factory = SessionFactory.newFactory();
-		tierDescriptionTree.put(tierName, factory.createTierDescription(tierName, true, TierString.class));
+		tierDescriptionTree.put(tierName, new TierInfo(tierName));
 	}
 
 	/**
@@ -53,7 +52,7 @@ public class AlignedMorphemeDatabase implements Serializable {
 	 */
 	public TernaryTreeNode<Collection<MorphemeTaggerEntry>> addMorphemeForTier(String tierName, String morpheme) {
 		// ensure tier exists
-		Optional<TernaryTreeNode<TierDescription>> tierNameRefOpt = tierDescriptionTree.findNode(tierName);
+		Optional<TernaryTreeNode<TierInfo>> tierNameRefOpt = tierDescriptionTree.findNode(tierName);
 		if(tierNameRefOpt.isEmpty()) {
 			try {
 				addUserTier(tierName);
@@ -64,7 +63,7 @@ public class AlignedMorphemeDatabase implements Serializable {
 		}
 		if(tierNameRefOpt.isEmpty())
 			throw new IllegalStateException("Unable to add tier name to database");
-		final TernaryTreeNode<TierDescription> tierNameRef = tierNameRefOpt.get();
+		final TernaryTreeNode<TierInfo> tierNameRef = tierNameRefOpt.get();
 
 		Optional<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> morphemeNodeOpt = tree.findNode(morpheme, true, true);
 		if(morphemeNodeOpt.isPresent()) {
@@ -103,7 +102,7 @@ public class AlignedMorphemeDatabase implements Serializable {
 				for(int j = 0; j < entryList.length; j++) {
 					if(j == i) continue;
 					var otherEntry = (Map.Entry<String, String>)entryList[j];
-					TernaryTreeNode<TierDescription> tierNodeRef = tierDescriptionTree.findNode(otherEntry.getKey()).get();
+					TernaryTreeNode<TierInfo> tierNodeRef = tierDescriptionTree.findNode(otherEntry.getKey()).get();
 					TernaryTreeNode<Collection<MorphemeTaggerEntry>> otherNodeRef = tree.findNode(otherEntry.getValue()).get();
 
 					Optional<MorphemeTaggerLinkedEntry> linkedEntryOpt =
@@ -144,7 +143,7 @@ public class AlignedMorphemeDatabase implements Serializable {
 				MorphemeTaggerEntry entry = entryOpt.get();
 				for(MorphemeTaggerLinkedEntry linkedEntry:entry.alignedTierLinkedEntries) {
 					String alignedTierName = linkedEntry.getTierName();
-					String alignedTierVals[] = new String[linkedEntry.linkedTierRefs.size()];
+					String[] alignedTierVals = new String[linkedEntry.linkedTierRefs.size()];
 					int i = 0;
 					for(TernaryTreeNode<Collection<MorphemeTaggerEntry>> alignedEntry:linkedEntry.linkedTierRefs) {
 						alignedTierVals[i++] = alignedEntry.getPrefix();
@@ -161,7 +160,7 @@ public class AlignedMorphemeDatabase implements Serializable {
 		return tierDescriptionTree.keySet();
 	}
 
-	public Collection<TierDescription> getTierDescriptions() {
+	public Collection<TierInfo> getTierInfo() {
 		return tierDescriptionTree.values();
 	}
 
@@ -182,19 +181,44 @@ public class AlignedMorphemeDatabase implements Serializable {
 		return node.get().getValue();
 	}
 
+	public class TierInfo implements Serializable {
+
+		private final static long serialVersionUID = 1L;
+
+		final String tierName;
+
+		final String tierFont;
+
+		public TierInfo(String tierName) {
+			this(tierName, "default");
+		}
+
+		public TierInfo(String tierName, String tierFont) {
+			this.tierName = tierName;
+			this.tierFont = tierFont;
+		}
+
+	}
+
 	private class MorphemeTaggerEntry implements Serializable {
+
+		private static final long serialVersionUID = 1L;
+
 		// reference to tier name node, tier names are stored frequently
 		// and storing a reference to the tree node reduces memory footprint
-		transient TernaryTreeNode<TierDescription> tierNameRef;
+		private transient TernaryTreeNode<TierInfo> tierNameRef;
+
+		// used for serialization to lazy-load linked values after tree structure is fully loaded into memory
+		private transient TernaryTreeNodePath tierNameNodePath;
 
 		// map of links to aligned tier data
-		transient List<MorphemeTaggerLinkedEntry> alignedTierLinkedEntries;
+		private transient List<MorphemeTaggerLinkedEntry> alignedTierLinkedEntries;
 
-		public MorphemeTaggerEntry(TernaryTreeNode<TierDescription> tierNameRef) {
+		public MorphemeTaggerEntry(TernaryTreeNode<TierInfo> tierNameRef) {
 			this(tierNameRef, new ArrayList<>());
 		}
 
-		public MorphemeTaggerEntry(TernaryTreeNode<TierDescription> tierNameRef,
+		public MorphemeTaggerEntry(TernaryTreeNode<TierInfo> tierNameRef,
 		                           List<MorphemeTaggerLinkedEntry> alignedTierLinkedEntries) {
 			super();
 
@@ -203,22 +227,72 @@ public class AlignedMorphemeDatabase implements Serializable {
 		}
 
 		public String getTierName() {
+			if(this.tierNameRef == null) {
+				if(this.tierNameNodePath != null) {
+					Optional<TernaryTreeNode<TierInfo>> tierNodeOpt =
+							tierDescriptionTree.findNode(this.tierNameNodePath);
+					if(tierNodeOpt.isEmpty()) {
+						throw new IllegalStateException("Invalid tier name path");
+					}
+					this.tierNameRef = tierNodeOpt.get();
+				} else {
+					throw new IllegalStateException("No path to tier name");
+				}
+			}
 			return this.tierNameRef.getPrefix();
+		}
+
+		@Serial
+		private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+			this.tierNameRef = null;
+
+			this.tierNameNodePath = (TernaryTreeNodePath) ois.readObject();
+
+			this.alignedTierLinkedEntries = new ArrayList<>();
+			final int numEntries = ois.readInt();
+			for(int i = 0; i < numEntries; i++) {
+				this.alignedTierLinkedEntries.add((MorphemeTaggerLinkedEntry) ois.readObject());
+			}
+		}
+
+		@Serial
+		private void writeObject(ObjectOutputStream out) throws IOException {
+			if(tierNameRef != null) {
+				out.writeObject(tierNameRef.getPath());
+			} else if(tierNameNodePath != null) {
+				out.writeObject(tierNameNodePath);
+			} else {
+				throw new IOException("No tree path to tier name");
+			}
+
+			if(this.alignedTierLinkedEntries != null) {
+				out.writeInt(this.alignedTierLinkedEntries.size());
+				for(var linkedEntry:this.alignedTierLinkedEntries) {
+					out.writeObject(linkedEntry);
+				}
+			}
 		}
 
 	}
 
-	private class MorphemeTaggerLinkedEntry {
+	private class MorphemeTaggerLinkedEntry implements Serializable {
 
-		TernaryTreeNode<TierDescription> tierNameRef;
+		@Serial
+		private static final long serialVersionUID = 1L;
 
-		Set<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> linkedTierRefs;
+		private transient TernaryTreeNode<TierInfo> tierNameRef;
 
-		public MorphemeTaggerLinkedEntry(TernaryTreeNode<TierDescription> tierNameRef) {
+		private transient TernaryTreeNodePath tierNamePath;
+
+		private transient Set<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> linkedTierRefs;
+
+		private transient Collection<TernaryTreeNodePath> linkedNodePaths;
+
+		public MorphemeTaggerLinkedEntry(TernaryTreeNode<TierInfo> tierNameRef) {
 			this(tierNameRef, new LinkedHashSet<>());
 		}
 
-		public MorphemeTaggerLinkedEntry(TernaryTreeNode<TierDescription> tierNameRef,
+		public MorphemeTaggerLinkedEntry(TernaryTreeNode<TierInfo> tierNameRef,
 		                                 Set<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> linkedTierRefs) {
 			super();
 
@@ -227,7 +301,73 @@ public class AlignedMorphemeDatabase implements Serializable {
 		}
 
 		public String getTierName() {
+			if(this.tierNameRef == null) {
+				if(this.tierNamePath != null) {
+					Optional<TernaryTreeNode<TierInfo>> tierInfoOpt =
+							tierDescriptionTree.findNode(this.tierNamePath);
+					if(tierInfoOpt.isEmpty())
+						throw new IllegalStateException("Invalid tier node path");
+					this.tierNameRef = tierInfoOpt.get();
+				} else {
+					throw new IllegalStateException("No tier node path");
+				}
+			}
 			return this.tierNameRef.getPrefix();
+		}
+
+		public Set<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> getLinkedTierRefs() {
+			if(this.linkedTierRefs == null) {
+				if(this.linkedNodePaths != null) {
+					this.linkedTierRefs = new LinkedHashSet<>();
+					for(var path:this.linkedNodePaths) {
+						Optional<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> tierNodeOpt =
+								tree.findNode(path);
+						if(tierNodeOpt.isEmpty())
+							throw new IllegalStateException("Invalid value path");
+						this.linkedTierRefs.add(tierNodeOpt.get());
+					}
+				} else {
+					throw new IllegalStateException("No linked values");
+				}
+			}
+			return this.linkedTierRefs;
+		}
+
+		private void readObject(ObjectInputStream oin) throws IOException, ClassNotFoundException {
+			this.tierNameRef = null;
+			this.linkedTierRefs = null;
+
+			this.tierNamePath = (TernaryTreeNodePath) oin.readObject();
+			final int numLinks = oin.readInt();
+			this.linkedNodePaths = new LinkedHashSet<>();
+			for(int i = 0; i < numLinks; i++) {
+				TernaryTreeNodePath linkedPath = (TernaryTreeNodePath) oin.readObject();
+				this.linkedNodePaths.add(linkedPath);
+			}
+		}
+
+		private void writeObject(ObjectOutputStream out) throws IOException {
+			if(this.tierNameRef != null) {
+				out.writeObject(this.tierNameRef.getPath());
+			} else if(this.tierNamePath != null) {
+				out.writeObject(this.tierNamePath);
+			} else {
+				throw new IOException("No path to tier name");
+			}
+
+			if(this.linkedTierRefs != null) {
+				out.writeInt(this.linkedTierRefs.size());
+				for(var linkedNode:linkedTierRefs) {
+					out.writeObject(linkedNode.getPath());
+				}
+			} else if(this.linkedNodePaths != null) {
+				out.writeInt(this.linkedNodePaths.size());
+				for(var linkedPath:linkedNodePaths) {
+					out.writeObject(linkedPath);
+				}
+			} else {
+				out.writeInt(0);
+			}
 		}
 
 	}
