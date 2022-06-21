@@ -1,4 +1,4 @@
-package ca.phon.session.alignedMorpheme;
+package ca.phon.alignedMorpheme;
 
 import ca.phon.orthography.*;
 import ca.phon.visitor.*;

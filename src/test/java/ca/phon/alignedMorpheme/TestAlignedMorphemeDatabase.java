@@ -1,6 +1,6 @@
-package ca.phon.session.alignedMorpheme;
+package ca.phon.alignedMorpheme;
 
-import au.com.bytecode.opencsv.CSVReader;
+import ca.phon.alignedMorpheme.db.AlignedMorphemeDatabase;
 import ca.phon.session.SystemTierType;
 import org.junit.*;
 import org.junit.runner.RunWith;

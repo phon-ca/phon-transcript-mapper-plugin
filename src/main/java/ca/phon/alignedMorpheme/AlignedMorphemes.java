@@ -1,6 +1,5 @@
-package ca.phon.session.alignedMorpheme;
+package ca.phon.alignedMorpheme;
 
-import ca.phon.app.Main;
 import ca.phon.extensions.*;
 import ca.phon.ipa.IPATranscript;
 import ca.phon.orthography.*;
