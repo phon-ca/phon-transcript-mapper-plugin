@@ -54,8 +54,8 @@ public class TestAlignedMorphemeDatabase {
 	public void testDatabaseSerialization() throws IOException, ClassNotFoundException {
 		AlignedMorphemeDatabase db = loadDatabase();
 
-		Assert.assertTrue(db.getTierInfo().stream().filter((info) -> "MorphemeType".equals(info.tierName)).findAny().isPresent());
-		Assert.assertTrue(db.getTierInfo().stream().filter((info) -> "MorphemeMeaning".equals(info.tierName)).findAny().isPresent());
+		Assert.assertTrue(db.getTierInfo().stream().filter((info) -> "MorphemeType".equals(info.getTierName())).findAny().isPresent());
+		Assert.assertTrue(db.getTierInfo().stream().filter((info) -> "MorphemeMeaning".equals(info.getTierName())).findAny().isPresent());
 
 		final String[] expectedTypes = {"p,quest","vai.fin","vii.fin","medial","subjunctive","vai+o.fin","spatial","thm(vta)","thm(vti.non3)","2.sg","2.sg>0","OK"};
 		final String[] expectedMeanings = {"p,quest","vai.fin","vii.fin","medial","subjunctive","vai+o.fin","vintr.fin","thm(vta)","thm(vti.non3)","imp","p,aff"};
@@ -72,8 +72,8 @@ public class TestAlignedMorphemeDatabase {
 		ObjectInputStream oin = new ObjectInputStream(new ByteArrayInputStream(bout.toByteArray()));
 		AlignedMorphemeDatabase testDb = (AlignedMorphemeDatabase) oin.readObject();
 
-		Assert.assertTrue(testDb.getTierInfo().stream().filter((info) -> "MorphemeType".equals(info.tierName)).findAny().isPresent());
-		Assert.assertTrue(testDb.getTierInfo().stream().filter((info) -> "MorphemeMeaning".equals(info.tierName)).findAny().isPresent());
+		Assert.assertTrue(testDb.getTierInfo().stream().filter((info) -> "MorphemeType".equals(info.getTierName())).findAny().isPresent());
+		Assert.assertTrue(testDb.getTierInfo().stream().filter((info) -> "MorphemeMeaning".equals(info.getTierName())).findAny().isPresent());
 
 		alignedVals = testDb.alignedMorphemesForTier("Orthography", "â");
 		Assert.assertArrayEquals(expectedTypes, alignedVals.get("MorphemeType"));
