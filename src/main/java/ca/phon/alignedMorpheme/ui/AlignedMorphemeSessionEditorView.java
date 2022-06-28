@@ -1,6 +1,7 @@
 package ca.phon.alignedMorpheme.ui;
 
 import ca.phon.app.session.editor.*;
+import ca.phon.plugin.*;
 import ca.phon.util.icons.*;
 
 import javax.swing.*;
@@ -15,7 +16,7 @@ public class AlignedMorphemeSessionEditorView extends EditorView {
 
 	public final static String NAME = "Aligned Word/Morpheme";
 
-	private final static String ICON = "blank";
+	public final static String ICON = "blank";
 
 	public AlignedMorphemeSessionEditorView(SessionEditor editor) {
 		super(editor);
