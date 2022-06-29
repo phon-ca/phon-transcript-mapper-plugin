@@ -26,11 +26,9 @@ public class AlignedMorphemeDatabase implements Serializable {
 	}
 
 	private void setupTierDescriptionTree() {
-		for(SystemTierType systemTier:SystemTierType.values()) {
-			if(systemTier.isGrouped())
-				tierDescriptionTree.put(systemTier.getName(),
-						new TierInfo(systemTier.getName()));
-		}
+		tierDescriptionTree.put(SystemTierType.Orthography.getName(), new TierInfo(SystemTierType.Orthography.getName()));
+		tierDescriptionTree.put(SystemTierType.IPATarget.getName(), new TierInfo(SystemTierType.IPATarget.getName()));
+		tierDescriptionTree.put(SystemTierType.IPAActual.getName(), new TierInfo(SystemTierType.IPAActual.getName()));
 	}
 
 	/**
