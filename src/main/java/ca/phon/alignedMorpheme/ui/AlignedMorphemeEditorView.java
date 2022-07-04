@@ -5,16 +5,15 @@ import ca.phon.alignedMorpheme.db.AlignedMorphemeDatabase;
 import ca.phon.app.log.LogUtil;
 import ca.phon.app.session.editor.*;
 import ca.phon.app.session.editor.view.common.*;
-import ca.phon.orthography.OrthoElement;
 import ca.phon.project.Project;
 import ca.phon.session.*;
 import ca.phon.session.Record;
+import ca.phon.ui.action.PhonActionEvent;
 import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.text.PromptedTextField;
 import ca.phon.util.Tuple;
 import ca.phon.util.icons.*;
-import ca.phon.worker.PhonWorker;
-import org.jdesktop.swingx.plaf.AbstractUIChangeHandler;
+import ca.phon.worker.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -46,7 +45,7 @@ public class AlignedMorphemeEditorView extends EditorView {
 
 	private TierDataLayoutPanel morphemeSelectionPanel;
 
-	public final static String NAME = "Aligned Word/Morpheme";
+	public final static String NAME = "Aligned Word/Morpheme Database";
 
 	public final static String ICON = "blank";
 
@@ -71,8 +70,28 @@ public class AlignedMorphemeEditorView extends EditorView {
 
 		init();
 		loadProjectDbAsync(() -> {
-			update();
+			updateAfterDbLoad();
 		});
+
+		setupEditorEvenListeners();
+	}
+
+	private void setupEditorEvenListeners() {
+		EditorAction tierChangedEvt = new DelegateEditorAction(this, "onTierChanged");
+		getEditor().getEventManager().registerActionForEvent(EditorEventType.TIER_CHANGED_EVT, tierChangedEvt);
+
+		EditorAction recordChangedAct = new DelegateEditorAction(this, "onRecordChanged");
+		getEditor().getEventManager().registerActionForEvent(EditorEventType.RECORD_CHANGED_EVT, recordChangedAct);
+	}
+
+	@RunOnEDT
+	public void onRecordChanged(EditorEvent ee) {
+		updateStateAsync(this::updateFromCurrentState);
+	}
+
+	@RunOnEDT
+	public void onTierChanged(EditorEvent ee) {
+		updateStateAsync(this::updateFromCurrentState);
 	}
 
 	private File projectDbFile() {
@@ -85,9 +104,20 @@ public class AlignedMorphemeEditorView extends EditorView {
 		final PhonWorker worker = PhonWorker.createWorker();
 		worker.setFinishWhenQueueEmpty(true);
 
-		worker.invokeLater(this::loadProjectDb);
+		final PhonTask task = new PhonTask("Load aligned word/morpheme database") {
+			@Override
+			public void performTask() {
+				setStatus(TaskStatus.RUNNING);
+				getEditor().getStatusBar().getProgressBar().setIndeterminate(true);
+				loadProjectDb();
+				getEditor().getStatusBar().getProgressBar().setIndeterminate(false);
+				setStatus(TaskStatus.FINISHED);
+			}
+		};
+		worker.invokeLater(task);
 		worker.setFinalTask(onFinish);
 
+		getEditor().getStatusBar().watchTask(task);
 		worker.start();
 	}
 
@@ -135,7 +165,7 @@ public class AlignedMorphemeEditorView extends EditorView {
 
 		this.morphemeField = new PromptedTextField("morpheme");
 		this.prevMorphemeLbl = new JLabel("<");
-		this.currentMorphemeLbl = new JLabel(String.format("%d / %d", alignedMorphemeIdx, 0));
+		this.currentMorphemeLbl = new JLabel(String.format(" %d / %d ", alignedMorphemeIdx, 0));
 		this.nextMorphemeLbl = new JLabel(">");
 
 		JPanel topPanel = new JPanel(new GridBagLayout());
@@ -155,24 +185,6 @@ public class AlignedMorphemeEditorView extends EditorView {
 		gbc.fill = GridBagConstraints.HORIZONTAL;
 		topPanel.add(this.keyTierBox, gbc);
 
-		++gbc.gridy;
-		gbc.gridx = 0;
-		gbc.weightx = 0.0;
-		gbc.fill = GridBagConstraints.NONE;
-		topPanel.add(new JLabel("Morpheme:"), gbc);
-		++gbc.gridx;
-		gbc.weightx = 1.0;
-		gbc.fill = GridBagConstraints.HORIZONTAL;
-		topPanel.add(this.morphemeField, gbc);
-		++gbc.gridx;
-		gbc.weightx = 0.0;
-		gbc.fill = GridBagConstraints.NONE;
-		topPanel.add(this.prevMorphemeLbl, gbc);
-		++gbc.gridx;
-		topPanel.add(this.currentMorphemeLbl, gbc);
-		++gbc.gridx;
-		topPanel.add(this.nextMorphemeLbl, gbc);
-
 		morphemeSelectionPanel = new TierDataLayoutPanel();
 
 		setLayout(new BorderLayout());
@@ -180,7 +192,27 @@ public class AlignedMorphemeEditorView extends EditorView {
 		add(new JScrollPane(morphemeSelectionPanel), BorderLayout.CENTER);
 	}
 
-	private void update() {
+	private void setState(MorphemeTaggerNode state) {
+		this.currentState = state;
+	}
+
+	private void updateStateAsync(Runnable onFinish) {
+		PhonWorker worker = PhonWorker.createWorker();
+		worker.invokeLater(this::updateState);
+		worker.setFinalTask(onFinish);
+		worker.setFinishWhenQueueEmpty(true);
+		worker.start();
+	}
+
+	private void updateState() {
+		setState(stateFromRecord(getEditor().currentRecord()));
+	}
+
+	private void updateFromCurrentState() {
+
+	}
+
+	private void updateAfterDbLoad() {
 		if(this.projectDb == null) return;
 
 		this.keyTierBox.setModel(new DefaultComboBoxModel<>(tiers));
@@ -194,8 +226,9 @@ public class AlignedMorphemeEditorView extends EditorView {
 			morphemeSelectionPanel.add(tierLbl, new TierDataConstraint((i+1), 0));
 		}
 
-		if(getEditor().currentRecord() != null)
-			this.currentState = stateFromRecord(getEditor().currentRecord());
+		if(getEditor().currentRecord() != null) {
+			updateStateAsync(this::updateFromCurrentState);
+		}
 	}
 
 	@Override
@@ -249,8 +282,6 @@ public class AlignedMorphemeEditorView extends EditorView {
 				}
 			}
 		}
-
-		printTree(root);
 
 		return root;
 	}
