@@ -5,18 +5,22 @@ import ca.phon.alignedMorpheme.db.AlignedMorphemeDatabase;
 import ca.phon.app.log.LogUtil;
 import ca.phon.app.session.editor.*;
 import ca.phon.app.session.editor.view.common.*;
+import ca.phon.orthography.OrthoElement;
 import ca.phon.project.Project;
 import ca.phon.session.*;
 import ca.phon.session.Record;
 import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.text.PromptedTextField;
+import ca.phon.util.Tuple;
 import ca.phon.util.icons.*;
 import ca.phon.worker.PhonWorker;
+import org.jdesktop.swingx.plaf.AbstractUIChangeHandler;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
-import java.util.Map;
+import java.util.*;
+import java.util.List;
 
 /**
  * Aligned morpheme editor view for Phon sessions. This view will display the aligned morpheme lookup data
@@ -58,10 +62,12 @@ public class AlignedMorphemeEditorView extends EditorView {
 
 	private int alignedMorphemeIdx = 0;
 
+	private MorphemeTaggerNode currentState;
+
 	public AlignedMorphemeEditorView(SessionEditor editor) {
 		super(editor);
 
-		this.tiers = new String[]{SystemTierType.IPATarget.getName(), SystemTierType.IPAActual.getName()};
+		this.tiers = new String[]{SystemTierType.Orthography.getName(), SystemTierType.IPATarget.getName(), SystemTierType.IPAActual.getName()};
 
 		init();
 		loadProjectDbAsync(() -> {
@@ -188,52 +194,8 @@ public class AlignedMorphemeEditorView extends EditorView {
 			morphemeSelectionPanel.add(tierLbl, new TierDataConstraint((i+1), 0));
 		}
 
-//		updateCurrentMorpheme();
-	}
-
-	private void updateCurrentMorpheme() {
-		final Record record = getEditor().currentRecord();
-		if(record == null) return;
-
-		final String keyTier = (String) this.keyTierBox.getSelectedItem();
-		if(keyTier == null) return;
-		SystemTierType systemTier = SystemTierType.tierFromString(keyTier);
-		String morpheme = "";
-
-		Group alignedGroup = record.getGroup(this.groupIdx);
-		Word alignedWord = (this.wordIdx < alignedGroup.getAlignedWordCount() ? alignedGroup.getAlignedWord(this.wordIdx) : null);
-		if(alignedWord == null) return;
-
-		AlignedMorphemes alignedMorphemes = alignedWord.getExtension(AlignedMorphemes.class);
-		if(alignedMorphemes == null) return;
-
-		AlignedMorpheme alignedMorpheme = (this.alignedMorphemeIdx < alignedMorphemes.getMorphemeCount()
-				? alignedMorphemes.getAlignedMorpheme(this.alignedMorphemeIdx) : null);
-		if(alignedMorpheme == null) return;
-
-		if(systemTier != null) {
-			switch(systemTier) {
-				case Orthography -> {
-					morpheme = (alignedMorpheme.getOrthography() != null ? alignedMorpheme.getOrthography().toString() : "");
-				}
-
-				case IPATarget -> {
-					morpheme = (alignedMorpheme.getIPATarget() != null ? alignedMorpheme.getIPATarget().toString() : "");
-				}
-
-				case IPAActual -> {
-					morpheme = (alignedMorpheme.getIPAActual() != null ? alignedMorpheme.getIPAActual().toString() : "");
-				}
-
-				default -> {
-
-				}
-			}
-		} else {
-			morpheme = (alignedMorpheme.getUserTier(keyTier) != null ? alignedMorpheme.getUserTier(keyTier).toString() : "");
-		}
-
-		this.morphemeField.setText(morpheme);
+		if(getEditor().currentRecord() != null)
+			this.currentState = stateFromRecord(getEditor().currentRecord());
 	}
 
 	@Override
@@ -249,6 +211,142 @@ public class AlignedMorphemeEditorView extends EditorView {
 	@Override
 	public JMenu getMenu() {
 		return new JMenu();
+	}
+
+	private MorphemeTaggerNode stateFromRecord(Record record) {
+		MorphemeTaggerNode root = new MorphemeTaggerNode(-1);
+
+		for(int gidx = 0; gidx < record.numberOfGroups(); gidx++) {
+			Group grp = record.getGroup(gidx);
+			MorphemeTaggerNode grpNode = new MorphemeTaggerNode(gidx);
+			root.addChild(grpNode);
+			for(int widx = 0; widx < grp.getAlignedWordCount(); widx++) {
+				Word wrd = grp.getAlignedWord(widx);
+				MorphemeTaggerNode wrdNode = new MorphemeTaggerNode(widx);
+				grpNode.addChild(' ', wrdNode);
+
+				AlignedMorphemes morphemes = wrd.getExtension(AlignedMorphemes.class);
+				if(morphemes != null) {
+					for(int midx = 0; midx < morphemes.getMorphemeCount(); midx++) {
+						AlignedMorpheme morpheme = morphemes.getAlignedMorpheme(midx);
+
+						String morphemeText = morpheme.getMorphemeText(keyTierBox.getSelectedItem().toString());
+						Map<String, String[]> alignedMorphemes =
+								this.projectDb.alignedMorphemesForTier(keyTierBox.getSelectedItem().toString(), morphemeText);
+
+						MorphemeTaggerNode morphemeNode = new MorphemeTaggerNode(midx, morphemeText, alignedMorphemes);
+
+						// start of word
+						char ch = '\u0000';
+						if(midx > 0) {
+							int orthoIdx = morpheme.getOrthographyWordLocation();
+							int chIdx = orthoIdx - 1;
+							ch = (chIdx >= 0 ? wrd.getOrthography().toString().charAt(chIdx) : '\u0000');
+						}
+
+						wrdNode.addChild(ch, morphemeNode);
+					}
+				}
+			}
+		}
+
+		printTree(root);
+
+		return root;
+	}
+
+	private void printTree(MorphemeTaggerNode tree) {
+		StringBuffer buffer = new StringBuffer();
+		treeToString(buffer, tree);
+		System.out.println(buffer.toString());
+	}
+
+	private void treeToString(StringBuffer buffer, MorphemeTaggerNode node) {
+		if(node.isTerminated()) {
+			buffer.append(String.format("%s\n", node.getMorpheme()));
+			for(String alignedTier:node.getAlignedMorphemeOptions().keySet()) {
+				String[] opts = node.alignedMorphemeOptions.get(alignedTier);
+				buffer.append(String.format("\t%s:\n", alignedTier));
+				buffer.append(String.format("\t\t%s\n", Arrays.toString(opts)));
+			}
+		} else {
+			for(int cidx = 0; cidx < node.childCount(); cidx++) {
+				treeToString(buffer, node.getChild(cidx));
+			}
+		}
+	}
+
+	private class MorphemeTaggerNode {
+
+		// index of group/word/morpheme
+		private int index;
+
+		// group/word/morpheme value
+		private String morpheme;
+
+		private Map<String, String[]> alignedMorphemeOptions;
+
+		private List<Tuple<Character, MorphemeTaggerNode>> children = new ArrayList<>();
+
+		public MorphemeTaggerNode(int idx) {
+			this(idx, null, null);
+		}
+
+		public MorphemeTaggerNode(int idx, String token) {
+			this(idx, token, null);
+		}
+
+		public MorphemeTaggerNode(int idx, String morpheme, Map<String, String[]> alignedMorphemeOptions) {
+			super();
+			this.index = idx;
+			this.morpheme = morpheme;
+			this.alignedMorphemeOptions = alignedMorphemeOptions;
+		}
+
+		public boolean isRoot() {
+			return this.index < 0;
+		}
+
+		public List<Tuple<Character, MorphemeTaggerNode>> getChildren() {
+			return this.children;
+		}
+
+		public boolean isTerminated() {
+			return this.morpheme != null;
+		}
+
+		public String getMorpheme() {
+			return this.morpheme;
+		}
+
+		public void setMorpheme(String morpheme) {
+			this.morpheme = morpheme;
+		}
+
+		public Map<String, String[]> getAlignedMorphemeOptions() {
+			return this.alignedMorphemeOptions;
+		}
+
+		public void setAlignedMorphemeOptions(Map<String, String[]> alignedMorphemeOptions) {
+			this.alignedMorphemeOptions = alignedMorphemeOptions;
+		}
+
+		public int childCount() {
+			return this.children.size();
+		}
+
+		public MorphemeTaggerNode getChild(int cidx) {
+			return this.children.get(cidx).getObj2();
+		}
+
+		public void addChild(MorphemeTaggerNode cnode) {
+			addChild('~', cnode);
+		}
+
+		public void addChild(Character ch, MorphemeTaggerNode cnode) {
+			this.children.add(new Tuple<>(ch, cnode));
+		}
+
 	}
 
 }
