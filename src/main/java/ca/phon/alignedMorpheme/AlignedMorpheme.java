@@ -38,6 +38,16 @@ public class AlignedMorpheme {
 				: null);
 	}
 
+	public int getOrthographyWordLocation() {
+		MorphemeParser parser = new MorphemeParser();
+		OrthoElement orthoElement = getAlignedWord().getOrthography();
+		final OrthoMorphemeVisitor visitor = new OrthoMorphemeVisitor();
+		visitor.visit(orthoElement);
+
+		return (this.morphemeIdx < visitor.getMorphemeIndexes().length
+				? visitor.getMorphemeIndexes()[this.morphemeIdx] : -1);
+	}
+
 	public IPATranscript getIPATarget() {
 		MorphemeParser parser = new MorphemeParser();
 		IPATranscript ipaTarget = getAlignedWord().getIPATarget();
@@ -72,6 +82,46 @@ public class AlignedMorpheme {
 		return (getMorphemeIdx() >= 0 && getMorphemeIdx() < morphemes.length
 				? morphemes[getMorphemeIdx()]
 				: null);
+	}
+
+	/**
+	 * Get text for tierName
+	 *
+	 * @param tierName the morpheme text for tierName or an empty string (never null)
+	 * @return
+	 */
+	public String getMorphemeText(String tierName) {
+		String retVal = "";
+
+		SystemTierType systemTier = SystemTierType.tierFromString(tierName);
+		if(systemTier != null) {
+			switch (systemTier) {
+				case Orthography -> {
+					OrthoElement ortho = getOrthography();
+					retVal = (ortho != null ? ortho.toString() : "");
+				}
+
+				case IPATarget -> {
+					IPATranscript ipa = getIPATarget();
+					retVal = (ipa != null ? ipa.toString() : "");
+				}
+
+				case IPAActual -> {
+					IPATranscript ipa = getIPAActual();
+					retVal = (ipa != null ? ipa.toString() : "");
+				}
+
+				case Notes -> {
+					TierString note = getNotes();
+					retVal = (note != null ? note.toString() : "");
+				}
+			}
+		} else {
+			TierString tierVal = getUserTier(tierName);
+			retVal = (tierVal != null ? tierVal.toString() : "");
+		}
+
+		return retVal;
 	}
 
 }

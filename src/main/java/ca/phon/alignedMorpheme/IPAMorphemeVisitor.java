@@ -21,17 +21,7 @@ public class IPAMorphemeVisitor extends VisitorAdapter<IPAElement> {
 
 	@Override
 	public void fallbackVisit(IPAElement obj) {
-
-	}
-
-	@Visits
-	public void visitPhone(Phone phone) {
-		this.builder.append(phone);
-	}
-
-	@Visits
-	public void visitCompoundPhone(CompoundPhone cp) {
-		this.builder.append(cp);
+		this.builder.append(obj);
 	}
 
 	private void createMorpheme() {

@@ -1,17 +1,31 @@
 package ca.phon.alignedMorpheme;
 
 import ca.phon.orthography.*;
+import ca.phon.util.Tuple;
 import ca.phon.visitor.*;
 import ca.phon.visitor.annotation.Visits;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class OrthoMorphemeVisitor extends VisitorAdapter<OrthoElement> {
 
-	private List<OrthoElement> morphemeList = new ArrayList<>();
+	private int wrdIdx = 0;
+
+	private List<Tuple<Integer, OrthoElement>> morphemeList = new ArrayList<>();
 
 	public OrthoElement[] getMorphemes() {
-		return morphemeList.toArray(new OrthoElement[0]);
+		return morphemeList.stream()
+				.map(t -> t.getObj2())
+				.collect(Collectors.toList())
+				.toArray(new OrthoElement[0]);
+	}
+
+	public Integer[] getMorphemeIndexes() {
+		return morphemeList.stream()
+				.map(t -> t.getObj1().intValue())
+				.collect(Collectors.toList())
+				.toArray(new Integer[0]);
 	}
 
 	@Override
@@ -27,7 +41,8 @@ public class OrthoMorphemeVisitor extends VisitorAdapter<OrthoElement> {
 
 	@Visits
 	public void visitOrthoWord(OrthoWord word) {
-		morphemeList.add(word);
+		morphemeList.add(new Tuple<>(wrdIdx, word));
+		wrdIdx += word.toString().length() + 1;
 	}
 
 }
