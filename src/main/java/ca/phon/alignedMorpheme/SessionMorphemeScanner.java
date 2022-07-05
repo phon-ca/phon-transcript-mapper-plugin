@@ -46,7 +46,7 @@ public class SessionMorphemeScanner {
 									final IPATranscript ipaT = am.getIPATarget();
 									final String target = ipaT == null ? "" : ipaT.toString();
 									if(target.length() > 0 && !"*".equals(target)) {
-										alignedMorphemeMap.put(systemTier.name(), target);
+										alignedMorphemeMap.put(systemTier.getName(), target);
 									}
 									break;
 
@@ -54,7 +54,7 @@ public class SessionMorphemeScanner {
 									final IPATranscript ipaA = am.getIPAActual();
 									final String actual = ipaA == null ? "" : am.getIPAActual().toString();
 									if(actual.length() > 0 && !"*".equals(actual)) {
-										alignedMorphemeMap.put(systemTier.name(), actual);
+										alignedMorphemeMap.put(systemTier.getName(), actual);
 									}
 									break;
 

@@ -1,14 +1,13 @@
 package ca.phon.alignedMorpheme.ui;
 
 import ca.phon.alignedMorpheme.*;
-import ca.phon.alignedMorpheme.db.AlignedMorphemeDatabase;
+import ca.phon.alignedMorpheme.db.*;
 import ca.phon.app.log.LogUtil;
 import ca.phon.app.session.editor.*;
 import ca.phon.app.session.editor.view.common.*;
 import ca.phon.project.Project;
 import ca.phon.session.*;
 import ca.phon.session.Record;
-import ca.phon.ui.action.PhonActionEvent;
 import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.text.PromptedTextField;
 import ca.phon.util.Tuple;
@@ -53,8 +52,6 @@ public class AlignedMorphemeEditorView extends EditorView {
 
 	private AlignedMorphemeDatabase projectDb;
 
-	private String[] tiers;
-
 	private int groupIdx = 0;
 
 	private int wordIdx = 0;
@@ -65,8 +62,6 @@ public class AlignedMorphemeEditorView extends EditorView {
 
 	public AlignedMorphemeEditorView(SessionEditor editor) {
 		super(editor);
-
-		this.tiers = new String[]{SystemTierType.Orthography.getName(), SystemTierType.IPATarget.getName(), SystemTierType.IPAActual.getName()};
 
 		init();
 		loadProjectDbAsync(() -> {
@@ -101,48 +96,27 @@ public class AlignedMorphemeEditorView extends EditorView {
 	}
 
 	private void loadProjectDbAsync(Runnable onFinish) {
-		final PhonWorker worker = PhonWorker.createWorker();
-		worker.setFinishWhenQueueEmpty(true);
-
-		final PhonTask task = new PhonTask("Load aligned word/morpheme database") {
-			@Override
-			public void performTask() {
-				setStatus(TaskStatus.RUNNING);
-				getEditor().getStatusBar().getProgressBar().setIndeterminate(true);
-				loadProjectDb();
-				getEditor().getStatusBar().getProgressBar().setIndeterminate(false);
-				setStatus(TaskStatus.FINISHED);
-			}
-		};
-		worker.invokeLater(task);
-		worker.setFinalTask(onFinish);
-
+		final PhonTask task = PhonWorker.invokeOnNewWorker(this::loadProjectDb, onFinish, LogUtil::warning);
+		task.setName("Loading aligned morpheme database");
 		getEditor().getStatusBar().watchTask(task);
-		worker.start();
 	}
 
 	private void loadProjectDb() {
+		this.projectDb = new AlignedMorphemeDatabase();
 		final File projectDbFile = projectDbFile();
 		if(projectDbFile.exists()) {
 			try (ObjectInputStream oin = new ObjectInputStream(new FileInputStream(projectDbFile))) {
 				this.projectDb = (AlignedMorphemeDatabase) oin.readObject();
 			} catch (IOException | ClassNotFoundException e) {
-				LogUtil.severe(e);
-				this.projectDb = new AlignedMorphemeDatabase();
+				LogUtil.warning(e);
 			}
-		} else {
-			this.projectDb = new AlignedMorphemeDatabase();
 		}
 	}
 
 	private void saveProjectDbAsync(Runnable onFinish) {
-		final PhonWorker worker = PhonWorker.createWorker();
-		worker.setFinishWhenQueueEmpty(true);
-
-		worker.invokeLater(this::saveProjectDb);
-		worker.setFinalTask(onFinish);
-
-		worker.start();
+		final PhonTask task = PhonWorker.invokeOnNewWorker(this::saveProjectDb, onFinish, LogUtil::warning);
+		task.setName("Saving aligned morpheme database");
+		getEditor().getStatusBar().watchTask(task);
 	}
 
 	private void saveProjectDb() {
@@ -197,11 +171,7 @@ public class AlignedMorphemeEditorView extends EditorView {
 	}
 
 	private void updateStateAsync(Runnable onFinish) {
-		PhonWorker worker = PhonWorker.createWorker();
-		worker.invokeLater(this::updateState);
-		worker.setFinalTask(onFinish);
-		worker.setFinishWhenQueueEmpty(true);
-		worker.start();
+		PhonWorker.invokeOnNewWorker(this::updateState, onFinish);
 	}
 
 	private void updateState() {
@@ -209,19 +179,20 @@ public class AlignedMorphemeEditorView extends EditorView {
 	}
 
 	private void updateFromCurrentState() {
-		morphemeSelectionPanel.removeAll();
-		for(int i = 0; i < tiers.length; i++) {
-			final String tierName = tiers[i];
-			final JLabel tierLbl = new JLabel(tierName);
-			tierLbl.setFont(FontPreferences.getTitleFont());
-			morphemeSelectionPanel.add(tierLbl, new TierDataConstraint((i+1), 0));
-		}
+//		morphemeSelectionPanel.removeAll();
+//		for(TierInfo ti:this.projectDb.getTierInfo()) {
+//			if(ti.isVisible()) {
+//				final JLabel tierLbl = new JLabel(ti.getTierName());
+//				tierLbl.setFont(FontPreferences.getTitleFont());
+//				morphemeSelectionPanel.add(tierLbl, new TierDataConstraint((i + 1), 0));
+//			}
+//		}
 	}
 
 	private void updateAfterDbLoad() {
 		if(this.projectDb == null) return;
 
-		this.keyTierBox.setModel(new DefaultComboBoxModel<>(tiers));
+		this.keyTierBox.setModel(new DefaultComboBoxModel<>(this.projectDb.tierNames().toArray(new String[0])));
 		this.keyTierBox.setSelectedItem(SystemTierType.Orthography.getName());
 
 		if(getEditor().currentRecord() != null) {
