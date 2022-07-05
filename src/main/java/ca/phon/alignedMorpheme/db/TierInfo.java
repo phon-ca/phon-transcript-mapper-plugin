@@ -4,11 +4,15 @@ import java.io.Serializable;
 
 public class TierInfo implements Serializable {
 
-	private final static long serialVersionUID = 1L;
+	private static final long serialVersionUID = -5835662467026647994L;
 
 	private final String tierName;
 
-	private final String tierFont;
+	private String tierFont;
+
+	private boolean visible = true;
+
+	private int order = -1;
 
 	public TierInfo(String tierName) {
 		this(tierName, "default");
@@ -26,4 +30,25 @@ public class TierInfo implements Serializable {
 	public String getTierFont() {
 		return tierFont;
 	}
+
+	public void setTierFont(String tierFont) {
+		this.tierFont = tierFont;
+	}
+
+	public boolean isVisible() {
+		return visible;
+	}
+
+	public void setVisible(boolean visible) {
+		this.visible = visible;
+	}
+
+	public int getOrder() {
+		return order;
+	}
+
+	public void setOrder(int order) {
+		this.order = order;
+	}
+
 }

@@ -209,15 +209,6 @@ public class AlignedMorphemeEditorView extends EditorView {
 	}
 
 	private void updateFromCurrentState() {
-
-	}
-
-	private void updateAfterDbLoad() {
-		if(this.projectDb == null) return;
-
-		this.keyTierBox.setModel(new DefaultComboBoxModel<>(tiers));
-		this.keyTierBox.setSelectedItem(SystemTierType.Orthography.getName());
-
 		morphemeSelectionPanel.removeAll();
 		for(int i = 0; i < tiers.length; i++) {
 			final String tierName = tiers[i];
@@ -225,6 +216,13 @@ public class AlignedMorphemeEditorView extends EditorView {
 			tierLbl.setFont(FontPreferences.getTitleFont());
 			morphemeSelectionPanel.add(tierLbl, new TierDataConstraint((i+1), 0));
 		}
+	}
+
+	private void updateAfterDbLoad() {
+		if(this.projectDb == null) return;
+
+		this.keyTierBox.setModel(new DefaultComboBoxModel<>(tiers));
+		this.keyTierBox.setSelectedItem(SystemTierType.Orthography.getName());
 
 		if(getEditor().currentRecord() != null) {
 			updateStateAsync(this::updateFromCurrentState);

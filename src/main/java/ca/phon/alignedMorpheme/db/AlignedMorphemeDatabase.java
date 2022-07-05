@@ -6,11 +6,9 @@ import ca.phon.session.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class AlignedMorphemeDatabase implements Serializable {
-
-	@Serial
-	private static final long serialVersionUID = 1L;
 
 	private TernaryTree<TierInfo> tierDescriptionTree;
 
@@ -26,9 +24,17 @@ public class AlignedMorphemeDatabase implements Serializable {
 	}
 
 	private void setupTierDescriptionTree() {
-		tierDescriptionTree.put(SystemTierType.Orthography.getName(), new TierInfo(SystemTierType.Orthography.getName()));
-		tierDescriptionTree.put(SystemTierType.IPATarget.getName(), new TierInfo(SystemTierType.IPATarget.getName()));
-		tierDescriptionTree.put(SystemTierType.IPAActual.getName(), new TierInfo(SystemTierType.IPAActual.getName()));
+		final TierInfo orthoInfo = new TierInfo(SystemTierType.Orthography.getName());
+		orthoInfo.setOrder(0);
+		tierDescriptionTree.put(SystemTierType.Orthography.getName(), orthoInfo);
+
+		final TierInfo ipaTInfo = new TierInfo(SystemTierType.IPATarget.getName());
+		ipaTInfo.setOrder(1);
+		tierDescriptionTree.put(SystemTierType.IPATarget.getName(), ipaTInfo);
+
+		final TierInfo ipaAInfo = new TierInfo(SystemTierType.IPATarget.getName());
+		ipaAInfo.setOrder(2);
+		tierDescriptionTree.put(SystemTierType.IPAActual.getName(), ipaAInfo);
 	}
 
 	/**
@@ -41,7 +47,9 @@ public class AlignedMorphemeDatabase implements Serializable {
 		if(tierDescriptionTree.containsKey(tierName)) {
 			throw new DuplicateTierEntry(tierName);
 		}
-		tierDescriptionTree.put(tierName, new TierInfo(tierName));
+		final TierInfo userTierInfo = new TierInfo(tierName);
+		userTierInfo.setOrder(tierDescriptionTree.size());
+		tierDescriptionTree.put(tierName, userTierInfo);
 	}
 
 	/**
@@ -155,11 +163,16 @@ public class AlignedMorphemeDatabase implements Serializable {
 	}
 
 	public Collection<String> tierNames() {
-		return tierDescriptionTree.keySet();
+		return tierDescriptionTree.values()
+				.stream().sorted(Comparator.comparingInt(TierInfo::getOrder))
+				.map(TierInfo::getTierName)
+				.collect(Collectors.toList());
 	}
 
 	public Collection<TierInfo> getTierInfo() {
-		return tierDescriptionTree.values();
+		return tierDescriptionTree.values()
+				.stream().sorted(Comparator.comparingInt(TierInfo::getOrder))
+				.collect(Collectors.toList());
 	}
 
 	private MorphemeTaggerEntry morphemeEntryForTier(String key, String tierName) {
