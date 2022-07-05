@@ -34,7 +34,7 @@ public class AlignedMorphemeDatabase implements Serializable {
 		ipaTInfo.setOrder(1);
 		tierDescriptionTree.put(SystemTierType.IPATarget.getName(), ipaTInfo);
 
-		final TierInfo ipaAInfo = new TierInfo(SystemTierType.IPATarget.getName());
+		final TierInfo ipaAInfo = new TierInfo(SystemTierType.IPAActual.getName());
 		ipaAInfo.setOrder(2);
 		tierDescriptionTree.put(SystemTierType.IPAActual.getName(), ipaAInfo);
 	}
