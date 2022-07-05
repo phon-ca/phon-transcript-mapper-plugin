@@ -51,4 +51,12 @@ public class TierInfo implements Serializable {
 		this.order = order;
 	}
 
+	public TierInfo clone() {
+		TierInfo retVal = new TierInfo(tierName);
+		retVal.setTierFont(tierFont);
+		retVal.setVisible(visible);
+		retVal.setOrder(order);
+		return  retVal;
+	}
+
 }

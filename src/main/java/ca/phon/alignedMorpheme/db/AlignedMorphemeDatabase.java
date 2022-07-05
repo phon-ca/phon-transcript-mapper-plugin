@@ -194,6 +194,60 @@ public class AlignedMorphemeDatabase implements Serializable {
 		return node.get().getValue();
 	}
 
+	/**
+	 * Import all entries from given database into this database.
+	 *
+	 * @param importDb
+	 */
+	public void importDatabase(AlignedMorphemeDatabase importDb) {
+		// add all tiers
+		for(TierInfo ti: importDb.getTierInfo()) {
+			if(!tierDescriptionTree.containsKey(ti.getTierName())) {
+				TierInfo cloneInfo = ti.clone();
+				cloneInfo.setOrder(tierDescriptionTree.size());
+				tierDescriptionTree.put(cloneInfo.getTierName(), cloneInfo);
+			}
+		}
+
+		// walk tree and add all entries
+		Set<Map.Entry<String, Collection<MorphemeTaggerEntry>>> entrySet = tree.entrySet();
+
+		// first add all keys to tree
+		for(Map.Entry<String, Collection<MorphemeTaggerEntry>> entry:entrySet) {
+			String morpheme = entry.getKey();
+			for(MorphemeTaggerEntry taggerEntry:entry.getValue()) {
+				addMorphemeForTier(taggerEntry.getTierName(importDb.tierDescriptionTree), morpheme);
+			}
+		}
+
+		// now create links for aligned morphemes
+		for(Map.Entry<String, Collection<MorphemeTaggerEntry>> entry:entrySet) {
+			String morpheme = entry.getKey();
+			Optional<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> keyNodeOpt = tree.findNode(morpheme);
+			// shouldn't happen because we added it above
+			if(!keyNodeOpt.isPresent()) continue;
+			TernaryTreeNode<Collection<MorphemeTaggerEntry>> keyNode = keyNodeOpt.get();
+			for(MorphemeTaggerEntry importTaggerEntry:entry.getValue()) {
+				List<MorphemeTaggerLinkedEntry> linkedEntries = new ArrayList<>();
+				for(MorphemeTaggerLinkedEntry importTaggerLinkedEntry:importTaggerEntry.getLinkedEntries()) {
+					MorphemeTaggerLinkedEntry taggerLinkedEntry = new MorphemeTaggerLinkedEntry(
+							tierDescriptionTree.findNode(importTaggerEntry.getTierName(importDb.tierDescriptionTree)).get());
+					linkedEntries.add(taggerLinkedEntry);
+					for(TernaryTreeNode<Collection<MorphemeTaggerEntry>> importTierNodeRef:importTaggerLinkedEntry.getLinkedTierRefs(importDb.tree)) {
+						Optional<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> tierNodeRef =
+								tree.findNode(importTierNodeRef.getPrefix());
+						if(tierNodeRef.isPresent()) {
+							taggerLinkedEntry.addLinkedTier(tree, tierNodeRef.get());
+						}
+					}
+				}
+				MorphemeTaggerEntry taggerEntry = new MorphemeTaggerEntry(
+						tierDescriptionTree.findNode(importTaggerEntry.getTierName(importDb.tierDescriptionTree)).get(), linkedEntries);
+				keyNode.getValue().add(taggerEntry);
+			}
+		}
+	}
+
 	public static class DuplicateTierEntry extends Exception {
 
 		public DuplicateTierEntry(String tierName) {
