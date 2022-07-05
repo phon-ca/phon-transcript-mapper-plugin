@@ -7,8 +7,7 @@ import java.util.*;
 
 class MorphemeTaggerLinkedEntry implements Serializable {
 
-	@Serial
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -5323402869852524374L;
 
 	private transient TernaryTreeNode<TierInfo> tierNameRef;
 

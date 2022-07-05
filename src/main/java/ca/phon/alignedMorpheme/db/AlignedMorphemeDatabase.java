@@ -10,6 +10,8 @@ import java.util.stream.Collectors;
 
 public class AlignedMorphemeDatabase implements Serializable {
 
+	private static final long serialVersionUID = -4436233595101310518L;
+
 	private TernaryTree<TierInfo> tierDescriptionTree;
 
 	private TernaryTree<Collection<MorphemeTaggerEntry>> tree;

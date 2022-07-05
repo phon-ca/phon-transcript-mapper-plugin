@@ -7,7 +7,7 @@ import java.util.*;
 
 class MorphemeTaggerEntry implements Serializable {
 
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -8095511445561636192L;
 
 	// reference to tier name node, tier names are stored frequently
 	// and storing a reference to the tree node reduces memory footprint
