@@ -1,10 +1,12 @@
 package ca.phon.alignedMorpheme.db;
 
+import au.com.bytecode.opencsv.CSVReader;
 import ca.hedlund.tst.*;
 import ca.phon.app.log.LogUtil;
 import ca.phon.session.*;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -192,6 +194,67 @@ public class AlignedMorphemeDatabase implements Serializable {
 		if(node.isEmpty()) return new ArrayList<>();
 
 		return node.get().getValue();
+	}
+
+	/**
+	 * Import entries from the provided (utf-8) csv file
+	 *
+	 * @param csvFile
+	 */
+	public void importFromCSV(File csvFile) throws IOException {
+		importFromCSV(csvFile, "UTF-8");
+	}
+
+	/**
+	 * Import entries from the provided csv file. The first row of the
+	 * csv file will be read as the tier name
+	 *
+	 * @param csvFile
+	 * @param encoding
+	 */
+	public void importFromCSV(File csvFile, String encoding) throws IOException {
+		try (CSVReader reader = new CSVReader(new InputStreamReader(new FileInputStream(csvFile), encoding))) {
+			importFromCSV(reader);
+		}
+	}
+
+	/**
+	 * Import entries from the given csv data.  The first row of the
+	 * 	 * csv file will be read as the tier name
+	 *
+	 * @param csvData
+	 */
+	public void importFromCSV(String csvData) throws IOException {
+		try (CSVReader reader = new CSVReader(new InputStreamReader(
+				new ByteArrayInputStream(csvData.getBytes(StandardCharsets.UTF_8))))) {
+			importFromCSV(reader);
+		}
+	}
+
+	private void importFromCSV(CSVReader csvReader) throws IOException {
+		final String[] cols = csvReader.readNext();
+		for(String tierName:cols) {
+			if(!tierDescriptionTree.containsKey(tierName)) {
+				try {
+					addUserTier(tierName);
+				} catch (DuplicateTierEntry e) {
+					throw new IOException(e);
+				}
+			}
+		}
+
+		String[] row = null;
+		while((row = csvReader.readNext()) != null) {
+			Map<String, String> alignedMorphemes = new HashMap<>();
+			for(int i = 0; i < cols.length; i++) {
+				String tierName = cols[i];
+				String morpheme = (i < row.length ? row[i] : "");
+				if(morpheme.trim().length() > 0) {
+					alignedMorphemes.put(tierName, morpheme);
+				}
+			}
+			addAlignedMorphemes(alignedMorphemes);
+		}
 	}
 
 	/**
