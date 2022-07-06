@@ -212,7 +212,8 @@ public class AlignedMorphemeDatabase implements Serializable {
 		// walk tree and add all entries
 		Set<Map.Entry<String, Collection<MorphemeTaggerEntry>>> entrySet = tree.entrySet();
 
-		// first add all keys to tree
+		// first add all morphemes to tree
+		// we will need to add all keys first to ensure we have nodes for linked morphemes
 		for(Map.Entry<String, Collection<MorphemeTaggerEntry>> entry:entrySet) {
 			String morpheme = entry.getKey();
 			for(MorphemeTaggerEntry taggerEntry:entry.getValue()) {
@@ -223,13 +224,16 @@ public class AlignedMorphemeDatabase implements Serializable {
 		// now create links for aligned morphemes
 		for(Map.Entry<String, Collection<MorphemeTaggerEntry>> entry:entrySet) {
 			String morpheme = entry.getKey();
+
 			Optional<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> keyNodeOpt = tree.findNode(morpheme);
 			// shouldn't happen because we added it above
 			if(!keyNodeOpt.isPresent()) continue;
+
 			TernaryTreeNode<Collection<MorphemeTaggerEntry>> keyNode = keyNodeOpt.get();
 			for(MorphemeTaggerEntry importTaggerEntry:entry.getValue()) {
+				// create tagger entry for tier or use existing
 				final String tierName = importTaggerEntry.getTierName(importDb.tierDescriptionTree);
-				var existingEntry =
+				Optional<MorphemeTaggerEntry> existingEntry =
 						keyNode.getValue().stream().filter(e -> e.getTierName(tierDescriptionTree).equals(tierName)).findAny();
 				final MorphemeTaggerEntry taggerEntry = existingEntry.isPresent() ? existingEntry.get() :
 						new MorphemeTaggerEntry(tierDescriptionTree.findNode(tierName).get());
@@ -237,8 +241,8 @@ public class AlignedMorphemeDatabase implements Serializable {
 					keyNode.getValue().add(taggerEntry);
 
 				for(MorphemeTaggerLinkedEntry importTaggerLinkedEntry:importTaggerEntry.getLinkedEntries()) {
+					// create tagger linked entry for linked tier or use existing
 					String linkedTierName = importTaggerLinkedEntry.getTierName(importDb.tierDescriptionTree);
-
 					Optional<MorphemeTaggerLinkedEntry> existingLinkedEntry = taggerEntry.getLinkedEntries().stream()
 							.filter((e) -> e.getTierName(tierDescriptionTree).equals(linkedTierName))
 							.findAny();
@@ -250,6 +254,7 @@ public class AlignedMorphemeDatabase implements Serializable {
 						taggerEntry.getLinkedEntries().add(taggerLinkedEntry);
 
 					for(TernaryTreeNode<Collection<MorphemeTaggerEntry>> importTierNodeRef:importTaggerLinkedEntry.getLinkedTierRefs(importDb.tree)) {
+						// find the tree node for the linked morpheme
 						Optional<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> tierNodeRef =
 								tree.findNode(importTierNodeRef.getPrefix());
 						if(tierNodeRef.isPresent() && !taggerLinkedEntry.getLinkedTierRefs(tree).contains(tierNodeRef.get())) {
