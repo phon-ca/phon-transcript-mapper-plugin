@@ -1,6 +1,6 @@
 package ca.phon.alignedMorpheme.db;
 
-import au.com.bytecode.opencsv.CSVReader;
+import au.com.bytecode.opencsv.*;
 import ca.hedlund.tst.*;
 import ca.phon.app.log.LogUtil;
 import ca.phon.session.*;
@@ -151,16 +151,24 @@ public class AlignedMorphemeDatabase implements Serializable {
 					morphemeNodeRef.getValue().stream().filter((e) -> e.getTierName(tierDescriptionTree).equals(tierName)).findAny();
 			if(entryOpt.isPresent()) {
 				MorphemeTaggerEntry entry = entryOpt.get();
-				for(MorphemeTaggerLinkedEntry linkedEntry:entry.getLinkedEntries()) {
-					String alignedTierName = linkedEntry.getTierName(tierDescriptionTree);
-					String[] alignedTierVals = new String[linkedEntry.getLinkedTierRefs(tree).size()];
-					int i = 0;
-					for(TernaryTreeNode<Collection<MorphemeTaggerEntry>> alignedEntry:linkedEntry.getLinkedTierRefs(tree)) {
-						alignedTierVals[i++] = alignedEntry.getPrefix();
-					}
-					retVal.put(alignedTierName, alignedTierVals);
-				}
+				retVal = alignedMorphemesForEntry(entry);
 			}
+		}
+
+		return retVal;
+	}
+
+	private Map<String, String[]> alignedMorphemesForEntry(MorphemeTaggerEntry entry) {
+		Map<String, String[]> retVal = new LinkedHashMap<>();
+
+		for(MorphemeTaggerLinkedEntry linkedEntry:entry.getLinkedEntries()) {
+			String alignedTierName = linkedEntry.getTierName(tierDescriptionTree);
+			String[] alignedTierVals = new String[linkedEntry.getLinkedTierRefs(tree).size()];
+			int i = 0;
+			for(TernaryTreeNode<Collection<MorphemeTaggerEntry>> alignedEntry:linkedEntry.getLinkedTierRefs(tree)) {
+				alignedTierVals[i++] = alignedEntry.getPrefix();
+			}
+			retVal.put(alignedTierName, alignedTierVals);
 		}
 
 		return retVal;
@@ -254,6 +262,44 @@ public class AlignedMorphemeDatabase implements Serializable {
 				}
 			}
 			addAlignedMorphemes(alignedMorphemes);
+		}
+	}
+
+	/**
+	 * Export alignment data for keyTier to csv file using provided encoding.
+	 *
+	 * @param keyTier
+	 * @param csvFile
+	 * @param encoding
+	 */
+	public void exportToCSV(String keyTier, File csvFile, String encoding) throws IOException {
+		try (CSVWriter writer = new CSVWriter(new OutputStreamWriter(new FileOutputStream(csvFile), encoding),
+				',', '\"')) {
+			exportToCSV(keyTier, writer);
+			writer.flush();
+		}
+	}
+
+	private void exportToCSV(String keyTier, CSVWriter writer) throws IOException {
+		List<String> tiers = new ArrayList<>();
+		tiers.addAll(tierNames());
+		tiers.remove(keyTier);
+		tiers.add(0, keyTier);
+
+		// write header
+		writer.writeNext(tiers.toArray(new String[0]));
+
+		Set<Map.Entry<String, Collection<MorphemeTaggerEntry>>> entrySet = tree.entrySet();
+		for(Map.Entry<String, Collection<MorphemeTaggerEntry>> entry:entrySet) {
+			Optional<MorphemeTaggerEntry> entryForKeyTier = entry.getValue()
+					.stream()
+					.filter((e) -> e.getTierName(tierDescriptionTree).equals(keyTier))
+					.findAny();
+			if(entryForKeyTier.isPresent()) {
+				Map<String, String[]> alignedMorphemes = alignedMorphemesForEntry(entryForKeyTier.get());
+
+				// TODO export aligned data using link information
+			}
 		}
 	}
 
