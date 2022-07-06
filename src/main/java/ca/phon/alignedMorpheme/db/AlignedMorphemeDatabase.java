@@ -228,22 +228,35 @@ public class AlignedMorphemeDatabase implements Serializable {
 			if(!keyNodeOpt.isPresent()) continue;
 			TernaryTreeNode<Collection<MorphemeTaggerEntry>> keyNode = keyNodeOpt.get();
 			for(MorphemeTaggerEntry importTaggerEntry:entry.getValue()) {
-				List<MorphemeTaggerLinkedEntry> linkedEntries = new ArrayList<>();
+				final String tierName = importTaggerEntry.getTierName(importDb.tierDescriptionTree);
+				var existingEntry =
+						keyNode.getValue().stream().filter(e -> e.getTierName(tierDescriptionTree).equals(tierName)).findAny();
+				final MorphemeTaggerEntry taggerEntry = existingEntry.isPresent() ? existingEntry.get() :
+						new MorphemeTaggerEntry(tierDescriptionTree.findNode(tierName).get());
+				if(existingEntry.isEmpty())
+					keyNode.getValue().add(taggerEntry);
+
 				for(MorphemeTaggerLinkedEntry importTaggerLinkedEntry:importTaggerEntry.getLinkedEntries()) {
-					MorphemeTaggerLinkedEntry taggerLinkedEntry = new MorphemeTaggerLinkedEntry(
-							tierDescriptionTree.findNode(importTaggerEntry.getTierName(importDb.tierDescriptionTree)).get());
-					linkedEntries.add(taggerLinkedEntry);
+					String linkedTierName = importTaggerLinkedEntry.getTierName(importDb.tierDescriptionTree);
+
+					Optional<MorphemeTaggerLinkedEntry> existingLinkedEntry = taggerEntry.getLinkedEntries().stream()
+							.filter((e) -> e.getTierName(tierDescriptionTree).equals(linkedTierName))
+							.findAny();
+					MorphemeTaggerLinkedEntry taggerLinkedEntry = (existingLinkedEntry.isPresent()
+						? existingLinkedEntry.get()
+						: new MorphemeTaggerLinkedEntry(
+							tierDescriptionTree.findNode(importTaggerEntry.getTierName(importDb.tierDescriptionTree)).get()));
+					if(existingLinkedEntry.isEmpty())
+						taggerEntry.getLinkedEntries().add(taggerLinkedEntry);
+
 					for(TernaryTreeNode<Collection<MorphemeTaggerEntry>> importTierNodeRef:importTaggerLinkedEntry.getLinkedTierRefs(importDb.tree)) {
 						Optional<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> tierNodeRef =
 								tree.findNode(importTierNodeRef.getPrefix());
-						if(tierNodeRef.isPresent()) {
+						if(tierNodeRef.isPresent() && !taggerLinkedEntry.getLinkedTierRefs(tree).contains(tierNodeRef.get())) {
 							taggerLinkedEntry.addLinkedTier(tree, tierNodeRef.get());
 						}
 					}
 				}
-				MorphemeTaggerEntry taggerEntry = new MorphemeTaggerEntry(
-						tierDescriptionTree.findNode(importTaggerEntry.getTierName(importDb.tierDescriptionTree)).get(), linkedEntries);
-				keyNode.getValue().add(taggerEntry);
 			}
 		}
 	}
