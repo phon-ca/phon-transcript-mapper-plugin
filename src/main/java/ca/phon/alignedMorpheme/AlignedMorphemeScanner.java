@@ -8,11 +8,11 @@ import ca.phon.session.Record;
 
 import java.util.*;
 
-public class SessionMorphemeScanner {
+public class AlignedMorphemeScanner {
 
 	private final AlignedMorphemeDatabase db;
 
-	public SessionMorphemeScanner(AlignedMorphemeDatabase db) {
+	public AlignedMorphemeScanner(AlignedMorphemeDatabase db) {
 		super();
 		this.db = db;
 	}
