@@ -280,6 +280,46 @@ public class AlignedMorphemeDatabase implements Serializable {
 		}
 	}
 
+	/**
+	 * Is there a link between the two tier values
+	 *
+	 * @param tierName
+	 * @param tierVal
+	 * @param linkedTier
+	 * @param linkedVal
+	 */
+	private boolean linkExists(String tierName, String tierVal, String linkedTier, String linkedVal) {
+		final Optional<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> nodeOpt = tree.findNode(tierVal);
+		if(nodeOpt.isEmpty()) return false;
+
+		final var node = nodeOpt.get();
+		return linkExists(node, tierName, linkedTier, linkedVal);
+	}
+
+	private boolean linkExists(TernaryTreeNode<Collection<MorphemeTaggerEntry>> node, String tierName, String linkedTier, String linkedVal) {
+		final Optional<MorphemeTaggerEntry> entryForTier = node.getValue()
+				.stream()
+				.filter((e) -> e.getTierName(tierDescriptionTree).equals(tierName))
+				.findAny();
+		if(entryForTier.isEmpty()) return false;
+
+		final MorphemeTaggerEntry taggerEntry = entryForTier.get();
+		final Optional<MorphemeTaggerLinkedEntry> linkedEntryOpt = taggerEntry.getLinkedEntries()
+				.stream()
+				.filter((e) -> e.getTierName(tierDescriptionTree).equals(linkedTier))
+				.findAny();
+		if(linkedEntryOpt.isEmpty()) return false;
+
+		final MorphemeTaggerLinkedEntry linkedEntry = linkedEntryOpt.get();
+		final Optional<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> linkedValOpt
+				= linkedEntry.getLinkedTierRefs(tree)
+				.stream()
+				.filter((r) -> r.getPrefix().equals(linkedVal))
+				.findAny();
+
+		return linkedValOpt.isPresent();
+	}
+
 	private void exportToCSV(String keyTier, CSVWriter writer) throws IOException {
 		List<String> tiers = new ArrayList<>();
 		tiers.addAll(tierNames());
