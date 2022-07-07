@@ -4,6 +4,7 @@ import au.com.bytecode.opencsv.*;
 import ca.hedlund.tst.*;
 import ca.phon.app.log.LogUtil;
 import ca.phon.session.*;
+import org.apache.commons.io.output.StringBuilderWriter;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -266,21 +267,6 @@ public class AlignedMorphemeDatabase implements Serializable {
 	}
 
 	/**
-	 * Export alignment data for keyTier to csv file using provided encoding.
-	 *
-	 * @param keyTier
-	 * @param csvFile
-	 * @param encoding
-	 */
-	public void exportToCSV(String keyTier, File csvFile, String encoding) throws IOException {
-		try (CSVWriter writer = new CSVWriter(new OutputStreamWriter(new FileOutputStream(csvFile), encoding),
-				',', '\"')) {
-			exportToCSV(keyTier, writer);
-			writer.flush();
-		}
-	}
-
-	/**
 	 * Is there a link between the two tier values
 	 *
 	 * @param tierName
@@ -288,7 +274,7 @@ public class AlignedMorphemeDatabase implements Serializable {
 	 * @param linkedTier
 	 * @param linkedVal
 	 */
-	private boolean linkExists(String tierName, String tierVal, String linkedTier, String linkedVal) {
+	public boolean linkExists(String tierName, String tierVal, String linkedTier, String linkedVal) {
 		final Optional<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> nodeOpt = tree.findNode(tierVal);
 		if(nodeOpt.isEmpty()) return false;
 
@@ -320,9 +306,58 @@ public class AlignedMorphemeDatabase implements Serializable {
 		return linkedValOpt.isPresent();
 	}
 
-	private void exportToCSV(String keyTier, CSVWriter writer) throws IOException {
-		List<String> tiers = new ArrayList<>();
-		tiers.addAll(tierNames());
+	/**
+	 * Export alignment data for given keyTier to csvFile include all tiers
+	 *
+	 * @param keyTier
+	 * @param csvFile
+	 * @throws IOException
+	 */
+	public void exportToCSV(String keyTier, File csvFile, String encoding) throws IOException {
+		exportToCSV(keyTier, tierNames(), csvFile, encoding);
+	}
+
+	/**
+	 * Export alignment data for given keyTier to csvFile include only specified tiers
+	 *
+	 * @param keyTier
+	 * @param tierNames
+	 * @param csvFile
+	 * @throws IOException
+	 */
+	public void exportToCSV(String keyTier, Collection<String> tierNames, File csvFile, String encoding) throws IOException {
+		try (CSVWriter writer = new CSVWriter(new OutputStreamWriter(new FileOutputStream(csvFile), encoding))) {
+			exportToCSV(keyTier, tierNames, writer);
+		}
+	}
+
+	/**
+	 * Export alignment data for given keyTier to StringBuilder include all tiers
+	 *
+	 * @param keyTier
+	 * @param builder
+	 * @throws IOException
+	 */
+	public void exportToCSV(String keyTier, StringBuilder builder) throws IOException {
+		exportToCSV(keyTier, tierNames(), builder);
+	}
+
+	/**
+	 * Export alignment data for given keyTier to StringBuilder include only specified tiers
+	 *
+	 * @param keyTier
+	 * @param tierNames
+	 * @param builder
+	 * @throws IOException
+	 */
+	public void exportToCSV(String keyTier, Collection<String> tierNames, StringBuilder builder) throws IOException {
+		try (CSVWriter writer = new CSVWriter(new StringBuilderWriter(builder))) {
+			exportToCSV(keyTier, tierNames, writer);
+		}
+	}
+
+	private void exportToCSV(String keyTier, Collection<String> tierNames, CSVWriter writer) throws IOException {
+		List<String> tiers = new ArrayList<>(tierNames);
 		tiers.remove(keyTier);
 		tiers.add(0, keyTier);
 
@@ -338,9 +373,25 @@ public class AlignedMorphemeDatabase implements Serializable {
 			if(entryForKeyTier.isPresent()) {
 				Map<String, String[]> alignedMorphemes = alignedMorphemesForEntry(entryForKeyTier.get());
 
-				// TODO export aligned data using link information
+				String[][] morphemeOpts = new String[tiers.size()][];
+				morphemeOpts[0] = new String[] { entry.getKey() };
+				for(int i = 1; i < tiers.size(); i++) {
+					String tierName = tiers.get(i);
+					String[] tierOpts = alignedMorphemes.get(tierName);
+					if(tierOpts == null)
+						tierOpts = new String[0];
+					morphemeOpts[i] = tierOpts;
+				}
+
+				MorphemeMapZipper zipper = new MorphemeMapZipper(this, tierNames().toArray(new String[0]), morphemeOpts);
+				List<String[]> rows = zipper.zippedValues();
+
+				for(String[] row:rows) {
+					writer.writeNext(row);
+				}
 			}
 		}
+		writer.flush();
 	}
 
 	/**
