@@ -11,6 +11,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * A database of tokens, or morphemes, along with the tiers in which they appear
+ * and a list of other tokens to which they are linked.  This database includes
+ * a list of tiers along with ordering and visibility of those tiers. The visibility
+ * parameter is used by the editor view and will not affect the return values for
+ * the tierNames() or tierInfo() methods.
+ *
+ */
 public class AlignedMorphemeDatabase implements Serializable {
 
 	private static final long serialVersionUID = -4436233595101310518L;
@@ -19,6 +27,8 @@ public class AlignedMorphemeDatabase implements Serializable {
 
 	private TernaryTree<Collection<MorphemeTaggerEntry>> tree;
 
+	private TernaryTree<Collection<TernaryTreeNode<TierInfo>>> alwaysExcludeTree;
+
 	public AlignedMorphemeDatabase() {
 		super();
 
@@ -26,6 +36,7 @@ public class AlignedMorphemeDatabase implements Serializable {
 		setupTierDescriptionTree();
 
 		tree = new TernaryTree<>();
+		alwaysExcludeTree = new TernaryTree<>();
 	}
 
 	private void setupTierDescriptionTree() {
