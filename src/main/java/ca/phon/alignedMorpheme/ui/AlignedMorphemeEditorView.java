@@ -8,14 +8,18 @@ import ca.phon.app.session.editor.view.common.*;
 import ca.phon.project.Project;
 import ca.phon.session.*;
 import ca.phon.session.Record;
+import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.text.PromptedTextField;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;
 
 import javax.swing.*;
+import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.io.*;
 import java.util.*;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Aligned morpheme editor view for Phon sessions. This view will display the aligned morpheme lookup data
@@ -184,6 +188,22 @@ public class AlignedMorphemeEditorView extends EditorView {
 //				morphemeSelectionPanel.add(tierLbl, new TierDataConstraint((i + 1), 0));
 //			}
 //		}
+		morphemeSelectionPanel.removeAll();
+
+		final Record record = getEditor().currentRecord();
+		if(record == null || currentState == null) return;
+
+		for(int gidx = 0; gidx < record.numberOfGroups(); gidx++) {
+			JLabel glbl = new JLabel(String.format("Group %d", gidx+1));
+			glbl.setFont(FontPreferences.getTitleFont());
+			morphemeSelectionPanel.add(glbl, new TierDataConstraint(0, gidx));
+
+			JTable morphemeTable = new JTable(new GroupMorphemesTableModel(gidx));
+			morphemeTable.setPreferredScrollableViewportSize(new Dimension(morphemeTable.getPreferredScrollableViewportSize().width, 100));
+			morphemeSelectionPanel.add(new JScrollPane(morphemeTable), new TierDataConstraint(1, gidx));
+		}
+		revalidate();
+		repaint();
 	}
 
 	private void updateAfterDbLoad() {
@@ -215,6 +235,8 @@ public class AlignedMorphemeEditorView extends EditorView {
 	private MorphemeTaggerNode stateFromRecord(Record record) {
 		MorphemeTaggerNode root = new MorphemeTaggerNode(-1);
 
+		List<String> tierList = getTiers();
+
 		for(int gidx = 0; gidx < record.numberOfGroups(); gidx++) {
 			Group grp = record.getGroup(gidx);
 			MorphemeTaggerNode grpNode = new MorphemeTaggerNode(gidx);
@@ -229,11 +251,14 @@ public class AlignedMorphemeEditorView extends EditorView {
 					for(int midx = 0; midx < morphemes.getMorphemeCount(); midx++) {
 						AlignedMorpheme morpheme = morphemes.getAlignedMorpheme(midx);
 
-						String morphemeText = morpheme.getMorphemeText(keyTierBox.getSelectedItem().toString());
+						Map<String, String> currentMorphemes = new HashMap<>();
+						for(String tierName:tierList) {
+							currentMorphemes.put(tierName, morpheme.getMorphemeText(tierName));
+						}
 						Map<String, String[]> alignedMorphemes =
-								this.projectDb.alignedMorphemesForTier(keyTierBox.getSelectedItem().toString(), morphemeText);
+								this.projectDb.alignedMorphemesForTier(keyTierBox.getSelectedItem().toString(), currentMorphemes.get(keyTierBox.getSelectedItem()));
 
-						MorphemeTaggerNode morphemeNode = new MorphemeTaggerNode(midx, morphemeText, alignedMorphemes);
+						MorphemeTaggerNode morphemeNode = new MorphemeTaggerNode(midx, currentMorphemes, alignedMorphemes);
 
 						// start of word
 						char ch = '\u0000';
@@ -252,6 +277,72 @@ public class AlignedMorphemeEditorView extends EditorView {
 		return root;
 	}
 
+	public List<String> getTiers() {
+		List<String> tierList = getEditor().getSession().getTierView()
+				.stream()
+				.filter(TierViewItem::isVisible)
+				.map(TierViewItem::getTierName)
+				.collect(Collectors.toList());
+		for(SystemTierType systemTier:SystemTierType.values()) {
+			if(!systemTier.isGrouped()) tierList.remove(systemTier.getName());
+		}
+		for(TierDescription td:getEditor().getSession().getUserTiers()) {
+			if(!td.isGrouped()) tierList.remove(td.getName());
+		}
+		// move key tier to front
+		tierList.remove(keyTierBox.getSelectedItem());
+		tierList.add(0, keyTierBox.getSelectedItem().toString());
+		return tierList;
+	}
 
+	private class GroupMorphemesTableModel extends AbstractTableModel {
+
+		final int groupIdx;
+
+		public GroupMorphemesTableModel(int groupIdx) {
+			super();
+
+			this.groupIdx = groupIdx;
+		}
+
+		@Override
+		public int getRowCount() {
+			if(currentState == null) return 0;
+
+			if(this.groupIdx < currentState.childCount()) {
+				MorphemeTaggerNode groupNode = currentState.getChild(this.groupIdx);
+				return groupNode.getLeafCount();
+			} else {
+				return 0;
+			}
+		}
+
+		@Override
+		public int getColumnCount() {
+			return getTiers().size();
+		}
+
+		public String getColumnName(int colIdx) {
+			return getTiers().get(colIdx);
+		}
+
+		@Override
+		public Object getValueAt(int rowIndex, int columnIndex) {
+			if(currentState == null) return "";
+
+			List<String> tierNames = getTiers();
+
+			if(this.groupIdx < currentState.childCount()) {
+				MorphemeTaggerNode groupNode = currentState.getChild(this.groupIdx);
+				MorphemeTaggerNode leafNode = groupNode.getLeaves().get(rowIndex);
+
+				String tierName = tierNames.get(columnIndex);
+				return leafNode.getMorpheme(tierName);
+			} else {
+				return "";
+			}
+		}
+
+	}
 
 }
