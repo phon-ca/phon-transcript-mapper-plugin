@@ -1,5 +1,6 @@
 package ca.phon.alignedMorpheme.ui;
 
+import ca.phon.alignedMorpheme.*;
 import ca.phon.alignedMorpheme.db.AlignedMorphemeDatabase;
 import ca.phon.session.SystemTierType;
 
@@ -8,37 +9,14 @@ import java.util.*;
 
 public class AlignedMorphemeTableModel extends AbstractTableModel {
 
-	private AlignedMorphemeDatabase db;
-
-	private String keyTier;
-
 	private String[] tiers;
 
-	private String morpheme;
+	private AlignedMorphemes alignedMorphemes;
 
-	private Map<String, String[]> alignedMorphemes;
-
-	public AlignedMorphemeTableModel(AlignedMorphemeDatabase db) {
-		this(db, db.tierNames().toArray(new String[0]), SystemTierType.Orthography.getName());
-	}
-
-	public AlignedMorphemeTableModel(AlignedMorphemeDatabase db, String[] tiers, String keyTier) {
+	public AlignedMorphemeTableModel(String[] tiers) {
 		super();
 
-		this.db = db;
 		this.tiers = tiers;
-		this.keyTier = keyTier;
-		this.morpheme = "";
-		this.alignedMorphemes = new HashMap<>();
-	}
-
-	public String getKeyTier() {
-		return this.keyTier;
-	}
-
-	public void setKeyTier(String keyTier) {
-		this.keyTier = keyTier;
-		super.fireTableDataChanged();
 	}
 
 	public String[] getTiers() {
@@ -50,20 +28,9 @@ public class AlignedMorphemeTableModel extends AbstractTableModel {
 		super.fireTableStructureChanged();
 	}
 
-	public String getMorpheme() {
-		return this.morpheme;
-	}
-
-	public void setMorpheme(String morpheme) {
-		this.morpheme = morpheme;
-		this.alignedMorphemes = db.alignedMorphemesForTier(getKeyTier(), morpheme);
-		super.fireTableDataChanged();
-	}
-
 	@Override
 	public int getRowCount() {
-
-		return 0;
+		return alignedMorphemes.getMorphemeCount();
 	}
 
 	@Override
@@ -73,7 +40,31 @@ public class AlignedMorphemeTableModel extends AbstractTableModel {
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
-		return null;
+		String tierName = this.tiers[columnIndex];
+		SystemTierType systemTier = SystemTierType.tierFromString(tierName);
+
+		AlignedMorpheme morpheme = alignedMorphemes.getAlignedMorpheme(rowIndex);
+		if(systemTier != null) {
+			switch (systemTier) {
+				case Orthography -> {
+					return (morpheme.getOrthography() != null ? morpheme.getOrthography() : "");
+				}
+
+				case IPATarget -> {
+					return (morpheme.getIPATarget() != null ? morpheme.getIPATarget() : "");
+				}
+
+				case IPAActual -> {
+					return (morpheme.getIPAActual() != null ? morpheme.getIPAActual() : "");
+				}
+
+				default -> {
+					return "";
+				}
+			}
+		} else {
+			return (morpheme.getUserTier(tierName) != null ? morpheme.getUserTier(tierName) : "");
+		}
 	}
 
 }
