@@ -1,6 +1,5 @@
-package ca.phon.alignedMorpheme;
+package ca.phon.alignedType;
 
-import ca.phon.alignedMorpheme.db.AlignedMorphemeDatabase;
 import ca.phon.ipa.IPATranscript;
 import ca.phon.orthography.OrthoElement;
 import ca.phon.session.*;
@@ -8,16 +7,16 @@ import ca.phon.session.Record;
 
 import java.util.*;
 
-public class AlignedMorphemeScanner {
+public class AlignedTypeScanner {
 
-	private final AlignedMorphemeDatabase db;
+	private final AlignedTypeDatabase db;
 
-	public AlignedMorphemeScanner(AlignedMorphemeDatabase db) {
+	public AlignedTypeScanner(AlignedTypeDatabase db) {
 		super();
 		this.db = db;
 	}
 
-	public AlignedMorphemeDatabase getMorphemeTaggerDatabase() {
+	public AlignedTypeDatabase getMorphemeTaggerDatabase() {
 		return this.db;
 	}
 
@@ -27,11 +26,11 @@ public class AlignedMorphemeScanner {
 				Group g = record.getGroup(i);
 				for(int j = 0; j < g.getAlignedWordCount(); j++) {
 					Word w = g.getAlignedWord(j);
-					AlignedMorphemes alignedMorphemes = w.getExtension(AlignedMorphemes.class);
-					if(alignedMorphemes != null) {
+					AlignedTypes alignedTypes = w.getExtension(AlignedTypes.class);
+					if(alignedTypes != null) {
 						Map<String, String> alignedMorphemeMap = new LinkedHashMap<>();
-						for(int k = 0; k < alignedMorphemes.getMorphemeCount(); k++) {
-							AlignedMorpheme am = alignedMorphemes.getAlignedMorpheme(k);
+						for(int k = 0; k < alignedTypes.getMorphemeCount(); k++) {
+							AlignedType am = alignedTypes.getAlignedMorpheme(k);
 							for(SystemTierType systemTier:SystemTierType.values()) {
 								switch(systemTier) {
 								case Orthography:

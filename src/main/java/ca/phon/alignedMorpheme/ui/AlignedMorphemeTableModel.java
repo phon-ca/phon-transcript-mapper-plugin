@@ -1,17 +1,15 @@
 package ca.phon.alignedMorpheme.ui;
 
-import ca.phon.alignedMorpheme.*;
-import ca.phon.alignedMorpheme.db.AlignedMorphemeDatabase;
+import ca.phon.alignedType.*;
 import ca.phon.session.SystemTierType;
 
 import javax.swing.table.AbstractTableModel;
-import java.util.*;
 
 public class AlignedMorphemeTableModel extends AbstractTableModel {
 
 	private String[] tiers;
 
-	private AlignedMorphemes alignedMorphemes;
+	private AlignedTypes alignedTypes;
 
 	public AlignedMorphemeTableModel(String[] tiers) {
 		super();
@@ -30,7 +28,7 @@ public class AlignedMorphemeTableModel extends AbstractTableModel {
 
 	@Override
 	public int getRowCount() {
-		return alignedMorphemes.getMorphemeCount();
+		return alignedTypes.getMorphemeCount();
 	}
 
 	@Override
@@ -43,7 +41,7 @@ public class AlignedMorphemeTableModel extends AbstractTableModel {
 		String tierName = this.tiers[columnIndex];
 		SystemTierType systemTier = SystemTierType.tierFromString(tierName);
 
-		AlignedMorpheme morpheme = alignedMorphemes.getAlignedMorpheme(rowIndex);
+		AlignedType morpheme = alignedTypes.getAlignedMorpheme(rowIndex);
 		if(systemTier != null) {
 			switch (systemTier) {
 				case Orthography -> {

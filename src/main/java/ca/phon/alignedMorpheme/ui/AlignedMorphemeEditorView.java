@@ -1,7 +1,6 @@
 package ca.phon.alignedMorpheme.ui;
 
-import ca.phon.alignedMorpheme.*;
-import ca.phon.alignedMorpheme.db.*;
+import ca.phon.alignedType.*;
 import ca.phon.app.log.LogUtil;
 import ca.phon.app.session.editor.*;
 import ca.phon.app.session.editor.view.common.*;
@@ -51,7 +50,7 @@ public class AlignedMorphemeEditorView extends EditorView {
 
 	private final static String PROJECT_DB_FILENAME = "__res/morphemeTagger/db.bin";
 
-	private AlignedMorphemeDatabase projectDb;
+	private AlignedTypeDatabase projectDb;
 
 	private int groupIdx = 0;
 
@@ -103,11 +102,11 @@ public class AlignedMorphemeEditorView extends EditorView {
 	}
 
 	private void loadProjectDb() {
-		this.projectDb = new AlignedMorphemeDatabase();
+		this.projectDb = new AlignedTypeDatabase();
 		final File projectDbFile = projectDbFile();
 		if(projectDbFile.exists()) {
 			try (ObjectInputStream oin = new ObjectInputStream(new FileInputStream(projectDbFile))) {
-				this.projectDb = (AlignedMorphemeDatabase) oin.readObject();
+				this.projectDb = (AlignedTypeDatabase) oin.readObject();
 			} catch (IOException | ClassNotFoundException e) {
 				LogUtil.warning(e);
 			}
@@ -246,10 +245,10 @@ public class AlignedMorphemeEditorView extends EditorView {
 				MorphemeTaggerNode wrdNode = new MorphemeTaggerNode(widx);
 				grpNode.addChild(' ', wrdNode);
 
-				AlignedMorphemes morphemes = wrd.getExtension(AlignedMorphemes.class);
+				AlignedTypes morphemes = wrd.getExtension(AlignedTypes.class);
 				if(morphemes != null) {
 					for(int midx = 0; midx < morphemes.getMorphemeCount(); midx++) {
-						AlignedMorpheme morpheme = morphemes.getAlignedMorpheme(midx);
+						AlignedType morpheme = morphemes.getAlignedMorpheme(midx);
 
 						Map<String, String> currentMorphemes = new HashMap<>();
 						for(String tierName:tierList) {

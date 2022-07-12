@@ -1,11 +1,11 @@
-package ca.phon.alignedMorpheme.db;
+package ca.phon.alignedType;
 
 import ca.hedlund.tst.*;
 
 import java.io.*;
 import java.util.*;
 
-class MorphemeTaggerLinkedEntry implements Serializable {
+class TypeLinkedEntry implements Serializable {
 
 	private static final long serialVersionUID = -5323402869852524374L;
 
@@ -13,16 +13,16 @@ class MorphemeTaggerLinkedEntry implements Serializable {
 
 	private transient TernaryTreeNodePath tierNamePath;
 
-	private transient Set<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> linkedTierRefs;
+	private transient Set<TernaryTreeNode<Collection<TypeEntry>>> linkedTierRefs;
 
 	private transient Collection<TernaryTreeNodePath> linkedNodePaths;
 
-	public MorphemeTaggerLinkedEntry(TernaryTreeNode<TierInfo> tierNameRef) {
+	public TypeLinkedEntry(TernaryTreeNode<TierInfo> tierNameRef) {
 		this(tierNameRef, new LinkedHashSet<>());
 	}
 
-	public MorphemeTaggerLinkedEntry(TernaryTreeNode<TierInfo> tierNameRef,
-	                                 Set<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> linkedTierRefs) {
+	public TypeLinkedEntry(TernaryTreeNode<TierInfo> tierNameRef,
+	                       Set<TernaryTreeNode<Collection<TypeEntry>>> linkedTierRefs) {
 		super();
 
 		this.tierNameRef = tierNameRef;
@@ -44,12 +44,12 @@ class MorphemeTaggerLinkedEntry implements Serializable {
 		return this.tierNameRef.getPrefix();
 	}
 
-	public Set<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> getLinkedTierRefs(TernaryTree<Collection<MorphemeTaggerEntry>> tree) {
+	public Set<TernaryTreeNode<Collection<TypeEntry>>> getLinkedTierRefs(TernaryTree<Collection<TypeEntry>> tree) {
 		if(this.linkedTierRefs == null) {
 			if(this.linkedNodePaths != null) {
 				this.linkedTierRefs = new LinkedHashSet<>();
 				for(var path:this.linkedNodePaths) {
-					Optional<TernaryTreeNode<Collection<MorphemeTaggerEntry>>> tierNodeOpt =
+					Optional<TernaryTreeNode<Collection<TypeEntry>>> tierNodeOpt =
 							tree.findNode(path);
 					if(tierNodeOpt.isEmpty())
 						throw new IllegalStateException("Invalid value path");
@@ -62,8 +62,8 @@ class MorphemeTaggerLinkedEntry implements Serializable {
 		return this.linkedTierRefs;
 	}
 
-	public void addLinkedTier(TernaryTree<Collection<MorphemeTaggerEntry>> tree,
-	                          TernaryTreeNode<Collection<MorphemeTaggerEntry>> linkedNode) {
+	public void addLinkedTier(TernaryTree<Collection<TypeEntry>> tree,
+	                          TernaryTreeNode<Collection<TypeEntry>> linkedNode) {
 		getLinkedTierRefs(tree).add(linkedNode);
 	}
 

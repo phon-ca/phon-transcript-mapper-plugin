@@ -1,4 +1,4 @@
-package ca.phon.alignedMorpheme;
+package ca.phon.alignedType;
 
 import ca.phon.orthography.*;
 import ca.phon.util.Tuple;
@@ -8,7 +8,7 @@ import ca.phon.visitor.annotation.Visits;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class OrthoMorphemeVisitor extends VisitorAdapter<OrthoElement> {
+public class OrthographyTypeVisitor extends VisitorAdapter<OrthoElement> {
 
 	private int wrdIdx = 0;
 

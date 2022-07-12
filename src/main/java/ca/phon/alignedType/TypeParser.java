@@ -1,4 +1,4 @@
-package ca.phon.alignedMorpheme;
+package ca.phon.alignedType;
 
 import ca.phon.ipa.IPATranscript;
 import ca.phon.orthography.*;
@@ -31,7 +31,7 @@ import ca.phon.session.TierString;
      7) *, B5, *
  * </pre>
  */
-public class MorphemeParser {
+public class TypeParser {
 
 	/**
 	 * Parse the given orthography into a list of morphemes.
@@ -40,13 +40,13 @@ public class MorphemeParser {
 	 * @return
 	 */
 	public OrthoElement[] parseOrthography(OrthoElement orthoEle) {
-		final OrthoMorphemeVisitor visitor = new OrthoMorphemeVisitor();
+		final OrthographyTypeVisitor visitor = new OrthographyTypeVisitor();
 		visitor.visit(orthoEle);
 		return visitor.getMorphemes();
 	}
 
 	public IPATranscript[] parseIPA(IPATranscript ipa) {
-		final IPAMorphemeVisitor visitor = new IPAMorphemeVisitor();
+		final IPATypeVisitor visitor = new IPATypeVisitor();
 		ipa.accept(visitor);
 		return visitor.getMorphemes();
 	}

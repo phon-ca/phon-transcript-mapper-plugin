@@ -1,4 +1,4 @@
-package ca.phon.alignedMorpheme.db;
+package ca.phon.alignedType;
 
 import java.io.Serializable;
 

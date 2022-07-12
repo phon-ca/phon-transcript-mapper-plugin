@@ -1,11 +1,11 @@
-package ca.phon.alignedMorpheme.db;
+package ca.phon.alignedType;
 
 import ca.hedlund.tst.*;
 
 import java.io.*;
 import java.util.*;
 
-class MorphemeTaggerEntry implements Serializable {
+class TypeEntry implements Serializable {
 
 	private static final long serialVersionUID = -8095511445561636192L;
 
@@ -17,14 +17,14 @@ class MorphemeTaggerEntry implements Serializable {
 	private transient TernaryTreeNodePath tierNameNodePath;
 
 	// map of links to aligned tier data
-	private transient List<MorphemeTaggerLinkedEntry> alignedTierLinkedEntries;
+	private transient List<TypeLinkedEntry> alignedTierLinkedEntries;
 
-	public MorphemeTaggerEntry(TernaryTreeNode<TierInfo> tierNameRef) {
+	public TypeEntry(TernaryTreeNode<TierInfo> tierNameRef) {
 		this(tierNameRef, new ArrayList<>());
 	}
 
-	public MorphemeTaggerEntry(TernaryTreeNode<TierInfo> tierNameRef,
-	                           List<MorphemeTaggerLinkedEntry> alignedTierLinkedEntries) {
+	public TypeEntry(TernaryTreeNode<TierInfo> tierNameRef,
+	                 List<TypeLinkedEntry> alignedTierLinkedEntries) {
 		super();
 
 		this.tierNameRef = tierNameRef;
@@ -47,11 +47,11 @@ class MorphemeTaggerEntry implements Serializable {
 		return this.tierNameRef.getPrefix();
 	}
 
-	public List<MorphemeTaggerLinkedEntry> getLinkedEntries() {
+	public List<TypeLinkedEntry> getLinkedEntries() {
 		return this.alignedTierLinkedEntries;
 	}
 
-	public void addLinkedEntry(MorphemeTaggerLinkedEntry entry) {
+	public void addLinkedEntry(TypeLinkedEntry entry) {
 		this.alignedTierLinkedEntries.add(entry);
 	}
 
@@ -64,7 +64,7 @@ class MorphemeTaggerEntry implements Serializable {
 		this.alignedTierLinkedEntries = new ArrayList<>();
 		final int numEntries = ois.readInt();
 		for(int i = 0; i < numEntries; i++) {
-			this.alignedTierLinkedEntries.add((MorphemeTaggerLinkedEntry) ois.readObject());
+			this.alignedTierLinkedEntries.add((TypeLinkedEntry) ois.readObject());
 		}
 	}
 

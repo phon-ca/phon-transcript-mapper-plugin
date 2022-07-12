@@ -1,6 +1,5 @@
-package ca.phon.alignedMorpheme;
+package ca.phon.alignedType;
 
-import ca.phon.alignedMorpheme.db.AlignedMorphemeDatabase;
 import ca.phon.session.SystemTierType;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -10,13 +9,13 @@ import java.io.*;
 import java.util.*;
 
 @RunWith(JUnit4.class)
-public class TestAlignedMorphemeDatabase {
+public class TestAlignedTypeDatabase {
 
 	private final static String CSV_NAME = "orthoTypeMean.txt";
 
-	private AlignedMorphemeDatabase loadDatabase() throws IOException {
+	private AlignedTypeDatabase loadDatabase() throws IOException {
 		// add database from csv data
-		final AlignedMorphemeDatabase db = new AlignedMorphemeDatabase();
+		final AlignedTypeDatabase db = new AlignedTypeDatabase();
 
 		BufferedReader reader = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream(CSV_NAME),"UTF-16"));
 		String headerLine = reader.readLine();
@@ -30,7 +29,7 @@ public class TestAlignedMorphemeDatabase {
 			if(systemTier == null) {
 				try {
 					db.addUserTier(tierName);
-				} catch (AlignedMorphemeDatabase.DuplicateTierEntry e) {
+				} catch (AlignedTypeDatabase.DuplicateTierEntry e) {
 					throw new IOException(e);
 				}
 			}
@@ -52,7 +51,7 @@ public class TestAlignedMorphemeDatabase {
 
 	@Test
 	public void testDatabaseSerialization() throws IOException, ClassNotFoundException {
-		AlignedMorphemeDatabase db = loadDatabase();
+		AlignedTypeDatabase db = loadDatabase();
 
 		Assert.assertTrue(db.getTierInfo().stream().filter((info) -> "MorphemeType".equals(info.getTierName())).findAny().isPresent());
 		Assert.assertTrue(db.getTierInfo().stream().filter((info) -> "MorphemeMeaning".equals(info.getTierName())).findAny().isPresent());
@@ -70,7 +69,7 @@ public class TestAlignedMorphemeDatabase {
 		oout.close();
 
 		ObjectInputStream oin = new ObjectInputStream(new ByteArrayInputStream(bout.toByteArray()));
-		AlignedMorphemeDatabase testDb = (AlignedMorphemeDatabase) oin.readObject();
+		AlignedTypeDatabase testDb = (AlignedTypeDatabase) oin.readObject();
 
 		Assert.assertTrue(testDb.getTierInfo().stream().filter((info) -> "MorphemeType".equals(info.getTierName())).findAny().isPresent());
 		Assert.assertTrue(testDb.getTierInfo().stream().filter((info) -> "MorphemeMeaning".equals(info.getTierName())).findAny().isPresent());

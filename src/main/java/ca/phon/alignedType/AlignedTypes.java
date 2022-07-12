@@ -1,4 +1,4 @@
-package ca.phon.alignedMorpheme;
+package ca.phon.alignedType;
 
 import ca.phon.extensions.*;
 import ca.phon.ipa.IPATranscript;
@@ -12,11 +12,11 @@ import java.lang.ref.WeakReference;
  *
  */
 @Extension(Word.class)
-public class AlignedMorphemes implements ExtensionProvider {
+public class AlignedTypes implements ExtensionProvider {
 
 	private WeakReference<Word> alignedWord;
 
-	public AlignedMorphemes() {
+	public AlignedTypes() {
 		super();
 	}
 
@@ -26,23 +26,23 @@ public class AlignedMorphemes implements ExtensionProvider {
 	public int getMorphemeCount() {
 		int retVal = 0;
 		final Word alignedWord = getAlignedWord();
-		final MorphemeParser morphemeParser = new MorphemeParser();
+		final TypeParser typeParser = new TypeParser();
 		if(alignedWord != null) {
 			OrthoElement orthoWord = alignedWord.getOrthography();
-			OrthoElement[] orthoMorphemes = orthoWord == null ? new OrthoElement[0] : morphemeParser.parseOrthography(alignedWord.getOrthography());
+			OrthoElement[] orthoMorphemes = orthoWord == null ? new OrthoElement[0] : typeParser.parseOrthography(alignedWord.getOrthography());
 			retVal = Math.max(retVal, orthoMorphemes.length);
 
 			IPATranscript ipaTarget = alignedWord.getIPATarget();
-			IPATranscript[] ipaTargets = ipaTarget == null ? new IPATranscript[0] : morphemeParser.parseIPA(alignedWord.getIPATarget());
+			IPATranscript[] ipaTargets = ipaTarget == null ? new IPATranscript[0] : typeParser.parseIPA(alignedWord.getIPATarget());
 			retVal = Math.max(retVal, ipaTargets.length);
 
 			IPATranscript ipaActual = alignedWord.getIPAActual();
-			IPATranscript[] ipaActuals = ipaActual == null ? new IPATranscript[0] : morphemeParser.parseIPA(alignedWord.getIPAActual());
+			IPATranscript[] ipaActuals = ipaActual == null ? new IPATranscript[0] : typeParser.parseIPA(alignedWord.getIPAActual());
 			retVal = Math.max(retVal, ipaActuals.length);
 
 			for(String userTierName:alignedWord.getGroup().getRecord().getExtraTierNames()) {
 				TierString tierVal = (TierString)alignedWord.getTier(userTierName);
-				TierString[] tierMorphemes = tierVal == null ? new TierString[0] : morphemeParser.parseTier((TierString)alignedWord.getTier(userTierName));
+				TierString[] tierMorphemes = tierVal == null ? new TierString[0] : typeParser.parseTier((TierString)alignedWord.getTier(userTierName));
 				retVal = Math.max(retVal, tierMorphemes.length);
 			}
 		}
@@ -66,18 +66,18 @@ public class AlignedMorphemes implements ExtensionProvider {
 	 * @throws NullPointerException
 	 * @throws ArrayIndexOutOfBoundsException
 	 */
-	public AlignedMorpheme getAlignedMorpheme(int morphemeIdx) {
+	public AlignedType getAlignedMorpheme(int morphemeIdx) {
 		if(morphemeIdx < 0 || morphemeIdx >= getMorphemeCount())
 			throw new ArrayIndexOutOfBoundsException("Invalid morpheme index " + morphemeIdx);
 		if(getAlignedWord() == null)
 			throw new NullPointerException("alignedWord");
-		return new AlignedMorpheme(getAlignedWord(), morphemeIdx);
+		return new AlignedType(getAlignedWord(), morphemeIdx);
 	}
 
 	@Override
 	public void installExtension(IExtendable obj) {
 		setAlignedWord((Word)obj);
-		((Word)obj).putExtension(AlignedMorphemes.class, this);
+		((Word)obj).putExtension(AlignedTypes.class, this);
 	}
 
 }
