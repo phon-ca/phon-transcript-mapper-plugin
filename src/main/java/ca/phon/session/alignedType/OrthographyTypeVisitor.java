@@ -1,4 +1,4 @@
-package ca.phon.alignedType;
+package ca.phon.session.alignedType;
 
 import ca.phon.orthography.*;
 import ca.phon.util.Tuple;

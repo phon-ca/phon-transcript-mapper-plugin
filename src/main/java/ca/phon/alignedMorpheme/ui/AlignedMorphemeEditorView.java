@@ -7,6 +7,7 @@ import ca.phon.app.session.editor.view.common.*;
 import ca.phon.project.Project;
 import ca.phon.session.*;
 import ca.phon.session.Record;
+import ca.phon.session.alignedType.*;
 import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.text.PromptedTextField;
 import ca.phon.util.icons.*;

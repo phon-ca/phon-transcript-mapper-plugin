@@ -2,6 +2,7 @@ package ca.phon.alignedMorpheme.ui;
 
 import ca.phon.alignedType.*;
 import ca.phon.session.SystemTierType;
+import ca.phon.session.alignedType.*;
 
 import javax.swing.table.AbstractTableModel;
 

@@ -1,4 +1,4 @@
-package ca.phon.alignedType;
+package ca.phon.session.alignedType;
 
 import au.com.bytecode.opencsv.*;
 import ca.hedlund.tst.*;
