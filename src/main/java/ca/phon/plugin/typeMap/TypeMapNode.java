@@ -1,11 +1,10 @@
-package ca.phon.alignedMorpheme.ui;
+package ca.phon.plugin.typeMap;
 
 import ca.phon.util.Tuple;
-import com.teamdev.jxbrowser.chromium.be;
 
 import java.util.*;
 
-class MorphemeTaggerNode {
+class TypeMapNode {
 
 	// index of group/word/morpheme
 	private int index;
@@ -14,17 +13,17 @@ class MorphemeTaggerNode {
 
 	private Map<String, String[]> alignedMorphemeOptions;
 
-	private List<Tuple<Character, MorphemeTaggerNode>> children = new ArrayList<>();
+	private List<Tuple<Character, TypeMapNode>> children = new ArrayList<>();
 
-	public MorphemeTaggerNode(int idx) {
+	public TypeMapNode(int idx) {
 		this(idx, null, null);
 	}
 
-	public MorphemeTaggerNode(int idx, Map<String, String> currentAlignedMorphemes) {
+	public TypeMapNode(int idx, Map<String, String> currentAlignedMorphemes) {
 		this(idx, currentAlignedMorphemes, null);
 	}
 
-	public MorphemeTaggerNode(int idx, Map<String, String> currentAlignedMorphemes, Map<String, String[]> alignedMorphemeOptions) {
+	public TypeMapNode(int idx, Map<String, String> currentAlignedMorphemes, Map<String, String[]> alignedMorphemeOptions) {
 		super();
 		this.index = idx;
 		this.currentAlignedMorphemes = currentAlignedMorphemes;
@@ -35,7 +34,7 @@ class MorphemeTaggerNode {
 		return this.index < 0;
 	}
 
-	public List<Tuple<Character, MorphemeTaggerNode>> getChildren() {
+	public List<Tuple<Character, TypeMapNode>> getChildren() {
 		return this.children;
 	}
 
@@ -63,15 +62,15 @@ class MorphemeTaggerNode {
 		return this.children.size();
 	}
 
-	public MorphemeTaggerNode getChild(int cidx) {
+	public TypeMapNode getChild(int cidx) {
 		return this.children.get(cidx).getObj2();
 	}
 
-	public void addChild(MorphemeTaggerNode cnode) {
+	public void addChild(TypeMapNode cnode) {
 		addChild('~', cnode);
 	}
 
-	public void addChild(Character ch, MorphemeTaggerNode cnode) {
+	public void addChild(Character ch, TypeMapNode cnode) {
 		this.children.add(new Tuple<>(ch, cnode));
 	}
 
@@ -106,10 +105,10 @@ class MorphemeTaggerNode {
 		return countLeaves(this);
 	}
 
-	private int countLeaves(MorphemeTaggerNode node) {
+	private int countLeaves(TypeMapNode node) {
 		int retVal = 0;
 		for(int i = 0; i < node.childCount(); i++) {
-			MorphemeTaggerNode child = node.getChild(i);
+			TypeMapNode child = node.getChild(i);
 			if(child.isTerminated())
 				++retVal;
 			else
@@ -123,15 +122,15 @@ class MorphemeTaggerNode {
 	 *
 	 * @return list of all leaves
 	 */
-	public List<MorphemeTaggerNode> getLeaves() {
-		List<MorphemeTaggerNode> retVal = new ArrayList<>();
+	public List<TypeMapNode> getLeaves() {
+		List<TypeMapNode> retVal = new ArrayList<>();
 		collectLeaves(this, retVal);
 		return retVal;
 	}
 
-	private void collectLeaves(MorphemeTaggerNode node, List<MorphemeTaggerNode> leaves) {
+	private void collectLeaves(TypeMapNode node, List<TypeMapNode> leaves) {
 		for(int i = 0; i < node.childCount(); i++) {
-			MorphemeTaggerNode child = node.getChild(i);
+			TypeMapNode child = node.getChild(i);
 			if(child.isTerminated())
 				leaves.add(child);
 			else

@@ -1,4 +1,4 @@
-package ca.phon.alignedMorpheme.ui;
+package ca.phon.plugin.typeMap;
 
 import ca.phon.alignedType.*;
 import ca.phon.session.SystemTierType;
@@ -6,13 +6,13 @@ import ca.phon.session.alignedType.*;
 
 import javax.swing.table.AbstractTableModel;
 
-public class AlignedMorphemeTableModel extends AbstractTableModel {
+public class AlignedTypeTableModel extends AbstractTableModel {
 
 	private String[] tiers;
 
 	private AlignedTypes alignedTypes;
 
-	public AlignedMorphemeTableModel(String[] tiers) {
+	public AlignedTypeTableModel(String[] tiers) {
 		super();
 
 		this.tiers = tiers;

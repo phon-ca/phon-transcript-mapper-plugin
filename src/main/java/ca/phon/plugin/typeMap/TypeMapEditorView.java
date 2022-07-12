@@ -1,4 +1,4 @@
-package ca.phon.alignedMorpheme.ui;
+package ca.phon.plugin.typeMap;
 
 import ca.phon.alignedType.*;
 import ca.phon.alignedTypeDatabase.AlignedTypeDatabase;
@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
  * morpheme database(s).
  *
  */
-public class AlignedMorphemeEditorView extends EditorView {
+public class TypeMapEditorView extends EditorView {
 
 	private JComboBox<String> keyTierBox;
 
@@ -60,9 +60,9 @@ public class AlignedMorphemeEditorView extends EditorView {
 
 	private int alignedMorphemeIdx = 0;
 
-	private MorphemeTaggerNode currentState;
+	private TypeMapNode currentState;
 
-	public AlignedMorphemeEditorView(SessionEditor editor) {
+	public TypeMapEditorView(SessionEditor editor) {
 		super(editor);
 
 		init();
@@ -168,7 +168,7 @@ public class AlignedMorphemeEditorView extends EditorView {
 		add(new JScrollPane(morphemeSelectionPanel), BorderLayout.CENTER);
 	}
 
-	private void setState(MorphemeTaggerNode state) {
+	private void setState(TypeMapNode state) {
 		this.currentState = state;
 	}
 
@@ -233,18 +233,18 @@ public class AlignedMorphemeEditorView extends EditorView {
 		return new JMenu();
 	}
 
-	private MorphemeTaggerNode stateFromRecord(Record record) {
-		MorphemeTaggerNode root = new MorphemeTaggerNode(-1);
+	private TypeMapNode stateFromRecord(Record record) {
+		TypeMapNode root = new TypeMapNode(-1);
 
 		List<String> tierList = getTiers();
 
 		for(int gidx = 0; gidx < record.numberOfGroups(); gidx++) {
 			Group grp = record.getGroup(gidx);
-			MorphemeTaggerNode grpNode = new MorphemeTaggerNode(gidx);
+			TypeMapNode grpNode = new TypeMapNode(gidx);
 			root.addChild(grpNode);
 			for(int widx = 0; widx < grp.getAlignedWordCount(); widx++) {
 				Word wrd = grp.getAlignedWord(widx);
-				MorphemeTaggerNode wrdNode = new MorphemeTaggerNode(widx);
+				TypeMapNode wrdNode = new TypeMapNode(widx);
 				grpNode.addChild(' ', wrdNode);
 
 				AlignedTypes morphemes = wrd.getExtension(AlignedTypes.class);
@@ -259,7 +259,7 @@ public class AlignedMorphemeEditorView extends EditorView {
 						Map<String, String[]> alignedMorphemes =
 								this.projectDb.alignedMorphemesForTier(keyTierBox.getSelectedItem().toString(), currentMorphemes.get(keyTierBox.getSelectedItem()));
 
-						MorphemeTaggerNode morphemeNode = new MorphemeTaggerNode(midx, currentMorphemes, alignedMorphemes);
+						TypeMapNode morphemeNode = new TypeMapNode(midx, currentMorphemes, alignedMorphemes);
 
 						// start of word
 						char ch = '\u0000';
@@ -311,7 +311,7 @@ public class AlignedMorphemeEditorView extends EditorView {
 			if(currentState == null) return 0;
 
 			if(this.groupIdx < currentState.childCount()) {
-				MorphemeTaggerNode groupNode = currentState.getChild(this.groupIdx);
+				TypeMapNode groupNode = currentState.getChild(this.groupIdx);
 				return groupNode.getLeafCount();
 			} else {
 				return 0;
@@ -334,8 +334,8 @@ public class AlignedMorphemeEditorView extends EditorView {
 			List<String> tierNames = getTiers();
 
 			if(this.groupIdx < currentState.childCount()) {
-				MorphemeTaggerNode groupNode = currentState.getChild(this.groupIdx);
-				MorphemeTaggerNode leafNode = groupNode.getLeaves().get(rowIndex);
+				TypeMapNode groupNode = currentState.getChild(this.groupIdx);
+				TypeMapNode leafNode = groupNode.getLeaves().get(rowIndex);
 
 				String tierName = tierNames.get(columnIndex);
 				return leafNode.getMorpheme(tierName);
