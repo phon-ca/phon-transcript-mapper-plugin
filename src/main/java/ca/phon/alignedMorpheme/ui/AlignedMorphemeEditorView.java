@@ -1,6 +1,7 @@
 package ca.phon.alignedMorpheme.ui;
 
 import ca.phon.alignedType.*;
+import ca.phon.alignedTypeDatabase.AlignedTypeDatabase;
 import ca.phon.app.log.LogUtil;
 import ca.phon.app.session.editor.*;
 import ca.phon.app.session.editor.view.common.*;

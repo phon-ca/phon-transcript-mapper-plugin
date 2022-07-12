@@ -1,5 +1,6 @@
 package ca.phon.session.alignedType;
 
+import ca.phon.alignedTypeDatabase.AlignedTypeDatabase;
 import ca.phon.ipa.IPATranscript;
 import ca.phon.orthography.OrthoElement;
 import ca.phon.session.*;

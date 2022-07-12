@@ -1,4 +1,4 @@
-package ca.phon.session.alignedType;
+package ca.phon.alignedTypeDatabase;
 
 import java.io.Serializable;
 

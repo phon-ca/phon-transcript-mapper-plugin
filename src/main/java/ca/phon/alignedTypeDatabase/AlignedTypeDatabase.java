@@ -1,9 +1,10 @@
-package ca.phon.session.alignedType;
+package ca.phon.alignedTypeDatabase;
 
 import au.com.bytecode.opencsv.*;
 import ca.hedlund.tst.*;
 import ca.phon.app.log.LogUtil;
 import ca.phon.session.*;
+import ca.phon.session.alignedType.ArrayUtils;
 import org.apache.commons.io.output.StringBuilderWriter;
 
 import java.io.*;
