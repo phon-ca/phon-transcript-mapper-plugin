@@ -394,15 +394,37 @@ public class AlignedMorphemeDatabase implements Serializable {
 					morphemeOpts[i] = tierOpts;
 				}
 
-				MorphemeMapCartesianProduct zipper = new MorphemeMapCartesianProduct(this, tierNames().toArray(new String[0]), morphemeOpts);
-				List<String[]> rows = zipper.product();
-
-				for(String[] row:rows) {
+				String[][] filteredCartesianProduct =
+						ArrayUtils.stringArrayCartesianProduct(morphemeOpts, this::includeInCartesianProduct);
+				for(String[] row:filteredCartesianProduct) {
 					writer.writeNext(row);
 				}
 			}
 		}
 		writer.flush();
+	}
+
+	protected Boolean includeInCartesianProduct(String[] rowVals) {
+		final String[] tierNames = tierNames().toArray(new String[0]);
+		if(rowVals.length != tierNames.length) return false;
+
+		boolean retVal = true;
+		// only include row if all values have links between them
+		for(int i = 1; i < rowVals.length-1; i++) {
+			String v1 = rowVals[i];
+			if(v1.trim().length() == 0) continue; // ignore empty tier values
+			String t1 = tierNames[i];
+
+			for(int j = i + 1; j < rowVals.length; j++) {
+				String v2= rowVals[j];
+				if(v2.trim().length() == 0) continue; // ignore empty tier values
+				String t2 = tierNames[j];
+
+				retVal &= linkExists(t1, v1, t2, v2);
+			}
+		}
+
+		return retVal;
 	}
 
 	/**
