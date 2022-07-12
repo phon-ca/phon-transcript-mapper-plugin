@@ -2,13 +2,27 @@ package ca.phon.alignedMorpheme.db;
 
 import java.util.List;
 
-public class MorphemeMapZipper extends StringArrayZipper {
+/**
+ * Return cartesian sets of provided arrays.
+ *
+ * Values are only included in the product if they exist in
+ * the database.
+ *
+ */
+public class MorphemeMapCartesianProduct extends StringArrayCartesianProduct {
 
 	private final AlignedMorphemeDatabase db;
 
 	private final String[] tierNames;
 
-	public MorphemeMapZipper(AlignedMorphemeDatabase db, String[] tierNames, String[][] tierOpts) {
+	/**
+	 * Constructor
+	 *
+	 * @param db aligned type database
+	 * @param tierNames list of tier names, <code>tierNames.length = tierOpts.length</code>
+	 * @param tierOpts list of tier values for each tier listed in <code>tierNames</code>
+	 */
+	public MorphemeMapCartesianProduct(AlignedMorphemeDatabase db, String[] tierNames, String[][] tierOpts) {
 		super(tierOpts);
 
 		this.db = db;

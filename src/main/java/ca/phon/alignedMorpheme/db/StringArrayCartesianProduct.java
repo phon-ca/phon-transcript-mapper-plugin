@@ -1,13 +1,33 @@
 package ca.phon.alignedMorpheme.db;
 
-import ca.phon.session.SystemTierType;
-
 import java.util.*;
 
 /**
- * Zip multiple arrays together
+ * Create cartesian sets of provided arrays.
+ *
+ * E.g.,
+ * Given:
+ * <pre>
+ * String[][] arrays = new String[3][];
+ * arrays[0] = new String[]{ "v1", "v2" };
+ * arrays[1] = new String[]{ "v3", "v4" };
+ * arrays[2] = new String[]{ "v5", "v6" };
+ * </pre>
+ *
+ * return
+ *
+ * <pre>
+ * [v1, v3, v5]
+ * [v1, v3, v6]
+ * [v1, v4, v5]
+ * [v1, v4, v6]
+ * [v2, v3, v5]
+ * [v2, v3, v6]
+ * [v2, v4, v5]
+ * [v2, v4, v6]
+ * </pre>
  */
-public class StringArrayZipper {
+public class StringArrayCartesianProduct {
 
 	private final String[][] arrays;
 
@@ -17,7 +37,7 @@ public class StringArrayZipper {
 
 	private final int lastArrayWithValues;
 
-	public StringArrayZipper(String[][] arrays) {
+	public StringArrayCartesianProduct(String[][] arrays) {
 		super();
 
 		this.arrays = arrays;
@@ -32,30 +52,11 @@ public class StringArrayZipper {
 	}
 
 	/**
-	 * Given:
-	 * <pre>
-	 * String[][] arrays = new String[3][];
-	 * arrays[0] = new String[]{ "v1", "v2" };
-	 * arrays[1] = new String[]{ "v3", "v4" };
-	 * arrays[2] = new String[]{ "v5", "v6" };
-	 * </pre>
-	 *
-	 * return
-	 *
-	 * <pre>
-	 * [v1, v3, v5]
-	 * [v1, v3, v6]
-	 * [v1, v4, v5]
-	 * [v1, v4, v6]
-	 * [v2, v3, v5]
-	 * [v2, v3, v6]
-	 * [v2, v4, v5]
-	 * [v2, v4, v6]
-	 * </pre>
+	 * Calculate ard return cartesian sets of arrays
 	 *
 	 * @return
 	 */
-	public List<String[]> zippedValues() {
+	public List<String[]> product() {
 		final List<String[]> retVal = new ArrayList<>();
 
 		while(this.currentVals[0] < this.maxVals[0]) {

@@ -394,8 +394,8 @@ public class AlignedMorphemeDatabase implements Serializable {
 					morphemeOpts[i] = tierOpts;
 				}
 
-				MorphemeMapZipper zipper = new MorphemeMapZipper(this, tierNames().toArray(new String[0]), morphemeOpts);
-				List<String[]> rows = zipper.zippedValues();
+				MorphemeMapCartesianProduct zipper = new MorphemeMapCartesianProduct(this, tierNames().toArray(new String[0]), morphemeOpts);
+				List<String[]> rows = zipper.product();
 
 				for(String[] row:rows) {
 					writer.writeNext(row);
