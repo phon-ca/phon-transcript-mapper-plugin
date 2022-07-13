@@ -1,6 +1,5 @@
 package ca.phon.plugin.typeMap;
 
-import ca.phon.alignedType.*;
 import ca.phon.session.SystemTierType;
 import ca.phon.session.alignedType.*;
 
@@ -42,19 +41,19 @@ public class AlignedTypeTableModel extends AbstractTableModel {
 		String tierName = this.tiers[columnIndex];
 		SystemTierType systemTier = SystemTierType.tierFromString(tierName);
 
-		AlignedType morpheme = alignedTypes.getAlignedMorpheme(rowIndex);
+		AlignedType alignedType = alignedTypes.getAlignedMorpheme(rowIndex);
 		if(systemTier != null) {
 			switch (systemTier) {
 				case Orthography -> {
-					return (morpheme.getOrthography() != null ? morpheme.getOrthography() : "");
+					return (alignedType.getOrthography() != null ? alignedType.getOrthography() : "");
 				}
 
 				case IPATarget -> {
-					return (morpheme.getIPATarget() != null ? morpheme.getIPATarget() : "");
+					return (alignedType.getIPATarget() != null ? alignedType.getIPATarget() : "");
 				}
 
 				case IPAActual -> {
-					return (morpheme.getIPAActual() != null ? morpheme.getIPAActual() : "");
+					return (alignedType.getIPAActual() != null ? alignedType.getIPAActual() : "");
 				}
 
 				default -> {
@@ -62,7 +61,7 @@ public class AlignedTypeTableModel extends AbstractTableModel {
 				}
 			}
 		} else {
-			return (morpheme.getUserTier(tierName) != null ? morpheme.getUserTier(tierName) : "");
+			return (alignedType.getUserTier(tierName) != null ? alignedType.getUserTier(tierName) : "");
 		}
 	}
 

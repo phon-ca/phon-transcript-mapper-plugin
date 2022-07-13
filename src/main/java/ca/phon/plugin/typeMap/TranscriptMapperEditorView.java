@@ -1,7 +1,6 @@
 package ca.phon.plugin.typeMap;
 
-import ca.phon.alignedType.*;
-import ca.phon.alignedTypeDatabase.AlignedTypeDatabase;
+import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
 import ca.phon.app.log.LogUtil;
 import ca.phon.app.session.editor.*;
 import ca.phon.app.session.editor.view.common.*;
@@ -10,9 +9,9 @@ import ca.phon.session.*;
 import ca.phon.session.Record;
 import ca.phon.session.alignedType.*;
 import ca.phon.ui.fonts.FontPreferences;
-import ca.phon.ui.text.PromptedTextField;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;
+import org.jdesktop.swingx.JXTable;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
@@ -28,41 +27,35 @@ import java.util.stream.Collectors;
  * morpheme database(s).
  *
  */
-public class TypeMapEditorView extends EditorView {
+public class TranscriptMapperEditorView extends EditorView {
+
+	private JLabel keyLabel;
 
 	private JComboBox<String> keyTierBox;
 
-	private PromptedTextField morphemeField;
+	private JLabel morphemesLabel;
+
+	private MorphemesTableModel morphemesTableModel;
+
+	private JXTable morphemesTable;
 
 	private JWindow suggestionsWindow;
 
 	private JList<String> suggestionsList;
 
-	private JLabel prevMorphemeLbl;
-
-	private JLabel currentMorphemeLbl;
-
-	private JLabel nextMorphemeLbl;
-
 	private TierDataLayoutPanel morphemeSelectionPanel;
 
-	public final static String NAME = "Aligned Word/Morpheme Database";
+	public final static String NAME = "Transcript Mapper";
 
 	public final static String ICON = "blank";
 
-	private final static String PROJECT_DB_FILENAME = "__res/morphemeTagger/db.bin";
+	private final static String PROJECT_DB_FILENAME = "__res/typemap/db.bin";
 
-	private AlignedTypeDatabase projectDb;
-
-	private int groupIdx = 0;
-
-	private int wordIdx = 0;
-
-	private int alignedMorphemeIdx = 0;
+	private AlignedTypesDatabase projectDb;
 
 	private TypeMapNode currentState;
 
-	public TypeMapEditorView(SessionEditor editor) {
+	public TranscriptMapperEditorView(SessionEditor editor) {
 		super(editor);
 
 		init();
@@ -104,11 +97,11 @@ public class TypeMapEditorView extends EditorView {
 	}
 
 	private void loadProjectDb() {
-		this.projectDb = new AlignedTypeDatabase();
+		this.projectDb = new AlignedTypesDatabase();
 		final File projectDbFile = projectDbFile();
 		if(projectDbFile.exists()) {
 			try (ObjectInputStream oin = new ObjectInputStream(new FileInputStream(projectDbFile))) {
-				this.projectDb = (AlignedTypeDatabase) oin.readObject();
+				this.projectDb = (AlignedTypesDatabase) oin.readObject();
 			} catch (IOException | ClassNotFoundException e) {
 				LogUtil.warning(e);
 			}
@@ -138,33 +131,33 @@ public class TypeMapEditorView extends EditorView {
 
 	private void init() {
 		this.keyTierBox = new JComboBox<>();
-
-		this.morphemeField = new PromptedTextField("morpheme");
-		this.prevMorphemeLbl = new JLabel("<");
-		this.currentMorphemeLbl = new JLabel(String.format(" %d / %d ", alignedMorphemeIdx, 0));
-		this.nextMorphemeLbl = new JLabel(">");
-
-		JPanel topPanel = new JPanel(new GridBagLayout());
-		GridBagConstraints gbc = new GridBagConstraints();
-		gbc.gridx = 0;
-		gbc.gridy = 0;
-		gbc.gridwidth = 1;
-		gbc.gridheight = 1;
-		gbc.anchor = GridBagConstraints.WEST;
-		gbc.fill = GridBagConstraints.NONE;
-		gbc.weightx = 0.0;
-		gbc.weighty = 0.0;
-
-		topPanel.add(new JLabel("Key tier:"), gbc);
-		++gbc.gridx;
-		gbc.weightx = 1.0;
-		gbc.fill = GridBagConstraints.HORIZONTAL;
-		topPanel.add(this.keyTierBox, gbc);
+		this.keyTierBox.addItemListener(e -> {
+			updateFromCurrentState();
+		});
 
 		morphemeSelectionPanel = new TierDataLayoutPanel();
 
+		int row = 0;
+		keyLabel = new JLabel("Key tier");
+		keyLabel.setFont(FontPreferences.getTitleFont());
+		morphemeSelectionPanel.add(keyLabel, new TierDataConstraint(TierDataConstraint.TIER_LABEL_COLUMN, row));
+		morphemeSelectionPanel.add(keyTierBox, new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, row));
+
+		++row;
+		JSeparator sep = new JSeparator(SwingConstants.HORIZONTAL);
+		morphemeSelectionPanel.add(sep, new TierDataConstraint(TierDataConstraint.FULL_TIER_COLUMN, row));
+
+		++row;
+		morphemesLabel = new JLabel("Morphemes");
+		morphemesLabel.setFont(FontPreferences.getTitleFont());
+		morphemeSelectionPanel.add(morphemesLabel, new TierDataConstraint(TierDataConstraint.TIER_LABEL_COLUMN, row));
+
+		morphemesTableModel = new MorphemesTableModel();
+		morphemesTable = new JXTable(morphemesTableModel);
+		morphemesTable.setVisibleRowCount(10);
+		morphemeSelectionPanel.add(new JScrollPane(morphemesTable), new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, row));
+
 		setLayout(new BorderLayout());
-		add(topPanel, BorderLayout.NORTH);
 		add(new JScrollPane(morphemeSelectionPanel), BorderLayout.CENTER);
 	}
 
@@ -181,30 +174,11 @@ public class TypeMapEditorView extends EditorView {
 	}
 
 	private void updateFromCurrentState() {
-//		morphemeSelectionPanel.removeAll();
-//		for(TierInfo ti:this.projectDb.getTierInfo()) {
-//			if(ti.isVisible()) {
-//				final JLabel tierLbl = new JLabel(ti.getTierName());
-//				tierLbl.setFont(FontPreferences.getTitleFont());
-//				morphemeSelectionPanel.add(tierLbl, new TierDataConstraint((i + 1), 0));
-//			}
-//		}
-		morphemeSelectionPanel.removeAll();
-
 		final Record record = getEditor().currentRecord();
 		if(record == null || currentState == null) return;
 
-		for(int gidx = 0; gidx < record.numberOfGroups(); gidx++) {
-			JLabel glbl = new JLabel(String.format("Group %d", gidx+1));
-			glbl.setFont(FontPreferences.getTitleFont());
-			morphemeSelectionPanel.add(glbl, new TierDataConstraint(0, gidx));
-
-			JTable morphemeTable = new JTable(new GroupMorphemesTableModel(gidx));
-			morphemeTable.setPreferredScrollableViewportSize(new Dimension(morphemeTable.getPreferredScrollableViewportSize().width, 100));
-			morphemeSelectionPanel.add(new JScrollPane(morphemeTable), new TierDataConstraint(1, gidx));
-		}
-		revalidate();
-		repaint();
+		if(morphemesTableModel != null)
+			morphemesTableModel.fireTableDataChanged();
 	}
 
 	private void updateAfterDbLoad() {
@@ -256,10 +230,10 @@ public class TypeMapEditorView extends EditorView {
 						for(String tierName:tierList) {
 							currentMorphemes.put(tierName, morpheme.getMorphemeText(tierName));
 						}
-						Map<String, String[]> alignedMorphemes =
-								this.projectDb.alignedMorphemesForTier(keyTierBox.getSelectedItem().toString(), currentMorphemes.get(keyTierBox.getSelectedItem()));
+						Map<String, String[]> alignedTypes =
+								this.projectDb.alignedTypesForTier(keyTierBox.getSelectedItem().toString(), currentMorphemes.get(keyTierBox.getSelectedItem()));
 
-						TypeMapNode morphemeNode = new TypeMapNode(midx, currentMorphemes, alignedMorphemes);
+						TypeMapNode morphemeNode = new TypeMapNode(midx, currentMorphemes, alignedTypes);
 
 						// start of word
 						char ch = '\u0000';
@@ -290,32 +264,24 @@ public class TypeMapEditorView extends EditorView {
 		for(TierDescription td:getEditor().getSession().getUserTiers()) {
 			if(!td.isGrouped()) tierList.remove(td.getName());
 		}
-		// move key tier to front
-		tierList.remove(keyTierBox.getSelectedItem());
-		tierList.add(0, keyTierBox.getSelectedItem().toString());
+		if(keyTierBox.getSelectedItem() != null) {
+			// move key tier to front
+			tierList.remove(keyTierBox.getSelectedItem());
+			tierList.add(0, keyTierBox.getSelectedItem().toString());
+		}
 		return tierList;
 	}
 
-	private class GroupMorphemesTableModel extends AbstractTableModel {
+	private class MorphemesTableModel extends AbstractTableModel {
 
-		final int groupIdx;
-
-		public GroupMorphemesTableModel(int groupIdx) {
+		public MorphemesTableModel() {
 			super();
-
-			this.groupIdx = groupIdx;
 		}
 
 		@Override
 		public int getRowCount() {
 			if(currentState == null) return 0;
-
-			if(this.groupIdx < currentState.childCount()) {
-				TypeMapNode groupNode = currentState.getChild(this.groupIdx);
-				return groupNode.getLeafCount();
-			} else {
-				return 0;
-			}
+			return currentState.getLeafCount();
 		}
 
 		@Override
@@ -330,18 +296,10 @@ public class TypeMapEditorView extends EditorView {
 		@Override
 		public Object getValueAt(int rowIndex, int columnIndex) {
 			if(currentState == null) return "";
-
 			List<String> tierNames = getTiers();
-
-			if(this.groupIdx < currentState.childCount()) {
-				TypeMapNode groupNode = currentState.getChild(this.groupIdx);
-				TypeMapNode leafNode = groupNode.getLeaves().get(rowIndex);
-
-				String tierName = tierNames.get(columnIndex);
-				return leafNode.getMorpheme(tierName);
-			} else {
-				return "";
-			}
+			TypeMapNode leafNode = currentState.getLeaves().get(rowIndex);
+			String tierName = tierNames.get(columnIndex);
+			return leafNode.getMorpheme(tierName);
 		}
 
 	}

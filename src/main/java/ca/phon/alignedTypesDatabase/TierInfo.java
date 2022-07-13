@@ -1,4 +1,4 @@
-package ca.phon.alignedTypeDatabase;
+package ca.phon.alignedTypesDatabase;
 
 import java.io.Serializable;
 

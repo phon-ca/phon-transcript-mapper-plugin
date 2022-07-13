@@ -3,10 +3,10 @@ package ca.phon.plugin.typeMap;
 import ca.phon.app.session.editor.*;
 import ca.phon.plugin.*;
 
-@PhonPlugin(name = TypeMapEditorView.NAME)
-@EditorViewInfo(category = EditorViewCategory.PLUGINS, icon = TypeMapEditorView.ICON,
-		name = TypeMapEditorView.NAME)
-public class TypeMapEditorViewExtPt implements IPluginExtensionPoint<EditorView> {
+@PhonPlugin(name = TranscriptMapperEditorView.NAME)
+@EditorViewInfo(category = EditorViewCategory.PLUGINS, icon = TranscriptMapperEditorView.ICON,
+		name = TranscriptMapperEditorView.NAME)
+public class TranscriptMapperEditorViewExtPt implements IPluginExtensionPoint<EditorView> {
 	@Override
 	public Class<?> getExtensionType() {
 		return EditorView.class;
@@ -17,7 +17,7 @@ public class TypeMapEditorViewExtPt implements IPluginExtensionPoint<EditorView>
 		return (args) -> {
 			if(args.length != 1) throw new IllegalArgumentException("Invalid number of args");
 			if(args[0] instanceof SessionEditor) {
-				return new TypeMapEditorView((SessionEditor) args[0]);
+				return new TranscriptMapperEditorView((SessionEditor) args[0]);
 			} else {
 				throw new IllegalArgumentException("First argument should be the editor");
 			}

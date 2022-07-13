@@ -74,27 +74,6 @@ class TypeMapNode {
 		this.children.add(new Tuple<>(ch, cnode));
 	}
 
-//	private void printTree(MorphemeTaggerNode tree) {
-//		StringBuffer buffer = new StringBuffer();
-//		treeToString(buffer, tree);
-//		System.out.println(buffer.toString());
-//	}
-//
-//	private void treeToString(StringBuffer buffer, MorphemeTaggerNode node) {
-//		if(node.isTerminated()) {
-//			buffer.append(String.format("%s\n", node.getMorpheme()));
-//			for(String alignedTier:node.getAlignedMorphemeOptions().keySet()) {
-//				String[] opts = node.alignedMorphemeOptions.get(alignedTier);
-//				buffer.append(String.format("\t%s:\n", alignedTier));
-//				buffer.append(String.format("\t\t%s\n", Arrays.toString(opts)));
-//			}
-//		} else {
-//			for(int cidx = 0; cidx < node.childCount(); cidx++) {
-//				treeToString(buffer, node.getChild(cidx));
-//			}
-//		}
-//	}
-
 	/**
 	 * Returns the number of leaves in the tree starting from this node
 	 *

@@ -1,4 +1,4 @@
-package ca.phon.alignedTypeDatabase;
+package ca.phon.alignedTypesDatabase;
 
 import au.com.bytecode.opencsv.*;
 import ca.hedlund.tst.*;
@@ -13,14 +13,14 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * A database of tokens, or morphemes, along with the tiers in which they appear
- * and a list of other tokens to which they are linked.  This database includes
+ * A database of types (unique strings) along with the tiers in which they appear
+ * and a list of other types to which they are linked.  This database also includes
  * a list of tiers along with ordering and visibility of those tiers. The visibility
  * parameter is used by the editor view and will not affect the return values for
  * the tierNames() or tierInfo() methods.
  *
  */
-public class AlignedTypeDatabase implements Serializable {
+public class AlignedTypesDatabase implements Serializable {
 
 	private static final long serialVersionUID = -4436233595101310518L;
 
@@ -30,7 +30,7 @@ public class AlignedTypeDatabase implements Serializable {
 
 	private TernaryTree<Collection<TernaryTreeNode<TierInfo>>> alwaysExcludeTree;
 
-	public AlignedTypeDatabase() {
+	public AlignedTypesDatabase() {
 		super();
 
 		tierDescriptionTree = new TernaryTree<>();
@@ -70,10 +70,13 @@ public class AlignedTypeDatabase implements Serializable {
 	}
 
 	/**
-	 * Add tier value to database without aligned tier data
+	 * Add type for specified tier
 	 *
+	 *
+	 *
+	 * @throws IllegalStateException if unable to add tier name or type to database
 	 */
-	public TernaryTreeNode<Collection<TypeEntry>> addMorphemeForTier(String tierName, String morpheme) {
+	public TernaryTreeNode<Collection<TypeEntry>> addTypeForTier(String tierName, String type) {
 		// ensure tier exists
 		Optional<TernaryTreeNode<TierInfo>> tierNameRefOpt = tierDescriptionTree.findNode(tierName);
 		if(tierNameRefOpt.isEmpty()) {
@@ -88,40 +91,40 @@ public class AlignedTypeDatabase implements Serializable {
 			throw new IllegalStateException("Unable to add tier name to database");
 		final TernaryTreeNode<TierInfo> tierNameRef = tierNameRefOpt.get();
 
-		Optional<TernaryTreeNode<Collection<TypeEntry>>> morphemeNodeOpt = tree.findNode(morpheme, true, true);
-		if(morphemeNodeOpt.isPresent()) {
-			final TernaryTreeNode<Collection<TypeEntry>> morphemeNode = morphemeNodeOpt.get();
-			if(!morphemeNode.isTerminated()) {
+		Optional<TernaryTreeNode<Collection<TypeEntry>>> typeNodeOpt = tree.findNode(type, true, true);
+		if(typeNodeOpt.isPresent()) {
+			final TernaryTreeNode<Collection<TypeEntry>> typeNode = typeNodeOpt.get();
+			if(!typeNode.isTerminated()) {
 				List<TypeEntry> entryList = new ArrayList<>();
-				morphemeNode.setValue(entryList);
+				typeNode.setValue(entryList);
 			}
 			Optional<TypeEntry> entryOpt =
-					morphemeNode.getValue().stream().filter((e) -> e.getTierName(tierDescriptionTree).equals(tierName)).findAny();
+					typeNode.getValue().stream().filter((e) -> e.getTierName(tierDescriptionTree).equals(tierName)).findAny();
 			if(entryOpt.isEmpty()) {
 				TypeEntry entry = new TypeEntry(tierNameRef);
-				morphemeNode.getValue().add(entry);
+				typeNode.getValue().add(entry);
 			}
-			return morphemeNode;
+			return typeNode;
 		} else {
-			throw new IllegalStateException("Unable to add morpheme to database");
+			throw new IllegalStateException("Unable to add type to database");
 		}
 	}
 
-	public void addAlignedMorphemes(Map<String, String> alignedMorphemes) {
-		for(var entry:alignedMorphemes.entrySet()) {
-			addMorphemeForTier(entry.getKey(), entry.getValue());
+	public void addAlignedTypes(Map<String, String> alignedTypes) {
+		for(var entry:alignedTypes.entrySet()) {
+			addTypeForTier(entry.getKey(), entry.getValue());
 		}
 
-		var entryList = alignedMorphemes.entrySet().toArray();
+		var entryList = alignedTypes.entrySet().toArray();
 		for(int i = 0; i < entryList.length; i++) {
 			var entry = (Map.Entry<String, String>)entryList[i];
-			TernaryTreeNode<Collection<TypeEntry>> morphemeNodeRef = tree.findNode(entry.getValue()).get();
-			Optional<TypeEntry> morphemeEntryOpt =
-					morphemeNodeRef.getValue()
+			TernaryTreeNode<Collection<TypeEntry>> typeNodeRef = tree.findNode(entry.getValue()).get();
+			Optional<TypeEntry> typeEntryOpt =
+					typeNodeRef.getValue()
 							.stream()
 							.filter((e) -> e.getTierName(tierDescriptionTree).equals(entry.getKey())).findAny();
-			if (morphemeEntryOpt.isPresent()) {
-				TypeEntry morphemeEntryForTier = morphemeEntryOpt.get();
+			if (typeEntryOpt.isPresent()) {
+				TypeEntry typeEntryForTier = typeEntryOpt.get();
 				for(int j = 0; j < entryList.length; j++) {
 					if(j == i) continue;
 					var otherEntry = (Map.Entry<String, String>)entryList[j];
@@ -129,12 +132,12 @@ public class AlignedTypeDatabase implements Serializable {
 					TernaryTreeNode<Collection<TypeEntry>> otherNodeRef = tree.findNode(otherEntry.getValue()).get();
 
 					Optional<TypeLinkedEntry> linkedEntryOpt =
-							morphemeEntryForTier.getLinkedEntries()
+							typeEntryForTier.getLinkedEntries()
 									.stream()
 									.filter((e) -> e.getTierName(tierDescriptionTree).equals(otherEntry.getKey())).findAny();
 					if(linkedEntryOpt.isEmpty()) {
 						TypeLinkedEntry linkedEntry = new TypeLinkedEntry(tierNodeRef);
-						morphemeEntryForTier.addLinkedEntry(linkedEntry);
+						typeEntryForTier.addLinkedEntry(linkedEntry);
 						linkedEntry.addLinkedTier(tree, otherNodeRef);
 					} else {
 						linkedEntryOpt.get().addLinkedTier(tree, otherNodeRef);
@@ -145,33 +148,33 @@ public class AlignedTypeDatabase implements Serializable {
 	}
 
 	/**
-	 * Return a set of aligned morphemes given a tier name and morpheme
+	 * Return a set of aligned types given a tier name and type
 	 * that exists for that tier.
 	 *
 	 * @param tierName
-	 * @param morpheme
+	 * @param type
 	 *
-	 * @return a map of aligned tier values for the given tier and morpheme
+	 * @return a map of aligned tier values for the given tier and type
 	 */
-	public Map<String, String[]> alignedMorphemesForTier(String tierName, String morpheme) {
+	public Map<String, String[]> alignedTypesForTier(String tierName, String type) {
 		Map<String, String[]> retVal = new LinkedHashMap<>();
 
-		Optional<TernaryTreeNode<Collection<TypeEntry>>> morphemeNodeRefOpt = tree.findNode(morpheme);
-		if(morphemeNodeRefOpt.isPresent()) {
-			final TernaryTreeNode<Collection<TypeEntry>> morphemeNodeRef = morphemeNodeRefOpt.get();
-			retVal.put(tierName, new String[]{morpheme});
+		Optional<TernaryTreeNode<Collection<TypeEntry>>> typeNodeRefOpt = tree.findNode(type);
+		if(typeNodeRefOpt.isPresent()) {
+			final TernaryTreeNode<Collection<TypeEntry>> typeNodeRef = typeNodeRefOpt.get();
+			retVal.put(tierName, new String[]{type});
 			Optional<TypeEntry> entryOpt =
-					morphemeNodeRef.getValue().stream().filter((e) -> e.getTierName(tierDescriptionTree).equals(tierName)).findAny();
+					typeNodeRef.getValue().stream().filter((e) -> e.getTierName(tierDescriptionTree).equals(tierName)).findAny();
 			if(entryOpt.isPresent()) {
 				TypeEntry entry = entryOpt.get();
-				retVal = alignedMorphemesForEntry(entry);
+				retVal = alignedTypesForEntry(entry);
 			}
 		}
 
 		return retVal;
 	}
 
-	private Map<String, String[]> alignedMorphemesForEntry(TypeEntry entry) {
+	private Map<String, String[]> alignedTypesForEntry(TypeEntry entry) {
 		Map<String, String[]> retVal = new LinkedHashMap<>();
 
 		for(TypeLinkedEntry linkedEntry:entry.getLinkedEntries()) {
@@ -200,17 +203,17 @@ public class AlignedTypeDatabase implements Serializable {
 				.collect(Collectors.toList());
 	}
 
-	private TypeEntry morphemeEntryForTier(String key, String tierName) {
-		final Collection<TypeEntry> entries = morphemeEntries(key);
-		final Optional<TypeEntry> morphemeTaggerEntry =
+	private TypeEntry typeEntryForTier(String key, String tierName) {
+		final Collection<TypeEntry> entries = typeEntries(key);
+		final Optional<TypeEntry> typeTaggerEntry =
 			entries.stream().filter((v) -> v.getTierName(tierDescriptionTree).equals(tierName)).findAny();
-		if(morphemeTaggerEntry.isPresent())
-			return morphemeTaggerEntry.get();
+		if(typeTaggerEntry.isPresent())
+			return typeTaggerEntry.get();
 		else
 			return null;
 	}
 
-	private Collection<TypeEntry> morphemeEntries(String key) {
+	private Collection<TypeEntry> typeEntries(String key) {
 		final Optional<TernaryTreeNode<Collection<TypeEntry>>> node = tree.findNode(key);
 		if(node.isEmpty()) return new ArrayList<>();
 
@@ -266,15 +269,15 @@ public class AlignedTypeDatabase implements Serializable {
 
 		String[] row = null;
 		while((row = csvReader.readNext()) != null) {
-			Map<String, String> alignedMorphemes = new HashMap<>();
+			Map<String, String> alignedTypes = new HashMap<>();
 			for(int i = 0; i < cols.length; i++) {
 				String tierName = cols[i];
-				String morpheme = (i < row.length ? row[i] : "");
-				if(morpheme.trim().length() > 0) {
-					alignedMorphemes.put(tierName, morpheme);
+				String type = (i < row.length ? row[i] : "");
+				if(type.trim().length() > 0) {
+					alignedTypes.put(tierName, type);
 				}
 			}
-			addAlignedMorphemes(alignedMorphemes);
+			addAlignedTypes(alignedTypes);
 		}
 	}
 
@@ -383,20 +386,20 @@ public class AlignedTypeDatabase implements Serializable {
 					.filter((e) -> e.getTierName(tierDescriptionTree).equals(keyTier))
 					.findAny();
 			if(entryForKeyTier.isPresent()) {
-				Map<String, String[]> alignedMorphemes = alignedMorphemesForEntry(entryForKeyTier.get());
+				Map<String, String[]> alignedTypes = alignedTypesForEntry(entryForKeyTier.get());
 
-				String[][] morphemeOpts = new String[tiers.size()][];
-				morphemeOpts[0] = new String[] { entry.getKey() };
+				String[][] typeOpts = new String[tiers.size()][];
+				typeOpts[0] = new String[] { entry.getKey() };
 				for(int i = 1; i < tiers.size(); i++) {
 					String tierName = tiers.get(i);
-					String[] tierOpts = alignedMorphemes.get(tierName);
+					String[] tierOpts = alignedTypes.get(tierName);
 					if(tierOpts == null)
 						tierOpts = new String[0];
-					morphemeOpts[i] = tierOpts;
+					typeOpts[i] = tierOpts;
 				}
 
 				String[][] filteredCartesianProduct =
-						ArrayUtils.stringArrayCartesianProduct(morphemeOpts, this::includeInCartesianProduct);
+						ArrayUtils.stringArrayCartesianProduct(typeOpts, this::includeInCartesianProduct);
 				for(String[] row:filteredCartesianProduct) {
 					writer.writeNext(row);
 				}
@@ -433,7 +436,7 @@ public class AlignedTypeDatabase implements Serializable {
 	 *
 	 * @param importDb
 	 */
-	public void importDatabase(AlignedTypeDatabase importDb) {
+	public void importDatabase(AlignedTypesDatabase importDb) {
 		// add all tiers
 		for(TierInfo ti: importDb.getTierInfo()) {
 			if(!tierDescriptionTree.containsKey(ti.getTierName())) {
@@ -446,20 +449,20 @@ public class AlignedTypeDatabase implements Serializable {
 		// walk tree and add all entries
 		Set<Map.Entry<String, Collection<TypeEntry>>> entrySet = tree.entrySet();
 
-		// first add all morphemes to tree
-		// we will need to add all keys first to ensure we have nodes for linked morphemes
+		// first add all types to tree
+		// we will need to add all keys first to ensure we have nodes for linked types
 		for(Map.Entry<String, Collection<TypeEntry>> entry:entrySet) {
-			String morpheme = entry.getKey();
+			String type = entry.getKey();
 			for(TypeEntry taggerEntry:entry.getValue()) {
-				addMorphemeForTier(taggerEntry.getTierName(importDb.tierDescriptionTree), morpheme);
+				addTypeForTier(taggerEntry.getTierName(importDb.tierDescriptionTree), type);
 			}
 		}
 
-		// now create links for aligned morphemes
+		// now create links for aligned types
 		for(Map.Entry<String, Collection<TypeEntry>> entry:entrySet) {
-			String morpheme = entry.getKey();
+			String type = entry.getKey();
 
-			Optional<TernaryTreeNode<Collection<TypeEntry>>> keyNodeOpt = tree.findNode(morpheme);
+			Optional<TernaryTreeNode<Collection<TypeEntry>>> keyNodeOpt = tree.findNode(type);
 			// shouldn't happen because we added it above
 			if(!keyNodeOpt.isPresent()) continue;
 
@@ -488,7 +491,7 @@ public class AlignedTypeDatabase implements Serializable {
 						taggerEntry.getLinkedEntries().add(taggerLinkedEntry);
 
 					for(TernaryTreeNode<Collection<TypeEntry>> importTierNodeRef:importTaggerLinkedEntry.getLinkedTierRefs(importDb.tree)) {
-						// find the tree node for the linked morpheme
+						// find the tree node for the linked type
 						Optional<TernaryTreeNode<Collection<TypeEntry>>> tierNodeRef =
 								tree.findNode(importTierNodeRef.getPrefix());
 						if(tierNodeRef.isPresent() && !taggerLinkedEntry.getLinkedTierRefs(tree).contains(tierNodeRef.get())) {

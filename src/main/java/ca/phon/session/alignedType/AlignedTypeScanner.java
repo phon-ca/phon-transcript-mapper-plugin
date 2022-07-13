@@ -1,6 +1,6 @@
 package ca.phon.session.alignedType;
 
-import ca.phon.alignedTypeDatabase.AlignedTypeDatabase;
+import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
 import ca.phon.ipa.IPATranscript;
 import ca.phon.orthography.OrthoElement;
 import ca.phon.session.*;
@@ -10,14 +10,14 @@ import java.util.*;
 
 public class AlignedTypeScanner {
 
-	private final AlignedTypeDatabase db;
+	private final AlignedTypesDatabase db;
 
-	public AlignedTypeScanner(AlignedTypeDatabase db) {
+	public AlignedTypeScanner(AlignedTypesDatabase db) {
 		super();
 		this.db = db;
 	}
 
-	public AlignedTypeDatabase getMorphemeTaggerDatabase() {
+	public AlignedTypesDatabase getMorphemeTaggerDatabase() {
 		return this.db;
 	}
 
@@ -29,7 +29,7 @@ public class AlignedTypeScanner {
 					Word w = g.getAlignedWord(j);
 					AlignedTypes alignedTypes = w.getExtension(AlignedTypes.class);
 					if(alignedTypes != null) {
-						Map<String, String> alignedMorphemeMap = new LinkedHashMap<>();
+						Map<String, String> alignedTypeMap = new LinkedHashMap<>();
 						for(int k = 0; k < alignedTypes.getMorphemeCount(); k++) {
 							AlignedType am = alignedTypes.getAlignedMorpheme(k);
 							for(SystemTierType systemTier:SystemTierType.values()) {
@@ -38,7 +38,7 @@ public class AlignedTypeScanner {
 									final OrthoElement orthoElement = am.getOrthography();
 									final String ortho = orthoElement == null ? "" : orthoElement.toString().trim();
 									if(ortho.length() > 0 && !"*".equals(ortho)) {
-										alignedMorphemeMap.put(systemTier.getName(), ortho);
+										alignedTypeMap.put(systemTier.getName(), ortho);
 									}
 									break;
 
@@ -46,7 +46,7 @@ public class AlignedTypeScanner {
 									final IPATranscript ipaT = am.getIPATarget();
 									final String target = ipaT == null ? "" : ipaT.toString();
 									if(target.length() > 0 && !"*".equals(target)) {
-										alignedMorphemeMap.put(systemTier.getName(), target);
+										alignedTypeMap.put(systemTier.getName(), target);
 									}
 									break;
 
@@ -54,7 +54,7 @@ public class AlignedTypeScanner {
 									final IPATranscript ipaA = am.getIPAActual();
 									final String actual = ipaA == null ? "" : am.getIPAActual().toString();
 									if(actual.length() > 0 && !"*".equals(actual)) {
-										alignedMorphemeMap.put(systemTier.getName(), actual);
+										alignedTypeMap.put(systemTier.getName(), actual);
 									}
 									break;
 
@@ -66,11 +66,11 @@ public class AlignedTypeScanner {
 							for(String userTierName: record.getExtraTierNames()) {
 								TierString userTierVal = am.getUserTier(userTierName);
 								if(userTierVal != null && userTierVal.length() > 0 && !"*".equals(userTierVal.toString())) {
-									alignedMorphemeMap.put(userTierName, userTierVal.toString());
+									alignedTypeMap.put(userTierName, userTierVal.toString());
 								}
 							}
 						}
-						this.db.addAlignedMorphemes(alignedMorphemeMap);
+						this.db.addAlignedTypes(alignedTypeMap);
 					}
 				}
 			}

@@ -1,7 +1,7 @@
 package ca.phon.alignedType;
 
 import ca.phon.session.SystemTierType;
-import ca.phon.alignedTypeDatabase.AlignedTypeDatabase;
+import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -10,13 +10,13 @@ import java.io.*;
 import java.util.*;
 
 @RunWith(JUnit4.class)
-public class TestAlignedTypeDatabase {
+public class TestAlignedTypesDatabase {
 
 	private final static String CSV_NAME = "orthoTypeMean.txt";
 
-	private AlignedTypeDatabase loadDatabase() throws IOException {
+	private AlignedTypesDatabase loadDatabase() throws IOException {
 		// add database from csv data
-		final AlignedTypeDatabase db = new AlignedTypeDatabase();
+		final AlignedTypesDatabase db = new AlignedTypesDatabase();
 
 		BufferedReader reader = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream(CSV_NAME),"UTF-16"));
 		String headerLine = reader.readLine();
@@ -30,7 +30,7 @@ public class TestAlignedTypeDatabase {
 			if(systemTier == null) {
 				try {
 					db.addUserTier(tierName);
-				} catch (AlignedTypeDatabase.DuplicateTierEntry e) {
+				} catch (AlignedTypesDatabase.DuplicateTierEntry e) {
 					throw new IOException(e);
 				}
 			}
@@ -44,7 +44,7 @@ public class TestAlignedTypeDatabase {
 				if(morphemes[i].trim().length() > 0)
 					alignedMorphemes.put(tierNames[i].trim(), morphemes[i].trim());
 			}
-			db.addAlignedMorphemes(alignedMorphemes);
+			db.addAlignedTypes(alignedMorphemes);
 		}
 
 		return db;
@@ -52,14 +52,14 @@ public class TestAlignedTypeDatabase {
 
 	@Test
 	public void testDatabaseSerialization() throws IOException, ClassNotFoundException {
-		AlignedTypeDatabase db = loadDatabase();
+		AlignedTypesDatabase db = loadDatabase();
 
 		Assert.assertTrue(db.getTierInfo().stream().filter((info) -> "MorphemeType".equals(info.getTierName())).findAny().isPresent());
 		Assert.assertTrue(db.getTierInfo().stream().filter((info) -> "MorphemeMeaning".equals(info.getTierName())).findAny().isPresent());
 
 		final String[] expectedTypes = {"p,quest","vai.fin","vii.fin","medial","subjunctive","vai+o.fin","spatial","thm(vta)","thm(vti.non3)","2.sg","2.sg>0","OK"};
 		final String[] expectedMeanings = {"p,quest","vai.fin","vii.fin","medial","subjunctive","vai+o.fin","vintr.fin","thm(vta)","thm(vti.non3)","imp","p,aff"};
-		Map<String, String[]> alignedVals = db.alignedMorphemesForTier("Orthography", "â");
+		Map<String, String[]> alignedVals = db.alignedTypesForTier("Orthography", "â");
 		Assert.assertArrayEquals(expectedTypes, alignedVals.get("MorphemeType"));
 		Assert.assertArrayEquals(expectedMeanings, alignedVals.get("MorphemeMeaning"));
 
@@ -70,12 +70,12 @@ public class TestAlignedTypeDatabase {
 		oout.close();
 
 		ObjectInputStream oin = new ObjectInputStream(new ByteArrayInputStream(bout.toByteArray()));
-		AlignedTypeDatabase testDb = (AlignedTypeDatabase) oin.readObject();
+		AlignedTypesDatabase testDb = (AlignedTypesDatabase) oin.readObject();
 
 		Assert.assertTrue(testDb.getTierInfo().stream().filter((info) -> "MorphemeType".equals(info.getTierName())).findAny().isPresent());
 		Assert.assertTrue(testDb.getTierInfo().stream().filter((info) -> "MorphemeMeaning".equals(info.getTierName())).findAny().isPresent());
 
-		alignedVals = testDb.alignedMorphemesForTier("Orthography", "â");
+		alignedVals = testDb.alignedTypesForTier("Orthography", "â");
 		Assert.assertArrayEquals(expectedTypes, alignedVals.get("MorphemeType"));
 		Assert.assertArrayEquals(expectedMeanings, alignedVals.get("MorphemeMeaning"));
 	}
