@@ -7,7 +7,7 @@ import java.util.function.Function;
 /**
  * Some helpful array methods used by the database
  */
-public class ArrayUtils {
+public class CartesianProduct {
 
 	/**
 	 * Calculate cartesian set of provided string arrays
@@ -16,8 +16,8 @@ public class ArrayUtils {
 	 *
 	 * @return cartestian product of arrays, no null values are returned
 	 */
-	public static String[][] stringArrayCartesianProduct(String[][] arrays) {
-		return stringArrayCartesianProduct(arrays, (set) -> true);
+	public static String[][] stringArrayProduct(String[][] arrays) {
+		return stringArrayProduct(arrays, (set) -> true);
 	}
 
 	/**
@@ -28,8 +28,8 @@ public class ArrayUtils {
 	 *
 	 * @return cartestian product of arrays, no null values are returned
 	 */
-	public static String[][] stringArrayCartesianProduct(String[][] arrays, Function<String[], Boolean> includeSet) {
-		String[][] retVal = ArrayUtils.cartesianProduct(String.class, arrays, includeSet);
+	public static String[][] stringArrayProduct(String[][] arrays, Function<String[], Boolean> includeSet) {
+		String[][] retVal = CartesianProduct.product(String.class, arrays, includeSet);
 		for(String[] set:retVal) {
 			for(int i = 0; i < set.length; i++) {
 				if(set[i] == null)
@@ -69,8 +69,8 @@ public class ArrayUtils {
 	 *
 	 * @return
 	 */
-	public static <T> T[][] cartesianProduct(Class<T> clazz, T[][] arrays) {
-		return cartesianProduct(clazz, arrays, (set) -> true);
+	public static <T> T[][] product(Class<T> clazz, T[][] arrays) {
+		return product(clazz, arrays, (set) -> true);
 	}
 
 	/**
@@ -104,7 +104,7 @@ public class ArrayUtils {
 	 *
 	 * @return
 	 */
-	public static <T> T[][] cartesianProduct(Class<T> clazz, T[][] arrays, Function<T[], Boolean> includeSet) {
+	public static <T> T[][] product(Class<T> clazz, T[][] arrays, Function<T[], Boolean> includeSet) {
 		final List<T[]> retVal = new ArrayList<>();
 
 		final int[] currentVals = new int[arrays.length];

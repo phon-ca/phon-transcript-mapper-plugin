@@ -398,7 +398,7 @@ public class AlignedTypesDatabase implements Serializable {
 				}
 
 				String[][] filteredCartesianProduct =
-						ArrayUtils.stringArrayCartesianProduct(typeOpts, this::includeInCartesianProduct);
+						CartesianProduct.stringArrayProduct(typeOpts, this::includeInCartesianProduct);
 				for(String[] row:filteredCartesianProduct) {
 					writer.writeNext(row);
 				}
