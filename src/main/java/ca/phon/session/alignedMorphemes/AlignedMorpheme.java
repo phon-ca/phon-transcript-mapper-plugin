@@ -1,4 +1,4 @@
-package ca.phon.session.alignedType;
+package ca.phon.session.alignedMorphemes;
 
 import ca.phon.ipa.IPATranscript;
 import ca.phon.orthography.*;
@@ -8,13 +8,13 @@ import ca.phon.session.*;
  * Represents a set of aligned morphemes across Phon tiers.
  *
  */
-public class AlignedType {
+public class AlignedMorpheme {
 
 	private final Word alignedWord;
 
 	private final int morphemeIdx;
 
-	AlignedType(Word word, int morphemeIdx) {
+	AlignedMorpheme(Word word, int morphemeIdx) {
 		super();
 
 		this.alignedWord = word;
@@ -30,7 +30,7 @@ public class AlignedType {
 	}
 
 	public OrthoElement getOrthography() {
-		TypeParser parser = new TypeParser();
+		MorphemeParser parser = new MorphemeParser();
 		OrthoElement orthoElement = getAlignedWord().getOrthography();
 		OrthoElement[] morphemes = orthoElement == null ? new OrthoElement[0] : parser.parseOrthography(getAlignedWord().getOrthography());
 		return (getMorphemeIdx() >= 0 && getMorphemeIdx() < morphemes.length
@@ -39,9 +39,9 @@ public class AlignedType {
 	}
 
 	public int getOrthographyWordLocation() {
-		TypeParser parser = new TypeParser();
+		MorphemeParser parser = new MorphemeParser();
 		OrthoElement orthoElement = getAlignedWord().getOrthography();
-		final OrthographyTypeVisitor visitor = new OrthographyTypeVisitor();
+		final OrthographyMorphemeVisitor visitor = new OrthographyMorphemeVisitor();
 		visitor.visit(orthoElement);
 
 		return (this.morphemeIdx < visitor.getMorphemeIndexes().length
@@ -49,7 +49,7 @@ public class AlignedType {
 	}
 
 	public IPATranscript getIPATarget() {
-		TypeParser parser = new TypeParser();
+		MorphemeParser parser = new MorphemeParser();
 		IPATranscript ipaTarget = getAlignedWord().getIPATarget();
 		IPATranscript[] morphemes = ipaTarget == null ? new IPATranscript[0] : parser.parseIPA(getAlignedWord().getIPATarget());
 		return (getMorphemeIdx() >= 0 && getMorphemeIdx() < morphemes.length
@@ -58,7 +58,7 @@ public class AlignedType {
 	}
 
 	public IPATranscript getIPAActual() {
-		TypeParser parser = new TypeParser();
+		MorphemeParser parser = new MorphemeParser();
 		IPATranscript ipaActual = getAlignedWord().getIPAActual();
 		IPATranscript[] morphemes = ipaActual == null ? new IPATranscript[0] : parser.parseIPA(getAlignedWord().getIPAActual());
 		return (getMorphemeIdx() >= 0 && getMorphemeIdx() < morphemes.length
@@ -67,7 +67,7 @@ public class AlignedType {
 	}
 
 	public TierString getNotes() {
-		TypeParser parser = new TypeParser();
+		MorphemeParser parser = new MorphemeParser();
 		TierString note = getAlignedWord().getNotes();
 		TierString[] morphemes = note == null ? new TierString[0] : parser.parseTier(getAlignedWord().getNotes());
 		return (getMorphemeIdx() >= 0 && getMorphemeIdx() < morphemes.length
@@ -76,7 +76,7 @@ public class AlignedType {
 	}
 
 	public TierString getUserTier(String tierName) {
-		TypeParser parser = new TypeParser();
+		MorphemeParser parser = new MorphemeParser();
 		TierString tier = (TierString)getAlignedWord().getTier(tierName);
 		TierString[] morphemes = tier == null ? new TierString[0] : parser.parseTier((TierString)getAlignedWord().getTier(tierName));
 		return (getMorphemeIdx() >= 0 && getMorphemeIdx() < morphemes.length

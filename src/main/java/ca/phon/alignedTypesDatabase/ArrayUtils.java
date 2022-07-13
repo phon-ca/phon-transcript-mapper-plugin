@@ -1,4 +1,4 @@
-package ca.phon.session.alignedType;
+package ca.phon.alignedTypesDatabase;
 
 import java.lang.reflect.Array;
 import java.util.*;

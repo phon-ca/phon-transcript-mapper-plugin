@@ -1,4 +1,4 @@
-package ca.phon.session.alignedType;
+package ca.phon.session.alignedMorphemes;
 
 import ca.phon.ipa.*;
 import ca.phon.visitor.VisitorAdapter;
@@ -6,7 +6,7 @@ import ca.phon.visitor.annotation.Visits;
 
 import java.util.*;
 
-public class IPATypeVisitor extends VisitorAdapter<IPAElement> {
+public class IPAMorphemeVisitor extends VisitorAdapter<IPAElement> {
 
 	private List<IPATranscript> morphemeList = new ArrayList<>();
 

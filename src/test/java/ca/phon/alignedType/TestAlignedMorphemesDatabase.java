@@ -10,7 +10,7 @@ import java.io.*;
 import java.util.*;
 
 @RunWith(JUnit4.class)
-public class TestAlignedTypesDatabase {
+public class TestAlignedMorphemesDatabase {
 
 	private final static String CSV_NAME = "orthoTypeMean.txt";
 

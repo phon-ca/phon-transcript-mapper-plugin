@@ -1,7 +1,7 @@
 package ca.phon.plugin.typeMap;
 
 import ca.phon.session.SystemTierType;
-import ca.phon.session.alignedType.*;
+import ca.phon.session.alignedMorphemes.*;
 
 import javax.swing.table.AbstractTableModel;
 
@@ -9,7 +9,7 @@ public class AlignedTypeTableModel extends AbstractTableModel {
 
 	private String[] tiers;
 
-	private AlignedTypes alignedTypes;
+	private AlignedMorphemes alignedMorphemes;
 
 	public AlignedTypeTableModel(String[] tiers) {
 		super();
@@ -28,7 +28,7 @@ public class AlignedTypeTableModel extends AbstractTableModel {
 
 	@Override
 	public int getRowCount() {
-		return alignedTypes.getMorphemeCount();
+		return alignedMorphemes.getMorphemeCount();
 	}
 
 	@Override
@@ -41,19 +41,19 @@ public class AlignedTypeTableModel extends AbstractTableModel {
 		String tierName = this.tiers[columnIndex];
 		SystemTierType systemTier = SystemTierType.tierFromString(tierName);
 
-		AlignedType alignedType = alignedTypes.getAlignedMorpheme(rowIndex);
+		AlignedMorpheme alignedMorpheme = alignedMorphemes.getAlignedMorpheme(rowIndex);
 		if(systemTier != null) {
 			switch (systemTier) {
 				case Orthography -> {
-					return (alignedType.getOrthography() != null ? alignedType.getOrthography() : "");
+					return (alignedMorpheme.getOrthography() != null ? alignedMorpheme.getOrthography() : "");
 				}
 
 				case IPATarget -> {
-					return (alignedType.getIPATarget() != null ? alignedType.getIPATarget() : "");
+					return (alignedMorpheme.getIPATarget() != null ? alignedMorpheme.getIPATarget() : "");
 				}
 
 				case IPAActual -> {
-					return (alignedType.getIPAActual() != null ? alignedType.getIPAActual() : "");
+					return (alignedMorpheme.getIPAActual() != null ? alignedMorpheme.getIPAActual() : "");
 				}
 
 				default -> {
@@ -61,7 +61,7 @@ public class AlignedTypeTableModel extends AbstractTableModel {
 				}
 			}
 		} else {
-			return (alignedType.getUserTier(tierName) != null ? alignedType.getUserTier(tierName) : "");
+			return (alignedMorpheme.getUserTier(tierName) != null ? alignedMorpheme.getUserTier(tierName) : "");
 		}
 	}
 

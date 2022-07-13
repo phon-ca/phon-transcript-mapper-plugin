@@ -7,7 +7,7 @@ import ca.phon.app.session.editor.view.common.*;
 import ca.phon.project.Project;
 import ca.phon.session.*;
 import ca.phon.session.Record;
-import ca.phon.session.alignedType.*;
+import ca.phon.session.alignedMorphemes.*;
 import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;
@@ -221,10 +221,10 @@ public class TranscriptMapperEditorView extends EditorView {
 				TypeMapNode wrdNode = new TypeMapNode(widx);
 				grpNode.addChild(' ', wrdNode);
 
-				AlignedTypes morphemes = wrd.getExtension(AlignedTypes.class);
+				AlignedMorphemes morphemes = wrd.getExtension(AlignedMorphemes.class);
 				if(morphemes != null) {
 					for(int midx = 0; midx < morphemes.getMorphemeCount(); midx++) {
-						AlignedType morpheme = morphemes.getAlignedMorpheme(midx);
+						AlignedMorpheme morpheme = morphemes.getAlignedMorpheme(midx);
 
 						Map<String, String> currentMorphemes = new HashMap<>();
 						for(String tierName:tierList) {
