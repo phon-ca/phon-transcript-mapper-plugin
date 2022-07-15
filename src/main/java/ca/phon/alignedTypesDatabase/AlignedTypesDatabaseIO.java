@@ -18,7 +18,7 @@ public class AlignedTypesDatabaseIO {
 	public final static String DB_EXT = ".atdb";
 
 	/** Default extension for compressed database files */
-	public final static String DBZ_EXT = ".atdb.zip";
+	public final static String DBZ_EXT = ".atdz";
 
 	private final static String INVALID_NAME_MSG = "Invalid file name, extension must be " + DB_EXT + " or " + DBZ_EXT;
 
