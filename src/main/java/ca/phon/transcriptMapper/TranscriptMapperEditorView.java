@@ -1,6 +1,6 @@
 package ca.phon.transcriptMapper;
 
-import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
+import ca.phon.alignedTypesDatabase.*;
 import ca.phon.app.log.LogUtil;
 import ca.phon.app.session.editor.*;
 import ca.phon.app.session.editor.view.common.*;
@@ -8,7 +8,10 @@ import ca.phon.project.Project;
 import ca.phon.session.*;
 import ca.phon.session.Record;
 import ca.phon.session.alignedMorphemes.*;
+import ca.phon.ui.DropDownButton;
+import ca.phon.ui.action.PhonUIAction;
 import ca.phon.ui.fonts.FontPreferences;
+import ca.phon.ui.menu.MenuBuilder;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;
 import org.jdesktop.swingx.JXTable;
@@ -28,6 +31,8 @@ import java.util.stream.Collectors;
  *
  */
 public class TranscriptMapperEditorView extends EditorView {
+
+	private JToolBar toolbar;
 
 	private JLabel keyLabel;
 
@@ -49,7 +54,8 @@ public class TranscriptMapperEditorView extends EditorView {
 
 	public final static String ICON = "blank";
 
-	private final static String PROJECT_DB_FILENAME = "__res/pluginData/transcriptMapper/db.bin";
+	private final static String PROJECT_DB_FILENAME = "__res/pluginData/transcriptMapper/typeMap" +
+			AlignedTypesDatabaseIO.DBZ_EXT;
 
 	private AlignedTypesDatabase projectDb;
 
@@ -88,6 +94,10 @@ public class TranscriptMapperEditorView extends EditorView {
 		return dbFile;
 	}
 
+	AlignedTypesDatabase getProjectDb() {
+		return this.projectDb;
+	}
+
 	private void loadProjectDbAsync(Runnable onFinish) {
 		final PhonTask task = PhonWorker.invokeOnNewWorker(this::loadProjectDb, onFinish, LogUtil::warning);
 		task.setName("Loading aligned morpheme database");
@@ -98,9 +108,9 @@ public class TranscriptMapperEditorView extends EditorView {
 		this.projectDb = new AlignedTypesDatabase();
 		final File projectDbFile = projectDbFile();
 		if(projectDbFile.exists()) {
-			try (ObjectInputStream oin = new ObjectInputStream(new FileInputStream(projectDbFile))) {
-				this.projectDb = (AlignedTypesDatabase) oin.readObject();
-			} catch (IOException | ClassNotFoundException e) {
+			try {
+				AlignedTypesDatabaseIO.readFromFile(projectDbFile);
+			} catch (IOException e) {
 				LogUtil.warning(e);
 			}
 		}
@@ -119,15 +129,39 @@ public class TranscriptMapperEditorView extends EditorView {
 			parentFolder.mkdirs();
 		}
 
-		try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(projectDbFile))) {
-			out.writeObject(this.projectDb);
-			out.flush();
+		try {
+			AlignedTypesDatabaseIO.writeToFile(this.projectDb, projectDbFile);
 		} catch (IOException e) {
 			LogUtil.severe(e);
 		}
 	}
 
+	private void setupToolbar() {
+		toolbar = new JToolBar();
+		add(toolbar, BorderLayout.NORTH);
+
+		final JPopupMenu dbMenu = new JPopupMenu("Database");
+		final MenuBuilder dbMenuBuilder = new MenuBuilder(dbMenu);
+		dbMenuBuilder.addItem(".", new ImportDatabaseAction(this));
+
+		PhonUIAction dbMenuAct = new PhonUIAction(this, "noop");
+		dbMenuAct.putValue(PhonUIAction.NAME, "Database");
+		dbMenuAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Show database menu");
+		dbMenuAct.putValue(PhonUIAction.SMALL_ICON, IconManager.getInstance().getIcon(ICON, IconSize.SMALL));
+		dbMenuAct.putValue(DropDownButton.ARROW_ICON_GAP, 0);
+		dbMenuAct.putValue(DropDownButton.ARROW_ICON_POSITION, SwingConstants.BOTTOM);
+		dbMenuAct.putValue(DropDownButton.BUTTON_POPUP, dbMenu);
+
+		DropDownButton dbBtn = new DropDownButton(dbMenuAct);
+		dbBtn.setOnlyPopup(true);
+
+		toolbar.add(dbBtn);
+	}
+
 	private void init() {
+		setLayout(new BorderLayout());
+		setupToolbar();
+
 		this.keyTierBox = new JComboBox<>();
 		this.keyTierBox.addItemListener(e -> {
 			updateFromCurrentState();
@@ -157,7 +191,6 @@ public class TranscriptMapperEditorView extends EditorView {
 		morphemesTable.setVisibleRowCount(10);
 		morphemeSelectionPanel.add(new JScrollPane(morphemesTable), new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, row));
 
-		setLayout(new BorderLayout());
 		add(new JScrollPane(morphemeSelectionPanel), BorderLayout.CENTER);
 	}
 
@@ -181,7 +214,7 @@ public class TranscriptMapperEditorView extends EditorView {
 			morphemesTableModel.fireTableDataChanged();
 	}
 
-	private void updateAfterDbLoad() {
+	void updateAfterDbLoad() {
 		if(this.projectDb == null) return;
 
 		this.keyTierBox.setModel(new DefaultComboBoxModel<>(this.projectDb.tierNames().toArray(new String[0])));
