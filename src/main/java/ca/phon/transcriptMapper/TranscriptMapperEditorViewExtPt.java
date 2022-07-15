@@ -1,4 +1,4 @@
-package ca.phon.tanscriptMapper;
+package ca.phon.transcriptMapper;
 
 import ca.phon.app.session.editor.*;
 import ca.phon.plugin.*;

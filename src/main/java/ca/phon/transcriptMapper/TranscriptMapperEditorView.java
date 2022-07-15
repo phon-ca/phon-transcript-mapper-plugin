@@ -1,4 +1,4 @@
-package ca.phon.tanscriptMapper;
+package ca.phon.transcriptMapper;
 
 import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
 import ca.phon.app.log.LogUtil;
@@ -49,7 +49,7 @@ public class TranscriptMapperEditorView extends EditorView {
 
 	public final static String ICON = "blank";
 
-	private final static String PROJECT_DB_FILENAME = "__res/typemap/db.bin";
+	private final static String PROJECT_DB_FILENAME = "__res/pluginData/transcriptMapper/db.bin";
 
 	private AlignedTypesDatabase projectDb;
 
@@ -59,9 +59,7 @@ public class TranscriptMapperEditorView extends EditorView {
 		super(editor);
 
 		init();
-		loadProjectDbAsync(() -> {
-			updateAfterDbLoad();
-		});
+		loadProjectDbAsync(this::updateAfterDbLoad);
 
 		setupEditorEvenListeners();
 	}
@@ -133,6 +131,8 @@ public class TranscriptMapperEditorView extends EditorView {
 		this.keyTierBox = new JComboBox<>();
 		this.keyTierBox.addItemListener(e -> {
 			updateFromCurrentState();
+			if(morphemesTableModel != null)
+				morphemesTableModel.fireTableStructureChanged();
 		});
 
 		morphemeSelectionPanel = new TierDataLayoutPanel();
@@ -252,7 +252,14 @@ public class TranscriptMapperEditorView extends EditorView {
 		return root;
 	}
 
+	/**
+	 * The list of tiers visible in the morpheme table
+	 *
+	 * @return list of tiers visible in the morpheme table
+	 *
+	 */
 	public List<String> getTiers() {
+		// use ordering and visibility from session
 		List<String> tierList = getEditor().getSession().getTierView()
 				.stream()
 				.filter(TierViewItem::isVisible)
