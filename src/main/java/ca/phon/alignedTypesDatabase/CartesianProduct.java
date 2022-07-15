@@ -115,7 +115,6 @@ public class CartesianProduct {
 
 		final T[] rowVals = (T[]) Array.newInstance(clazz, arrays.length);
 		while(currentVals[0] < maxVals[0]) {
-
 			for(int i = 0; i < arrays.length; i++) {
 				T[] colVals = arrays[i];
 

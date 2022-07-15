@@ -1,4 +1,4 @@
-package ca.phon.plugin.typeMap;
+package ca.phon.tanscriptMapper;
 
 import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
 import ca.phon.app.log.LogUtil;

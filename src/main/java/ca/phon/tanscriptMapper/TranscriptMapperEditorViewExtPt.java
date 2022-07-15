@@ -1,4 +1,4 @@
-package ca.phon.plugin.typeMap;
+package ca.phon.tanscriptMapper;
 
 import ca.phon.app.session.editor.*;
 import ca.phon.plugin.*;
