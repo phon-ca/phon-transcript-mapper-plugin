@@ -58,6 +58,7 @@ public class ImportCSVAction extends TranscriptMapperAction {
 				}
 			}
 		};
+		importTask.setName(DESC);
 
 		getView().getEditor().getStatusBar().watchTask(importTask);
 		PhonWorker.invokeOnNewWorker(importTask, () -> {

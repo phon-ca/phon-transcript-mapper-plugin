@@ -77,7 +77,9 @@ public class ImportDatabaseAction extends TranscriptMapperAction {
 				}
 			}
 		};
+		importTask.setName(DESC);
 
+		getView().getEditor().getStatusBar().watchTask(importTask);
 		PhonWorker.invokeOnNewWorker(importTask, () -> {
 			getView().saveProjectDbAsync(getView()::updateAfterDbLoad);
 		});
