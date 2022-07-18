@@ -35,7 +35,7 @@ public class ImportCSVAction extends TranscriptMapperAction {
 		props.setFileFilter(FileFilter.csvFilter);
 		props.setListener((e) -> {
 			if(e.getDialogResult() == NativeDialogEvent.OK_OPTION) {
-				final String filename = ((String[])e.getDialogData())[0];
+				final String filename = e.getDialogData().toString();
 				importDatabaseFromCSV(filename);
 			}
 		});
@@ -59,7 +59,10 @@ public class ImportCSVAction extends TranscriptMapperAction {
 			}
 		};
 
-		PhonWorker.invokeOnNewWorker(importTask, getView()::updateAfterDbLoad);
+		getView().getEditor().getStatusBar().watchTask(importTask);
+		PhonWorker.invokeOnNewWorker(importTask, () -> {
+			getView().saveProjectDbAsync(getView()::updateAfterDbLoad);
+		});
 	}
 
 }

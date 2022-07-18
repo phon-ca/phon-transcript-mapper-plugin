@@ -109,14 +109,14 @@ public class TranscriptMapperEditorView extends EditorView {
 		final File projectDbFile = projectDbFile();
 		if(projectDbFile.exists()) {
 			try {
-				AlignedTypesDatabaseIO.readFromFile(projectDbFile);
+				this.projectDb = AlignedTypesDatabaseIO.readFromFile(projectDbFile);
 			} catch (IOException e) {
 				LogUtil.warning(e);
 			}
 		}
 	}
 
-	private void saveProjectDbAsync(Runnable onFinish) {
+	void saveProjectDbAsync(Runnable onFinish) {
 		final PhonTask task = PhonWorker.invokeOnNewWorker(this::saveProjectDb, onFinish, LogUtil::warning);
 		task.setName("Saving aligned morpheme database");
 		getEditor().getStatusBar().watchTask(task);
@@ -143,7 +143,9 @@ public class TranscriptMapperEditorView extends EditorView {
 		final JPopupMenu dbMenu = new JPopupMenu("Database");
 		final MenuBuilder dbMenuBuilder = new MenuBuilder(dbMenu);
 		dbMenuBuilder.addItem(".", new ImportDatabaseAction(this));
+		dbMenuBuilder.addSeparator(".", "csv");
 		dbMenuBuilder.addItem(".", new ImportCSVAction(this));
+		dbMenuBuilder.addItem(".", new ExportCSVAction(this));
 
 		PhonUIAction dbMenuAct = new PhonUIAction(this, "noop");
 		dbMenuAct.putValue(PhonUIAction.NAME, "Database");
@@ -287,7 +289,26 @@ public class TranscriptMapperEditorView extends EditorView {
 	}
 
 	/**
-	 * The list of tiers visible in the morpheme table
+	 * Get the selected key tier (or Orthography)
+	 *
+	 * @return selected key tier
+	 */
+	public String keyTier() {
+		return (keyTierBox.getSelectedItem() != null ? keyTierBox.getSelectedItem().toString()
+				: SystemTierType.Orthography.getName());
+	}
+
+	/**
+	 * Set key tier, no action if key tier is not in list
+	 *
+	 * @param keyTier
+	 */
+	public void setKeyTier(String keyTier) {
+		keyTierBox.setSelectedItem(keyTier);
+	}
+
+	/**
+	 * The list of tiers visible in the morpheme table and key tier selector
 	 *
 	 * @return list of tiers visible in the morpheme table
 	 *

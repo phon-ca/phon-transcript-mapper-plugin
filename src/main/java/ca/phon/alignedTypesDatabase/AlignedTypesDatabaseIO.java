@@ -78,10 +78,10 @@ public class AlignedTypesDatabaseIO {
 				ZipEntry zipEntry = new ZipEntry(basename + DB_EXT);
 				zout.putNextEntry(zipEntry);
 
-				try(final ObjectOutputStream out = new ObjectOutputStream(zout)) {
-					out.writeObject(db);
-					out.flush();
-				}
+				final ObjectOutputStream out = new ObjectOutputStream(zout);
+				out.writeObject(db);
+				out.flush();
+
 				zout.closeEntry();
 			}
 		} else {
