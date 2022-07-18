@@ -420,7 +420,7 @@ public class AlignedTypesDatabase implements Serializable {
 
 			for(int j = i + 1; j < rowVals.length; j++) {
 				String v2= rowVals[j];
-				if(v2.trim().length() == 0) continue; // ignore empty tier values
+				if(v2 == null || v2.trim().length() == 0) continue; // ignore empty tier values
 				String t2 = tierNames[j];
 
 				retVal &= linkExists(t1, v1, t2, v2);

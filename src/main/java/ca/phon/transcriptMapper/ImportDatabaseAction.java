@@ -42,15 +42,15 @@ public class ImportDatabaseAction extends TranscriptMapperAction {
 		props.setCanChooseDirectories(true);
 		props.setCanCreateDirectories(false);
 		props.setAllowMultipleSelection(false);
-		String formatDesc = String.format("Transcript mapper database (%s, %s)", AlignedTypesDatabaseIO.DB_EXT,
+		String formatDesc = String.format("Transcript mapper database (%s;%s)", AlignedTypesDatabaseIO.DB_EXT,
 				AlignedTypesDatabaseIO.DBZ_EXT);
-		String extensions = String.format("%s, %s", AlignedTypesDatabaseIO.DB_EXT.substring(1),
+		String extensions = String.format("%s;%s", AlignedTypesDatabaseIO.DB_EXT.substring(1),
 				AlignedTypesDatabaseIO.DBZ_EXT.substring(1));
 		final FileFilter filter = new FileFilter(formatDesc, extensions);
 		props.setFileFilter(filter);
 		props.setListener((e) -> {
 			if(e.getDialogResult() == NativeDialogEvent.OK_OPTION) {
-				final String filename = ((String[])e.getDialogData())[0];
+				final String filename = e.getDialogData().toString();
 				importDatabaseFromFile(filename);
 			}
 		});
