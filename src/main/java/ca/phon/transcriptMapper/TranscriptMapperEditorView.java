@@ -143,6 +143,7 @@ public class TranscriptMapperEditorView extends EditorView {
 		final JPopupMenu dbMenu = new JPopupMenu("Database");
 		final MenuBuilder dbMenuBuilder = new MenuBuilder(dbMenu);
 		dbMenuBuilder.addItem(".", new ImportDatabaseAction(this));
+		dbMenuBuilder.addItem(".", new ImportCSVAction(this));
 
 		PhonUIAction dbMenuAct = new PhonUIAction(this, "noop");
 		dbMenuAct.putValue(PhonUIAction.NAME, "Database");
