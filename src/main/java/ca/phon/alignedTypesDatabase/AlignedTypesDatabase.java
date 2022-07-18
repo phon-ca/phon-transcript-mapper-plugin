@@ -161,6 +161,9 @@ public class AlignedTypesDatabase implements Serializable {
 		Optional<TernaryTreeNode<Collection<TypeEntry>>> typeNodeRefOpt = tree.findNode(type);
 		if(typeNodeRefOpt.isPresent()) {
 			final TernaryTreeNode<Collection<TypeEntry>> typeNodeRef = typeNodeRefOpt.get();
+			if(typeNodeRef.getValue() == null) {
+				System.out.println(String.format("%s, %s", tierName, type));
+			}
 			retVal.put(tierName, new String[]{type});
 			Optional<TypeEntry> entryOpt =
 					typeNodeRef.getValue().stream().filter((e) -> e.getTierName(tierDescriptionTree).equals(tierName)).findAny();

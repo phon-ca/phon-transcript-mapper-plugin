@@ -17,6 +17,7 @@ import ca.phon.worker.*;
 import org.jdesktop.swingx.JXTable;
 
 import javax.swing.*;
+import javax.swing.event.*;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.io.*;
@@ -155,10 +156,87 @@ public class TranscriptMapperEditorView extends EditorView {
 		dbMenuAct.putValue(DropDownButton.ARROW_ICON_POSITION, SwingConstants.BOTTOM);
 		dbMenuAct.putValue(DropDownButton.BUTTON_POPUP, dbMenu);
 
+		final JPopupMenu tiersMenu = new JPopupMenu("Tiers");
+		final MenuBuilder tiersMenuBuilder = new MenuBuilder(tiersMenu);
+		tiersMenu.addPopupMenuListener(new PopupMenuListener() {
+			@Override
+			public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+				tiersMenu.removeAll();
+				setupTiersMenu(tiersMenuBuilder);
+			}
+
+			@Override
+			public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+
+			}
+
+			@Override
+			public void popupMenuCanceled(PopupMenuEvent e) {
+
+			}
+		});
+
+		PhonUIAction tiersMenuAct = new PhonUIAction(this, "noop");
+		tiersMenuAct.putValue(PhonUIAction.NAME, "Tiers");
+		tiersMenuAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Show tiers menu");
+		tiersMenuAct.putValue(PhonUIAction.SMALL_ICON, IconManager.getInstance().getIcon(ICON, IconSize.SMALL));
+		tiersMenuAct.putValue(DropDownButton.ARROW_ICON_GAP, 0);
+		tiersMenuAct.putValue(DropDownButton.ARROW_ICON_POSITION, SwingConstants.BOTTOM);
+		tiersMenuAct.putValue(DropDownButton.BUTTON_POPUP, tiersMenu);
+
 		DropDownButton dbBtn = new DropDownButton(dbMenuAct);
 		dbBtn.setOnlyPopup(true);
 
+		DropDownButton tiersBtn = new DropDownButton(tiersMenuAct);
+		tiersBtn.setOnlyPopup(true);
+
 		toolbar.add(dbBtn);
+		toolbar.add(tiersBtn);
+	}
+
+	private void setupTiersMenu(MenuBuilder builder) {
+		final List<String> allTiers = allTiers();
+
+		final List<String> dbOnlyTiers = new ArrayList<>();
+		// tier visibility menu
+		for(String tierName:allTiers) {
+			if(sessionHasTier(tierName)) {
+				final PhonUIAction toggleTierVisibleAct = new PhonUIAction(this, "toggleTier", tierName);
+				toggleTierVisibleAct.putValue(PhonUIAction.NAME, tierName);
+				toggleTierVisibleAct.putValue(PhonUIAction.SHORT_DESCRIPTION, String.format("Toggle tier %s", tierName));
+				toggleTierVisibleAct.putValue(PhonUIAction.SELECTED_KEY, dbTierVisible(tierName));
+				final JCheckBoxMenuItem toggleTierItem = new JCheckBoxMenuItem(toggleTierVisibleAct);
+				toggleTierItem.setEnabled(sessionTierVisible(tierName));
+				builder.addItem(".", toggleTierItem);
+			} else {
+				dbOnlyTiers.add(tierName);
+			}
+		}
+
+		if(dbOnlyTiers.size() > 0) {
+			builder.addSeparator(".", "create_tiers");
+			final String missingTiersMsg = String.format("<html><body><div style='background: #f3ca4f; " +
+					"border: 1px solid gray; border-radius: 10; padding: 5'>The database contains %d tier(s) " +
+					"not present in the session<div></body></html>", dbOnlyTiers.size());
+			final JMenuItem msgItem = new JMenuItem(missingTiersMsg);
+			msgItem.setEnabled(false);
+			msgItem.setForeground(Color.black);
+			builder.addItem(".", msgItem);
+
+			for(String tierName:dbOnlyTiers) {
+				final PhonUIAction createTierAct = new PhonUIAction(this, "createTiers", List.of(tierName));
+				createTierAct.putValue(PhonUIAction.NAME, "Add tier: " + tierName);
+				createTierAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Add tier " + tierName + " to session");
+				builder.addItem(".", createTierAct);
+			}
+
+			if(dbOnlyTiers.size() > 1) {
+				final PhonUIAction createAllTiersAct = new PhonUIAction(this, "createTiers", dbOnlyTiers);
+				createAllTiersAct.putValue(PhonUIAction.NAME, "Add all missing tiers");
+				createAllTiersAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Add all database tiers missing from session");
+				builder.addItem(".", createAllTiersAct);
+			}
+		}
 	}
 
 	private void init() {
@@ -246,7 +324,7 @@ public class TranscriptMapperEditorView extends EditorView {
 	private TypeMapNode stateFromRecord(Record record) {
 		TypeMapNode root = new TypeMapNode(-1);
 
-		List<String> tierList = getTiers();
+		List<String> tierList = getVisibleTiers();
 
 		for(int gidx = 0; gidx < record.numberOfGroups(); gidx++) {
 			Group grp = record.getGroup(gidx);
@@ -308,12 +386,84 @@ public class TranscriptMapperEditorView extends EditorView {
 	}
 
 	/**
+	 * Set of all aligned tiers in both the record and the database
+	 *
+	 * @return list of all tiers
+	 */
+	public List<String> allTiers() {
+		Set<String> tierSet = new LinkedHashSet<>();
+		tierSet.addAll(sessionGroupedTiers());
+		tierSet.addAll(this.projectDb.tierNames());
+		return tierSet.stream().collect(Collectors.toList());
+	}
+
+	private boolean sessionHasTier(String tierName) {
+		SystemTierType systermTier = SystemTierType.tierFromString(tierName);
+		if(systermTier != null) {
+			return systermTier.isGrouped();
+		} else {
+			for (TierDescription td : getEditor().getSession().getUserTiers()) {
+				if(td.getName().equals(tierName)) return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean sessionTierVisible(String tierName) {
+		Optional<TierViewItem> tviOpt =
+				getEditor().getSession().getTierView().stream().filter(tvi -> tvi.getTierName().equals(tierName)).findAny();
+		if(tviOpt.isPresent()) {
+			return tviOpt.get().isVisible();
+		} else {
+			return false;
+		}
+	}
+
+	private boolean dbTierVisible(String tierName) {
+		Optional<TierInfo> tierInfoOpt =
+				this.projectDb.getTierInfo().stream().filter(ti -> ti.getTierName().equals(tierName)).findAny();
+		if(tierInfoOpt.isPresent()) {
+			return tierInfoOpt.get().isVisible();
+		} else {
+			return false;
+		}
+	}
+
+	private boolean isGroupedTier(TierViewItem tvi) {
+		SystemTierType systemTier = SystemTierType.tierFromString(tvi.getTierName());
+		if(systemTier != null) {
+			return systemTier.isGrouped();
+		} else {
+			for(TierDescription td:getEditor().getSession().getUserTiers()) {
+				if (td.getName().equals(tvi.getTierName())) {
+					return td.isGrouped();
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Set of all aligned tiers in the session
+	 *
+	 * @return all aligned (grouped) tiers in session
+	 */
+	public List<String> sessionGroupedTiers() {
+		List<String> tierList = getEditor().getSession().getTierView()
+				.stream()
+				.filter(this::isGroupedTier)
+				.map(TierViewItem::getTierName)
+				.collect(Collectors.toList());
+		return tierList;
+	}
+
+	/**
 	 * The list of tiers visible in the morpheme table and key tier selector
 	 *
 	 * @return list of tiers visible in the morpheme table
 	 *
 	 */
-	public List<String> getTiers() {
+	public List<String> getVisibleTiers() {
 		// use ordering and visibility from session
 		List<String> tierList = getEditor().getSession().getTierView()
 				.stream()
@@ -348,17 +498,17 @@ public class TranscriptMapperEditorView extends EditorView {
 
 		@Override
 		public int getColumnCount() {
-			return getTiers().size();
+			return getVisibleTiers().size();
 		}
 
 		public String getColumnName(int colIdx) {
-			return getTiers().get(colIdx);
+			return getVisibleTiers().get(colIdx);
 		}
 
 		@Override
 		public Object getValueAt(int rowIndex, int columnIndex) {
 			if(currentState == null) return "";
-			List<String> tierNames = getTiers();
+			List<String> tierNames = getVisibleTiers();
 			TypeMapNode leafNode = currentState.getLeaves().get(rowIndex);
 			String tierName = tierNames.get(columnIndex);
 			return leafNode.getMorpheme(tierName);
