@@ -565,9 +565,9 @@ public class TranscriptMapperEditorView extends EditorView {
 		int offset = 0;
 		for(int gidx = 0; gidx < this.currentState.childCount(); gidx++) {
 			TypeMapNode groupNode = this.currentState.getChild(gidx);
-			if(row < offset + groupNode.childCount())
+			if(row < offset + groupNode.getLeafCount())
 				return gidx;
-			offset += groupNode.childCount();
+			offset += groupNode.getLeafCount();
 		}
 		return -1;
 	}
