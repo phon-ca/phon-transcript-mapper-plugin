@@ -8,7 +8,7 @@ import ca.phon.project.Project;
 import ca.phon.session.*;
 import ca.phon.session.Record;
 import ca.phon.session.alignedMorphemes.*;
-import ca.phon.ui.DropDownButton;
+import ca.phon.ui.*;
 import ca.phon.ui.action.PhonUIAction;
 import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.menu.MenuBuilder;
@@ -18,7 +18,7 @@ import org.jdesktop.swingx.JXTable;
 
 import javax.swing.*;
 import javax.swing.event.*;
-import javax.swing.table.AbstractTableModel;
+import javax.swing.table.*;
 import java.awt.*;
 import java.io.*;
 import java.util.*;
@@ -254,6 +254,7 @@ public class TranscriptMapperEditorView extends EditorView {
 
 		int row = 0;
 		keyLabel = new JLabel("Key tier");
+		keyLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 		keyLabel.setFont(FontPreferences.getTitleFont());
 		morphemeSelectionPanel.add(keyLabel, new TierDataConstraint(TierDataConstraint.TIER_LABEL_COLUMN, row));
 		morphemeSelectionPanel.add(keyTierBox, new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, row));
@@ -263,12 +264,26 @@ public class TranscriptMapperEditorView extends EditorView {
 		morphemeSelectionPanel.add(sep, new TierDataConstraint(TierDataConstraint.FULL_TIER_COLUMN, row));
 
 		++row;
-		morphemesLabel = new JLabel("Morphemes");
+		morphemesLabel = new JLabel("Words/Morphemes");
+		morphemesLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 		morphemesLabel.setFont(FontPreferences.getTitleFont());
 		morphemeSelectionPanel.add(morphemesLabel, new TierDataConstraint(TierDataConstraint.TIER_LABEL_COLUMN, row));
 
 		morphemesTableModel = new MorphemesTableModel();
-		morphemesTable = new JXTable(morphemesTableModel);
+		morphemesTable = new JXTable(morphemesTableModel) {
+			public Component prepareRenderer(TableCellRenderer renderer, int row, int column)
+			{
+				Component c = super.prepareRenderer(renderer, row, column);
+
+				//  Alternate row color
+
+				if (!isRowSelected(row))
+					c.setBackground(tableRowToGroupIndex(row) % 2 == 0 ? getBackground() : PhonGuiConstants.PHON_UI_STRIP_COLOR);
+
+				return c;
+			}
+		};
+		morphemesTable.setSortable(false);
 		morphemesTable.setVisibleRowCount(10);
 		morphemeSelectionPanel.add(new JScrollPane(morphemesTable), new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, row));
 
@@ -455,6 +470,25 @@ public class TranscriptMapperEditorView extends EditorView {
 				.map(TierViewItem::getTierName)
 				.collect(Collectors.toList());
 		return tierList;
+	}
+
+	/**
+	 * Determine group index from morpheme table row
+	 *
+	 * @param row
+	 *
+	 * @return group index for provided row
+	 */
+	public int tableRowToGroupIndex(int row) {
+		if(this.currentState == null) return -1;
+		int offset = 0;
+		for(int gidx = 0; gidx < this.currentState.childCount(); gidx++) {
+			TypeMapNode groupNode = this.currentState.getChild(gidx);
+			if(row < offset + groupNode.childCount())
+				return gidx;
+			offset += groupNode.childCount();
+		}
+		return -1;
 	}
 
 	/**
