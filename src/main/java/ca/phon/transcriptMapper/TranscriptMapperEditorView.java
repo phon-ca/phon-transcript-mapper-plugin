@@ -21,6 +21,7 @@ import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.table.*;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.io.*;
 import java.util.*;
 import java.util.List;
@@ -146,6 +147,7 @@ public class TranscriptMapperEditorView extends EditorView {
 
 	private void setupToolbar() {
 		toolbar = new JToolBar();
+		toolbar.setFloatable(false);
 		add(toolbar, BorderLayout.NORTH);
 
 		final JPopupMenu dbMenu = new JPopupMenu("Database");
@@ -286,6 +288,13 @@ public class TranscriptMapperEditorView extends EditorView {
 		morphemesLabel.setFont(FontPreferences.getTitleFont());
 		morphemeSelectionPanel.add(morphemesLabel, new TierDataConstraint(TierDataConstraint.TIER_LABEL_COLUMN, row));
 
+		setupMorphemesTable();
+		morphemeSelectionPanel.add(new JScrollPane(morphemesTable), new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, row));
+
+		add(new JScrollPane(morphemeSelectionPanel), BorderLayout.CENTER);
+	}
+
+	private void setupMorphemesTable() {
 		morphemesTableModel = new MorphemesTableModel();
 		morphemesTable = new JXTable(morphemesTableModel) {
 			public Component prepareRenderer(TableCellRenderer renderer, int row, int column)
@@ -298,10 +307,18 @@ public class TranscriptMapperEditorView extends EditorView {
 			}
 		};
 		morphemesTable.setSortable(false);
+		morphemesTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		morphemesTable.setVisibleRowCount(10);
-		morphemeSelectionPanel.add(new JScrollPane(morphemesTable), new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, row));
 
-		add(new JScrollPane(morphemeSelectionPanel), BorderLayout.CENTER);
+		InputMap inputMap = morphemesTable.getInputMap(JComponent.WHEN_FOCUSED);
+		ActionMap actionMap = morphemesTable.getActionMap();
+
+		final PhonUIAction showMorphemeMenuAction = new PhonUIAction(this, "showMorphemeMenu");
+		showMorphemeMenuAction.putValue(PhonUIAction.NAME, "Show menu for selected word/morpheme");
+		final String morphemeMenuActId = "show_morpheme_menu";
+		actionMap.put(morphemeMenuActId, showMorphemeMenuAction);
+		final KeyStroke showMorphemeMenuKs = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
+		inputMap.put(showMorphemeMenuKs, morphemeMenuActId);
 	}
 
 	private void setState(TypeMapNode state) {
@@ -381,8 +398,10 @@ public class TranscriptMapperEditorView extends EditorView {
 	private TypeMapNode stateFromRecord(Record record) {
 		TypeMapNode root = new TypeMapNode(-1);
 
-		List<String> tierList = getVisibleTiers();
+		final String keyTier = keyTier();
+		if(keyTier == null) return root;
 
+		List<String> tierList = getVisibleTiers();
 		for(int gidx = 0; gidx < record.numberOfGroups(); gidx++) {
 			Group grp = record.getGroup(gidx);
 			TypeMapNode grpNode = new TypeMapNode(gidx);
@@ -402,7 +421,7 @@ public class TranscriptMapperEditorView extends EditorView {
 							currentMorphemes.put(tierName, morpheme.getMorphemeText(tierName));
 						}
 						Map<String, String[]> alignedTypes =
-								this.projectDb.alignedTypesForTier(keyTier(), currentMorphemes.get(keyTierBox.getSelectedItem()));
+								this.projectDb.alignedTypesForTier(keyTier, currentMorphemes.get(keyTier), tierList);
 
 						TypeMapNode morphemeNode = new TypeMapNode(midx, currentMorphemes, alignedTypes);
 
@@ -474,6 +493,35 @@ public class TranscriptMapperEditorView extends EditorView {
 			getEditor().getUndoSupport().postEdit(tierEdit);
 		}
 		getEditor().getUndoSupport().endUpdate();
+	}
+
+	/**
+	 * Show morpheme menu for selected word/morpheme in table
+	 *
+	 * @param pae
+	 */
+	public void showMorphemeMenu(PhonActionEvent pae) {
+		JPopupMenu popupMenu = new JPopupMenu();
+
+		if(this.currentState == null) return;
+
+		final String keyTier = keyTier();
+		if(keyTier == null) return;
+
+		final int selectedRow = this.morphemesTable.getSelectedRow();
+		final TypeMapNode leafNode = this.currentState.getLeaves().get(selectedRow);
+
+		final String morpheme = leafNode.getMorpheme(keyTier);
+		final Map<String, String[]> alignmentOptions = leafNode.getAlignedMorphemeOptions();
+		System.out.println(alignmentOptions);
+
+		final String[][] arrays = new String[alignmentOptions.size()][];
+		arrays[0] = new String[]{morpheme};
+		int idx = 1;
+		for(var entry:alignmentOptions.entrySet()) {
+
+		}
+
 	}
 
 	/**

@@ -162,6 +162,20 @@ public class AlignedTypesDatabase implements Serializable {
 	 * @return a map of aligned tier values for the given tier and type
 	 */
 	public Map<String, String[]> alignedTypesForTier(String tierName, String type) {
+		return alignedTypesForTier(tierName, type, List.of());
+	}
+
+	/**
+	 * Return a set of aligned types given a tier name and type
+	 * that exists for that tier.
+	 *
+	 * @param tierName
+	 * @param type
+	 * @param tierList
+	 *
+	 * @return a map of aligned tier values for the given tier and type
+	 */
+	public Map<String, String[]> alignedTypesForTier(String tierName, String type, List<String> tierList) {
 		Map<String, String[]> retVal = new LinkedHashMap<>();
 		if(tierName == null || type == null) return retVal;
 
@@ -176,7 +190,7 @@ public class AlignedTypesDatabase implements Serializable {
 					typeNodeRef.getValue().stream().filter((e) -> e.getTierName(tierDescriptionTree).equals(tierName)).findAny();
 			if(entryOpt.isPresent()) {
 				TypeEntry entry = entryOpt.get();
-				retVal = alignedTypesForEntry(entry);
+				retVal = alignedTypesForEntry(entry, tierList);
 			}
 		}
 
@@ -184,10 +198,16 @@ public class AlignedTypesDatabase implements Serializable {
 	}
 
 	private Map<String, String[]> alignedTypesForEntry(TypeEntry entry) {
+		return alignedTypesForEntry(entry, List.of());
+	}
+
+	private Map<String, String[]> alignedTypesForEntry(TypeEntry entry, List<String> tierList) {
 		Map<String, String[]> retVal = new LinkedHashMap<>();
 
 		for(TypeLinkedEntry linkedEntry:entry.getLinkedEntries()) {
 			String alignedTierName = linkedEntry.getTierName(tierDescriptionTree);
+			boolean includeTier = tierList.size() > 0 ? tierList.contains(alignedTierName) : true;
+			if(!includeTier) continue;
 			String[] alignedTierVals = new String[linkedEntry.getLinkedTierRefs(tree).size()];
 			int i = 0;
 			for(TernaryTreeNode<Collection<TypeEntry>> alignedEntry:linkedEntry.getLinkedTierRefs(tree)) {
@@ -417,7 +437,7 @@ public class AlignedTypesDatabase implements Serializable {
 		writer.flush();
 	}
 
-	protected Boolean includeInCartesianProduct(String[] rowVals) {
+	public Boolean includeInCartesianProduct(String[] rowVals) {
 		final String[] tierNames = tierNames().toArray(new String[0]);
 		if(rowVals.length != tierNames.length) return false;
 
