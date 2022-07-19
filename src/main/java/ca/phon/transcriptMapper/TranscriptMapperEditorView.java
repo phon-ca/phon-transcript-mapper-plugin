@@ -317,7 +317,7 @@ public class TranscriptMapperEditorView extends EditorView {
 	void updateAfterDbLoad() {
 		if(this.projectDb == null) return;
 
-		this.keyTierBox.setModel(new DefaultComboBoxModel<>(this.projectDb.tierNames().toArray(new String[0])));
+		this.keyTierBox.setModel(new DefaultComboBoxModel<>(getVisibleTiers().toArray(new String[0])));
 		this.keyTierBox.setSelectedItem(SystemTierType.Orthography.getName());
 
 		if(getEditor().currentRecord() != null) {
@@ -368,7 +368,7 @@ public class TranscriptMapperEditorView extends EditorView {
 							currentMorphemes.put(tierName, morpheme.getMorphemeText(tierName));
 						}
 						Map<String, String[]> alignedTypes =
-								this.projectDb.alignedTypesForTier(keyTierBox.getSelectedItem().toString(), currentMorphemes.get(keyTierBox.getSelectedItem()));
+								this.projectDb.alignedTypesForTier(keyTier(), currentMorphemes.get(keyTierBox.getSelectedItem()));
 
 						TypeMapNode morphemeNode = new TypeMapNode(midx, currentMorphemes, alignedTypes);
 

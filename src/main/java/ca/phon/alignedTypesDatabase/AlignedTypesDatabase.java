@@ -163,6 +163,7 @@ public class AlignedTypesDatabase implements Serializable {
 	 */
 	public Map<String, String[]> alignedTypesForTier(String tierName, String type) {
 		Map<String, String[]> retVal = new LinkedHashMap<>();
+		if(tierName == null || type == null) return retVal;
 
 		Optional<TernaryTreeNode<Collection<TypeEntry>>> typeNodeRefOpt = tree.findNode(type);
 		if(typeNodeRefOpt.isPresent()) {
