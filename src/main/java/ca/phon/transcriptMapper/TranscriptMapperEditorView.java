@@ -3,13 +3,14 @@ package ca.phon.transcriptMapper;
 import ca.phon.alignedTypesDatabase.*;
 import ca.phon.app.log.LogUtil;
 import ca.phon.app.session.editor.*;
+import ca.phon.app.session.editor.undo.AddTierEdit;
 import ca.phon.app.session.editor.view.common.*;
 import ca.phon.project.Project;
 import ca.phon.session.*;
 import ca.phon.session.Record;
 import ca.phon.session.alignedMorphemes.*;
 import ca.phon.ui.*;
-import ca.phon.ui.action.PhonUIAction;
+import ca.phon.ui.action.*;
 import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.menu.MenuBuilder;
 import ca.phon.util.icons.*;
@@ -77,6 +78,9 @@ public class TranscriptMapperEditorView extends EditorView {
 
 		EditorAction recordChangedAct = new DelegateEditorAction(this, "onRecordChanged");
 		getEditor().getEventManager().registerActionForEvent(EditorEventType.RECORD_CHANGED_EVT, recordChangedAct);
+
+		EditorAction tierViewChangeAct = new DelegateEditorAction(this, "onTierViewChanged");
+		getEditor().getEventManager().registerActionForEvent(EditorEventType.TIER_VIEW_CHANGED_EVT, tierViewChangeAct);
 	}
 
 	@RunOnEDT
@@ -88,6 +92,9 @@ public class TranscriptMapperEditorView extends EditorView {
 	public void onTierChanged(EditorEvent ee) {
 		updateStateAsync(this::updateFromCurrentState);
 	}
+
+	@RunOnEDT
+	public void onTierViewChanged(EditorEvent ee) { updateAfterDbLoad(); }
 
 	private File projectDbFile() {
 		final Project project = getEditor().getProject();
@@ -314,7 +321,11 @@ public class TranscriptMapperEditorView extends EditorView {
 		this.keyTierBox.setSelectedItem(SystemTierType.Orthography.getName());
 
 		if(getEditor().currentRecord() != null) {
-			updateStateAsync(this::updateFromCurrentState);
+			updateStateAsync(() -> {
+				if(this.morphemesTableModel != null)
+					this.morphemesTableModel.fireTableStructureChanged();
+				this.updateFromCurrentState();
+			});
 		}
 	}
 
@@ -410,8 +421,25 @@ public class TranscriptMapperEditorView extends EditorView {
 			tierInfo.setVisible(!tierInfo.isVisible());
 
 			updateAfterDbLoad();
-			this.morphemesTableModel.fireTableStructureChanged();
 		}
+	}
+
+	/**
+	 * Create the given list of tiers in the session
+	 *
+	 * @param pae
+	 */
+	public void createTiers(PhonActionEvent pae) {
+		final List<String> tierList = (List<String>) pae.getData();
+		final SessionFactory factory = SessionFactory.newFactory();
+		getEditor().getUndoSupport().beginUpdate();
+		for(String tierName:tierList) {
+			final AddTierEdit tierEdit = new AddTierEdit(getEditor(),
+					factory.createTierDescription(tierName, true, TierString.class),
+					factory.createTierViewItem(tierName));
+			getEditor().getUndoSupport().postEdit(tierEdit);
+		}
+		getEditor().getUndoSupport().endUpdate();
 	}
 
 	/**
