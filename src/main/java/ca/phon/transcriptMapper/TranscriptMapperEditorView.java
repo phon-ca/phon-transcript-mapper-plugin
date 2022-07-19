@@ -150,10 +150,7 @@ public class TranscriptMapperEditorView extends EditorView {
 
 		final JPopupMenu dbMenu = new JPopupMenu("Database");
 		final MenuBuilder dbMenuBuilder = new MenuBuilder(dbMenu);
-		dbMenuBuilder.addItem(".", new ImportDatabaseAction(this));
-		dbMenuBuilder.addSeparator(".", "csv");
-		dbMenuBuilder.addItem(".", new ImportCSVAction(this));
-		dbMenuBuilder.addItem(".", new ExportCSVAction(this));
+		setupDatabaseMenu(dbMenuBuilder);
 
 		PhonUIAction dbMenuAct = new PhonUIAction(this, "noop");
 		dbMenuAct.putValue(PhonUIAction.NAME, "Database");
@@ -201,6 +198,13 @@ public class TranscriptMapperEditorView extends EditorView {
 		toolbar.add(tiersBtn);
 	}
 
+	private void setupDatabaseMenu(MenuBuilder builder) {
+		builder.addItem(".", new ImportDatabaseAction(this));
+		builder.addSeparator(".", "csv");
+		builder.addItem(".", new ImportCSVAction(this));
+		builder.addItem(".", new ExportCSVAction(this));
+	}
+
 	private void setupTiersMenu(MenuBuilder builder) {
 		final List<String> allTiers = allTiers();
 
@@ -213,7 +217,13 @@ public class TranscriptMapperEditorView extends EditorView {
 				toggleTierVisibleAct.putValue(PhonUIAction.SHORT_DESCRIPTION, String.format("Toggle tier %s", tierName));
 				toggleTierVisibleAct.putValue(PhonUIAction.SELECTED_KEY, dbTierVisible(tierName));
 				final JCheckBoxMenuItem toggleTierItem = new JCheckBoxMenuItem(toggleTierVisibleAct);
-				toggleTierItem.setEnabled(sessionTierVisible(tierName));
+				if(!isGroupedTier(tierName)) {
+					toggleTierItem.setEnabled(false);
+					toggleTierItem.setToolTipText(String.format("%s is not a group tier", tierName));
+				} else if(!sessionTierVisible(tierName)) {
+					toggleTierItem.setEnabled(false);
+					toggleTierItem.setToolTipText(String.format("%s is not visible in record data", tierName));
+				}
 				builder.addItem(".", toggleTierItem);
 			} else {
 				dbOnlyTiers.add(tierName);
@@ -341,7 +351,31 @@ public class TranscriptMapperEditorView extends EditorView {
 
 	@Override
 	public JMenu getMenu() {
-		return new JMenu();
+		JMenu retVal = new JMenu();
+		MenuBuilder builder = new MenuBuilder(retVal);
+		setupDatabaseMenu(builder);
+
+		builder.addSeparator(".", "tiers");
+		final JMenu tiersMenu = builder.addMenu(".", "Tiers");
+		tiersMenu.addMenuListener(new MenuListener() {
+			@Override
+			public void menuSelected(MenuEvent e) {
+				tiersMenu.removeAll();
+				setupTiersMenu(new MenuBuilder(tiersMenu));
+			}
+
+			@Override
+			public void menuDeselected(MenuEvent e) {
+
+			}
+
+			@Override
+			public void menuCanceled(MenuEvent e) {
+
+			}
+		});
+
+		return retVal;
 	}
 
 	private TypeMapNode stateFromRecord(Record record) {
@@ -420,7 +454,7 @@ public class TranscriptMapperEditorView extends EditorView {
 			TierInfo tierInfo = tierInfoOpt.get();
 			tierInfo.setVisible(!tierInfo.isVisible());
 
-			updateAfterDbLoad();
+			saveProjectDbAsync(this::updateAfterDbLoad);
 		}
 	}
 
@@ -486,18 +520,23 @@ public class TranscriptMapperEditorView extends EditorView {
 		}
 	}
 
-	private boolean isGroupedTier(TierViewItem tvi) {
-		SystemTierType systemTier = SystemTierType.tierFromString(tvi.getTierName());
+	private boolean isGroupedTier(String tierName) {
+		SystemTierType systemTier = SystemTierType.tierFromString(tierName);
 		if(systemTier != null) {
 			return systemTier.isGrouped();
 		} else {
 			for(TierDescription td:getEditor().getSession().getUserTiers()) {
-				if (td.getName().equals(tvi.getTierName())) {
+				if (td.getName().equals(tierName)) {
 					return td.isGrouped();
 				}
 			}
 		}
 		return false;
+
+	}
+
+	private boolean isGroupedTier(TierViewItem tvi) {
+		return isGroupedTier(tvi.getTierName());
 	}
 
 	/**
