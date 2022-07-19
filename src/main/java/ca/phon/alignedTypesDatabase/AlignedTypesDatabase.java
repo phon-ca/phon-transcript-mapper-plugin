@@ -109,6 +109,12 @@ public class AlignedTypesDatabase implements Serializable {
 		}
 	}
 
+	/**
+	 * Add aligned types to the database.  This method will add each type as a key in the database
+	 * and setup tier links as necessary.
+	 *
+	 * @param alignedTypes a map of tierName -> types which will be added to the database
+	 */
 	public void addAlignedTypes(Map<String, String> alignedTypes) {
 		for(var entry:alignedTypes.entrySet()) {
 			addTypeForTier(entry.getKey(), entry.getValue());

@@ -274,12 +274,9 @@ public class TranscriptMapperEditorView extends EditorView {
 			public Component prepareRenderer(TableCellRenderer renderer, int row, int column)
 			{
 				Component c = super.prepareRenderer(renderer, row, column);
-
-				//  Alternate row color
-
+				// alternate row color based on group index
 				if (!isRowSelected(row))
 					c.setBackground(tableRowToGroupIndex(row) % 2 == 0 ? getBackground() : PhonGuiConstants.PHON_UI_STRIP_COLOR);
-
 				return c;
 			}
 		};
@@ -401,6 +398,23 @@ public class TranscriptMapperEditorView extends EditorView {
 	}
 
 	/**
+	 * Toggle database visibility of specified tier
+	 *
+	 * @param tierName
+	 */
+	public void toggleTier(String tierName) {
+		Optional<TierInfo> tierInfoOpt =
+				this.projectDb.getTierInfo().stream().filter(ti -> ti.getTierName().equals(tierName)).findAny();
+		if(tierInfoOpt.isPresent()) {
+			TierInfo tierInfo = tierInfoOpt.get();
+			tierInfo.setVisible(!tierInfo.isVisible());
+
+			updateAfterDbLoad();
+			this.morphemesTableModel.fireTableStructureChanged();
+		}
+	}
+
+	/**
 	 * Set of all aligned tiers in both the record and the database
 	 *
 	 * @return list of all tiers
@@ -515,7 +529,12 @@ public class TranscriptMapperEditorView extends EditorView {
 			tierList.remove(keyTierBox.getSelectedItem());
 			tierList.add(0, keyTierBox.getSelectedItem().toString());
 		}
-		return tierList;
+		// filter based on database visibility
+		if(this.projectDb != null) {
+			return tierList.stream().filter(this::dbTierVisible).collect(Collectors.toList());
+		} else {
+			return tierList;
+		}
 	}
 
 	private class MorphemesTableModel extends AbstractTableModel {
@@ -544,8 +563,8 @@ public class TranscriptMapperEditorView extends EditorView {
 			if(currentState == null) return "";
 			List<String> tierNames = getVisibleTiers();
 			TypeMapNode leafNode = currentState.getLeaves().get(rowIndex);
-			String tierName = tierNames.get(columnIndex);
-			return leafNode.getMorpheme(tierName);
+			String tierName = (columnIndex < tierNames.size() ? tierNames.get(columnIndex) : null);
+			return (tierName == null ? "" : leafNode.getMorpheme(tierName));
 		}
 
 	}
