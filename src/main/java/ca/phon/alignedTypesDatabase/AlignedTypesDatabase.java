@@ -428,7 +428,7 @@ public class AlignedTypesDatabase implements Serializable {
 				}
 
 				String[][] filteredCartesianProduct =
-						CartesianProduct.stringArrayProduct(typeOpts, this::includeInCartesianProduct);
+						CartesianProduct.stringArrayProduct(typeOpts, (set) -> this.includeInCartesianProduct(tierNames().toArray(new String[0]), set));
 				for(String[] row:filteredCartesianProduct) {
 					writer.writeNext(row);
 				}
@@ -437,15 +437,14 @@ public class AlignedTypesDatabase implements Serializable {
 		writer.flush();
 	}
 
-	public Boolean includeInCartesianProduct(String[] rowVals) {
-		final String[] tierNames = tierNames().toArray(new String[0]);
+	public Boolean includeInCartesianProduct(String tierNames[], String[] rowVals) {
 		if(rowVals.length != tierNames.length) return false;
 
 		boolean retVal = true;
 		// only include row if all values have links between them
 		for(int i = 1; i < rowVals.length-1; i++) {
 			String v1 = rowVals[i];
-			if(v1.trim().length() == 0) continue; // ignore empty tier values
+			if(v1 == null || v1.trim().length() == 0) continue; // ignore empty tier values
 			String t1 = tierNames[i];
 
 			for(int j = i + 1; j < rowVals.length; j++) {

@@ -264,9 +264,9 @@ public class TranscriptMapperEditorView extends EditorView {
 
 		this.keyTierBox = new JComboBox<>();
 		this.keyTierBox.addItemListener(e -> {
-			updateFromCurrentState();
-			if(morphemesTableModel != null)
-				morphemesTableModel.fireTableStructureChanged();
+			updateStateAsync(this::updateFromCurrentState);
+			if(this.morphemesTableModel != null)
+				this.morphemesTableModel.fireTableStructureChanged();
 		});
 
 		morphemeSelectionPanel = new TierDataLayoutPanel();
@@ -501,7 +501,8 @@ public class TranscriptMapperEditorView extends EditorView {
 	 * @param pae
 	 */
 	public void showMorphemeMenu(PhonActionEvent pae) {
-		JPopupMenu popupMenu = new JPopupMenu();
+		final JPopupMenu popupMenu = new JPopupMenu();
+		final MenuBuilder builder = new MenuBuilder(popupMenu);
 
 		if(this.currentState == null) return;
 
@@ -513,15 +514,30 @@ public class TranscriptMapperEditorView extends EditorView {
 
 		final String morpheme = leafNode.getMorpheme(keyTier);
 		final Map<String, String[]> alignmentOptions = leafNode.getAlignedMorphemeOptions();
-		System.out.println(alignmentOptions);
 
-		final String[][] arrays = new String[alignmentOptions.size()][];
-		arrays[0] = new String[]{morpheme};
-		int idx = 1;
-		for(var entry:alignmentOptions.entrySet()) {
+		final List<String> visibleTiers = getVisibleTiers();
+		final String[][] arrays = new String[visibleTiers.size()][];
 
+		int idx = 0;
+		for(String tierName:visibleTiers) {
+			if(keyTier.equals(tierName))
+				arrays[idx++] = new String[]{morpheme};
+			else
+				arrays[idx++] = (alignmentOptions.containsKey(tierName) ? alignmentOptions.get(tierName) : new String[0]);
 		}
 
+		final String[][] product = CartesianProduct.stringArrayProduct(arrays,
+				(set) -> projectDb.includeInCartesianProduct(visibleTiers.toArray(new String[0]), set));
+		for(int i = 0; i < product.length; i++) {
+			final String optionTxt = Arrays.toString(product[i]);
+			builder.addItem(".", optionTxt);
+		}
+
+		int ypos = 0;
+		for(int i = 0; i <= selectedRow; i++) {
+			ypos += morphemesTable.getRowHeight(i);
+		}
+		popupMenu.show(this.morphemesTable, 0, ypos);
 	}
 
 	/**
