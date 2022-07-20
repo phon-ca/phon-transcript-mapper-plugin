@@ -310,6 +310,23 @@ public class AlignedTypesDatabase implements Serializable {
 		}
 	}
 
+	public boolean typeExists(String type) {
+		return this.tree.containsKey(type);
+	}
+
+	public boolean typeExistsInTier(String type, String tier) {
+		Optional<TernaryTreeNode<Collection<TypeEntry>>> treeNodeOpt = this.tree.findNode(type);
+		if(treeNodeOpt.isPresent()) {
+			TernaryTreeNode<Collection<TypeEntry>> treeNode = treeNodeOpt.get();
+			Optional<TypeEntry> typeEntryForTier = treeNode.getValue().stream()
+					.filter(e -> e.getTierName(this.tierDescriptionTree).equals(tier))
+					.findAny();
+			return typeEntryForTier.isPresent();
+		} else {
+			return false;
+		}
+	}
+
 	/**
 	 * Is there a link between the two tier values
 	 *

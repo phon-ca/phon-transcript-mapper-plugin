@@ -306,6 +306,7 @@ public class TranscriptMapperEditorView extends EditorView {
 				return c;
 			}
 		};
+		morphemesTable.setDefaultRenderer(Object.class, new MorphemeTableCellRenderer());
 		morphemesTable.setSortable(false);
 		morphemesTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		morphemesTable.setVisibleRowCount(10);
@@ -665,6 +666,33 @@ public class TranscriptMapperEditorView extends EditorView {
 			return tierList.stream().filter(this::dbTierVisible).collect(Collectors.toList());
 		} else {
 			return tierList;
+		}
+	}
+
+	private class MorphemeTableCellRenderer extends DefaultTableCellRenderer {
+		@Override
+		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+			JLabel retVal = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+			TypeMapNode leafNode = currentState.getLeaves().get(row);
+
+			String tier = getVisibleTiers().get(column);
+			String key = leafNode.getMorpheme(keyTier());
+			String morpheme = leafNode.getMorpheme(tier);
+
+			if(column == 0) {
+				// check that key exists in database
+				if(!getProjectDb().typeExistsInTier(key, keyTier())) {
+					retVal.setFont(retVal.getFont().deriveFont(Font.ITALIC));
+				}
+			} else {
+				// check that link exists to key
+				if(!getProjectDb().linkExists(keyTier(), key, tier, morpheme)) {
+					retVal.setFont(retVal.getFont().deriveFont(Font.ITALIC));
+				}
+			}
+
+			return retVal;
 		}
 	}
 
