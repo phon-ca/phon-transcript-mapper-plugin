@@ -3,26 +3,35 @@ package ca.phon.transcriptMapper;
 import ca.phon.alignedTypesDatabase.*;
 import ca.phon.app.log.LogUtil;
 import ca.phon.app.session.editor.*;
-import ca.phon.app.session.editor.undo.AddTierEdit;
+import ca.phon.app.session.editor.undo.*;
 import ca.phon.app.session.editor.view.common.*;
+import ca.phon.extensions.UnvalidatedValue;
+import ca.phon.ipa.*;
+import ca.phon.ipa.alignment.*;
+import ca.phon.orthography.Orthography;
+import ca.phon.orthography.parser.OrthographyParser;
 import ca.phon.project.Project;
 import ca.phon.session.*;
 import ca.phon.session.Record;
 import ca.phon.session.alignedMorphemes.*;
+import ca.phon.syllabifier.*;
 import ca.phon.ui.*;
 import ca.phon.ui.action.*;
 import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.menu.MenuBuilder;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;
+import org.apache.tools.ant.taskdefs.condition.Or;
 import org.jdesktop.swingx.JXTable;
 
 import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.table.*;
+import javax.swing.undo.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.*;
+import java.text.ParseException;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -394,6 +403,105 @@ public class TranscriptMapperEditorView extends EditorView {
 		});
 
 		return retVal;
+	}
+
+	private void updateRecord(int morphemeIdx, String[] tiers, String[] selectedTypes) {
+		getEditor().getUndoSupport().beginUpdate();
+		for(int i = 0; i < selectedTypes.length; i++) {
+			updateTier(morphemeIdx, tiers[i], selectedTypes[i]);
+		}
+		getEditor().getUndoSupport().endUpdate();
+	}
+
+	private void updateTier(int morphemeIdx, String tier, String selectedMorpheme) {
+		int gIdx = tableRowToGroupIndex(morphemeIdx);
+		int mIdx = 0;
+		for(int i = 0; i < gIdx; i++)
+			mIdx += currentState.getChild(i).getLeafCount();
+		StringBuilder builder = new StringBuilder();
+		TypeMapNode groupNode = this.currentState.getChild(gIdx);
+
+		for(int wIdx = 0; wIdx < groupNode.childCount(); wIdx++) {
+			if(wIdx > 0) builder.append(' ');
+			TypeMapNode wordNode = groupNode.getChild(wIdx);
+
+			for(int wmIdx = 0; wmIdx < wordNode.childCount(); wmIdx++) {
+				TypeMapNode morphemeNode = wordNode.getChild(wmIdx);
+				// append morpheme marker
+				if(mIdx > 0) builder.append(wordNode.getChildren().get(wmIdx).getObj1());
+				if(mIdx + wmIdx == morphemeIdx) {
+					builder.append(selectedMorpheme);
+				} else {
+					builder.append(morphemeNode.getMorpheme(tier));
+				}
+			}
+			mIdx += wordNode.childCount();
+		}
+
+		final Record currentRecord = getEditor().currentRecord();
+		final SystemTierType systemTier = SystemTierType.tierFromString(tier);
+		if(systemTier != null) {
+			switch(systemTier) {
+				case Orthography -> {
+					try {
+						final Orthography newOrtho = Orthography.parseOrthography(builder.toString());
+						final TierEdit<Orthography> edit =
+								new TierEdit<>(getEditor(), currentRecord.getOrthography(), gIdx, newOrtho);
+						getEditor().getUndoSupport().postEdit(edit);
+					} catch (ParseException e) {
+						LogUtil.warning(e);
+						final Orthography ortho = new Orthography();
+						final UnvalidatedValue uv = new UnvalidatedValue(builder.toString(), e);
+						ortho.putExtension(UnvalidatedValue.class, uv);
+						final TierEdit<Orthography> edit =
+								new TierEdit<>(getEditor(), currentRecord.getOrthography(), gIdx, ortho);
+						getEditor().getUndoSupport().postEdit(edit);
+					}
+				}
+
+				case IPATarget, IPAActual -> {
+					final Tier<IPATranscript> ipaTier = systemTier == SystemTierType.IPATarget
+							? currentRecord.getIPATarget()
+							: currentRecord.getIPAActual();
+					try {
+						final IPATranscript newIpa = IPATranscript.parseIPATranscript(builder.toString());
+						// update syllabification
+						Syllabifier syllabifier = SyllabifierLibrary.getInstance().defaultSyllabifier();
+						final SyllabifierInfo syllabifierInfo = getEditor().getExtension(SyllabifierInfo.class);
+						if(syllabifierInfo != null) {
+							final Syllabifier s = SyllabifierLibrary.getInstance().getSyllabifierForLanguage(
+									syllabifierInfo.getSyllabifierLanguageForTier(tier));
+							if(s != null)
+								syllabifier = s;
+						}
+						syllabifier.syllabify(newIpa.toList());
+						final TierEdit<IPATranscript> edit =
+								new TierEdit<>(getEditor(), ipaTier, gIdx, newIpa);
+						getEditor().getUndoSupport().postEdit(edit);
+					} catch (ParseException e) {
+						LogUtil.warning(e);
+						final IPATranscript ipa = new IPATranscript();
+						final UnvalidatedValue uv = new UnvalidatedValue(builder.toString(), e);
+						ipa.putExtension(UnvalidatedValue.class, uv);
+						final TierEdit<IPATranscript> edit =
+								new TierEdit<>(getEditor(), ipaTier, gIdx, ipa);
+						getEditor().getUndoSupport().postEdit(edit);
+					}
+
+					// update alignment
+					final PhoneMap newAlignment = (new PhoneAligner()).calculatePhoneAlignment(
+							currentRecord.getIPATarget().getGroup(gIdx), currentRecord.getIPAActual().getGroup(gIdx));
+					final TierEdit<PhoneMap> edit =
+							new TierEdit<PhoneMap>(getEditor(), currentRecord.getPhoneAlignment(), gIdx, newAlignment);
+					getEditor().getUndoSupport().postEdit(edit);
+				}
+			}
+		} else {
+			final Tier<TierString> userTier = currentRecord.getTier(tier, TierString.class);
+			final TierEdit<TierString> edit =
+					new TierEdit<TierString>(getEditor(), userTier, gIdx, new TierString(builder.toString()));
+			getEditor().getUndoSupport().postEdit(edit);
+		}
 	}
 
 	private TypeMapNode stateFromRecord(Record record) {
