@@ -302,9 +302,7 @@ public class AlignedTypesDatabase implements Serializable {
 			for(int i = 0; i < cols.length; i++) {
 				String tierName = cols[i];
 				String type = (i < row.length ? row[i] : "");
-				if(type.trim().length() > 0) {
-					alignedTypes.put(tierName, type);
-				}
+				alignedTypes.put(tierName, type);
 			}
 			addAlignedTypes(alignedTypes);
 		}
@@ -461,12 +459,12 @@ public class AlignedTypesDatabase implements Serializable {
 		// only include row if all values have links between them
 		for(int i = 1; i < rowVals.length-1; i++) {
 			String v1 = rowVals[i];
-			if(v1 == null || v1.trim().length() == 0) continue; // ignore empty tier values
+			if(v1 == null) continue; // ignore empty tier values
 			String t1 = tierNames[i];
 
 			for(int j = i + 1; j < rowVals.length; j++) {
 				String v2= rowVals[j];
-				if(v2 == null || v2.trim().length() == 0) continue; // ignore empty tier values
+				if(v2 == null) continue; // ignore empty tier values
 				String t2 = tierNames[j];
 
 				retVal &= linkExists(t1, v1, t2, v2);

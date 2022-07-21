@@ -19,6 +19,7 @@ import ca.phon.ui.*;
 import ca.phon.ui.action.*;
 import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.menu.MenuBuilder;
+import ca.phon.util.Tuple;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;
 import org.apache.tools.ant.taskdefs.condition.Or;
@@ -66,7 +67,7 @@ public class TranscriptMapperEditorView extends EditorView {
 
 	public final static String ICON = "blank";
 
-	private final static String PROJECT_DB_FILENAME = "__res/pluginData/transcriptMapper/typeMap" +
+	private final static String PROJECT_DB_FILENAME = "__res/transcriptMapper/typeMap" +
 			AlignedTypesDatabaseIO.DBZ_EXT;
 
 	private AlignedTypesDatabase projectDb;
@@ -428,7 +429,7 @@ public class TranscriptMapperEditorView extends EditorView {
 			for(int wmIdx = 0; wmIdx < wordNode.childCount(); wmIdx++) {
 				TypeMapNode morphemeNode = wordNode.getChild(wmIdx);
 				// append morpheme marker
-				if(mIdx > 0) builder.append(wordNode.getChildren().get(wmIdx).getObj1());
+				if(wmIdx > 0) builder.append(wordNode.getChildren().get(wmIdx).getObj1());
 				if(mIdx + wmIdx == morphemeIdx) {
 					builder.append(selectedMorpheme);
 				} else {
@@ -443,19 +444,22 @@ public class TranscriptMapperEditorView extends EditorView {
 		if(systemTier != null) {
 			switch(systemTier) {
 				case Orthography -> {
-					try {
-						final Orthography newOrtho = Orthography.parseOrthography(builder.toString());
-						final TierEdit<Orthography> edit =
-								new TierEdit<>(getEditor(), currentRecord.getOrthography(), gIdx, newOrtho);
-						getEditor().getUndoSupport().postEdit(edit);
-					} catch (ParseException e) {
-						LogUtil.warning(e);
-						final Orthography ortho = new Orthography();
-						final UnvalidatedValue uv = new UnvalidatedValue(builder.toString(), e);
-						ortho.putExtension(UnvalidatedValue.class, uv);
-						final TierEdit<Orthography> edit =
-								new TierEdit<>(getEditor(), currentRecord.getOrthography(), gIdx, ortho);
-						getEditor().getUndoSupport().postEdit(edit);
+					final Orthography currentOrtho = currentRecord.getOrthography().getGroup(gIdx);
+					if(!currentOrtho.toString().equals(builder.toString())) {
+						try {
+							final Orthography newOrtho = Orthography.parseOrthography(builder.toString());
+							final TierEdit<Orthography> edit =
+									new TierEdit<>(getEditor(), currentRecord.getOrthography(), gIdx, newOrtho);
+							getEditor().getUndoSupport().postEdit(edit);
+						} catch (ParseException e) {
+							LogUtil.warning(e);
+							final Orthography ortho = new Orthography();
+							final UnvalidatedValue uv = new UnvalidatedValue(builder.toString(), e);
+							ortho.putExtension(UnvalidatedValue.class, uv);
+							final TierEdit<Orthography> edit =
+									new TierEdit<>(getEditor(), currentRecord.getOrthography(), gIdx, ortho);
+							getEditor().getUndoSupport().postEdit(edit);
+						}
 					}
 				}
 
@@ -463,44 +467,50 @@ public class TranscriptMapperEditorView extends EditorView {
 					final Tier<IPATranscript> ipaTier = systemTier == SystemTierType.IPATarget
 							? currentRecord.getIPATarget()
 							: currentRecord.getIPAActual();
-					try {
-						final IPATranscript newIpa = IPATranscript.parseIPATranscript(builder.toString());
-						// update syllabification
-						Syllabifier syllabifier = SyllabifierLibrary.getInstance().defaultSyllabifier();
-						final SyllabifierInfo syllabifierInfo = getEditor().getExtension(SyllabifierInfo.class);
-						if(syllabifierInfo != null) {
-							final Syllabifier s = SyllabifierLibrary.getInstance().getSyllabifierForLanguage(
-									syllabifierInfo.getSyllabifierLanguageForTier(tier));
-							if(s != null)
-								syllabifier = s;
+					final IPATranscript currentIpa = ipaTier.getGroup(gIdx);
+					if (!currentIpa.toString().equals(builder.toString())) {
+						try {
+							final IPATranscript newIpa = IPATranscript.parseIPATranscript(builder.toString());
+							// update syllabification
+							Syllabifier syllabifier = SyllabifierLibrary.getInstance().defaultSyllabifier();
+							final SyllabifierInfo syllabifierInfo = getEditor().getExtension(SyllabifierInfo.class);
+							if (syllabifierInfo != null) {
+								final Syllabifier s = SyllabifierLibrary.getInstance().getSyllabifierForLanguage(
+										syllabifierInfo.getSyllabifierLanguageForTier(tier));
+								if (s != null)
+									syllabifier = s;
+							}
+							syllabifier.syllabify(newIpa.toList());
+							final TierEdit<IPATranscript> edit =
+									new TierEdit<>(getEditor(), ipaTier, gIdx, newIpa);
+							getEditor().getUndoSupport().postEdit(edit);
+						} catch (ParseException e) {
+							LogUtil.warning(e);
+							final IPATranscript ipa = new IPATranscript();
+							final UnvalidatedValue uv = new UnvalidatedValue(builder.toString(), e);
+							ipa.putExtension(UnvalidatedValue.class, uv);
+							final TierEdit<IPATranscript> edit =
+									new TierEdit<>(getEditor(), ipaTier, gIdx, ipa);
+							getEditor().getUndoSupport().postEdit(edit);
 						}
-						syllabifier.syllabify(newIpa.toList());
-						final TierEdit<IPATranscript> edit =
-								new TierEdit<>(getEditor(), ipaTier, gIdx, newIpa);
-						getEditor().getUndoSupport().postEdit(edit);
-					} catch (ParseException e) {
-						LogUtil.warning(e);
-						final IPATranscript ipa = new IPATranscript();
-						final UnvalidatedValue uv = new UnvalidatedValue(builder.toString(), e);
-						ipa.putExtension(UnvalidatedValue.class, uv);
-						final TierEdit<IPATranscript> edit =
-								new TierEdit<>(getEditor(), ipaTier, gIdx, ipa);
+
+						// update alignment
+						final PhoneMap newAlignment = (new PhoneAligner()).calculatePhoneAlignment(
+								currentRecord.getIPATarget().getGroup(gIdx), currentRecord.getIPAActual().getGroup(gIdx));
+						final TierEdit<PhoneMap> edit =
+								new TierEdit<>(getEditor(), currentRecord.getPhoneAlignment(), gIdx, newAlignment);
 						getEditor().getUndoSupport().postEdit(edit);
 					}
-
-					// update alignment
-					final PhoneMap newAlignment = (new PhoneAligner()).calculatePhoneAlignment(
-							currentRecord.getIPATarget().getGroup(gIdx), currentRecord.getIPAActual().getGroup(gIdx));
-					final TierEdit<PhoneMap> edit =
-							new TierEdit<PhoneMap>(getEditor(), currentRecord.getPhoneAlignment(), gIdx, newAlignment);
-					getEditor().getUndoSupport().postEdit(edit);
 				}
 			}
 		} else {
 			final Tier<TierString> userTier = currentRecord.getTier(tier, TierString.class);
-			final TierEdit<TierString> edit =
-					new TierEdit<TierString>(getEditor(), userTier, gIdx, new TierString(builder.toString()));
-			getEditor().getUndoSupport().postEdit(edit);
+			final TierString currentVal = (gIdx < userTier.numberOfGroups() ? userTier.getGroup(gIdx) : new TierString());
+			if(!currentVal.toString().equals(builder.toString())) {
+				final TierEdit<TierString> edit =
+						new TierEdit<>(getEditor(), userTier, gIdx, new TierString(builder.toString()));
+				getEditor().getUndoSupport().postEdit(edit);
+			}
 		}
 	}
 
@@ -639,7 +649,12 @@ public class TranscriptMapperEditorView extends EditorView {
 				(set) -> projectDb.includeInCartesianProduct(visibleTiers.toArray(new String[0]), set));
 		for(int i = 0; i < product.length; i++) {
 			final String optionTxt = Arrays.toString(product[i]);
-			builder.addItem(".", optionTxt);
+			final PhonUIAction insertAlignedMorphemesAct = new PhonUIAction(this,
+					"insertAlignedMorphemes", product[i]);
+			insertAlignedMorphemesAct.putValue(PhonUIAction.NAME, optionTxt);
+			insertAlignedMorphemesAct.putValue(PhonUIAction.SHORT_DESCRIPTION,
+					"Insert aligned values into record, replacing current words/morphemes");
+			builder.addItem(".", insertAlignedMorphemesAct);
 		}
 
 		int ypos = 0;
@@ -647,6 +662,11 @@ public class TranscriptMapperEditorView extends EditorView {
 			ypos += morphemesTable.getRowHeight(i);
 		}
 		popupMenu.show(this.morphemesTable, 0, ypos);
+	}
+
+	public void insertAlignedMorphemes(PhonActionEvent pae) {
+		final String[] options = (String[]) pae.getData();
+		updateRecord(morphemesTable.getSelectedRow(), getVisibleTiers().toArray(new String[0]), options);
 	}
 
 	/**

@@ -37,7 +37,7 @@ public class AlignedMorphemesScanner {
 								case Orthography:
 									final OrthoElement orthoElement = am.getOrthography();
 									final String ortho = orthoElement == null ? "" : orthoElement.toString().trim();
-									if(ortho.length() > 0 && !"*".equals(ortho)) {
+									if(!"*".equals(ortho)) {
 										alignedTypeMap.put(systemTier.getName(), ortho);
 									}
 									break;
@@ -45,7 +45,7 @@ public class AlignedMorphemesScanner {
 								case IPATarget:
 									final IPATranscript ipaT = am.getIPATarget();
 									final String target = ipaT == null ? "" : ipaT.toString();
-									if(target.length() > 0 && !"*".equals(target)) {
+									if(!"*".equals(target)) {
 										alignedTypeMap.put(systemTier.getName(), target);
 									}
 									break;
@@ -53,7 +53,7 @@ public class AlignedMorphemesScanner {
 								case IPAActual:
 									final IPATranscript ipaA = am.getIPAActual();
 									final String actual = ipaA == null ? "" : am.getIPAActual().toString();
-									if(actual.length() > 0 && !"*".equals(actual)) {
+									if(!"*".equals(actual)) {
 										alignedTypeMap.put(systemTier.getName(), actual);
 									}
 									break;
@@ -63,10 +63,13 @@ public class AlignedMorphemesScanner {
 								}
 							}
 
-							for(String userTierName: record.getExtraTierNames()) {
-								TierString userTierVal = am.getUserTier(userTierName);
-								if(userTierVal != null && userTierVal.length() > 0 && !"*".equals(userTierVal.toString())) {
-									alignedTypeMap.put(userTierName, userTierVal.toString());
+							for(TierDescription td: session.getUserTiers()) {
+								if(td.isGrouped()) {
+									TierString userTierVal = am.getUserTier(td.getName());
+									if (userTierVal == null) userTierVal = new TierString();
+									if (!"*".equals(userTierVal.toString())) {
+										alignedTypeMap.put(td.getName(), userTierVal.toString());
+									}
 								}
 							}
 						}
