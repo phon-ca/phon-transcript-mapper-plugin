@@ -345,6 +345,57 @@ public class AlignedTypesDatabase implements Serializable {
 		return linkExists(node, tierName, linkedTier, linkedVal);
 	}
 
+	/**
+	 * Remove the link between two tier values.  If all links for the tier are removed, the
+	 * type is also removed for that tier
+	 *
+	 * @param tierName
+	 * @param tierVal
+	 * @param linkedTier
+	 * @param linkedVal
+	 *
+	 * @return true if link was removed
+	 */
+	public boolean removeLink(String tierName, String tierVal, String linkedTier, String linkedVal) {
+		final Optional<TernaryTreeNode<Collection<TypeEntry>>> nodeOpt = tree.findNode(tierVal);
+		if(nodeOpt.isEmpty()) return false;
+
+		final var node = nodeOpt.get();
+		if(node.getValue() == null) return false;
+
+		final Optional<TypeEntry> entryForTier = node.getValue()
+				.stream()
+				.filter((e) -> e.getTierName(tierDescriptionTree).equals(tierName))
+				.findAny();
+		if(entryForTier.isEmpty()) return false;
+
+		final TypeEntry taggerEntry = entryForTier.get();
+		final Optional<TypeLinkedEntry> linkedEntryOpt = taggerEntry.getLinkedEntries()
+				.stream()
+				.filter((e) -> e.getTierName(tierDescriptionTree).equals(linkedTier))
+				.findAny();
+		if(linkedEntryOpt.isEmpty()) return false;
+
+		final TypeLinkedEntry linkedEntry = linkedEntryOpt.get();
+		final Optional<TernaryTreeNode<Collection<TypeEntry>>> linkedValOpt = linkedEntry.getLinkedTierRefs(tree)
+				.stream()
+				.filter((r) -> r.getPrefix().equals(linkedVal))
+				.findAny();
+		if(linkedValOpt.isPresent()) {
+			linkedEntry.getLinkedTierRefs(tree).remove(linkedValOpt.get());
+
+			if(linkedEntry.getLinkedTierRefs(tree).size() == 0) {
+				taggerEntry.getLinkedEntries().remove(linkedEntry);
+
+				if(taggerEntry.getLinkedEntries().size() == 0) {
+					node.getValue().remove(taggerEntry);
+				}
+			}
+			return true;
+		}
+		return false;
+	}
+
 	private boolean linkExists(TernaryTreeNode<Collection<TypeEntry>> node, String tierName, String linkedTier, String linkedVal) {
 		if(node.getValue() == null) return false;
 		final Optional<TypeEntry> entryForTier = node.getValue()
