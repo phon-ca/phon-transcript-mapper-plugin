@@ -457,14 +457,18 @@ public class TranscriptMapperEditorView extends EditorView {
 	}
 
 	private void updateRecord(int morphemeIdx, String[] tiers, String[] selectedTypes) {
+		boolean needsRefresh = false;
 		getEditor().getUndoSupport().beginUpdate();
 		for(int i = 0; i < selectedTypes.length; i++) {
-			updateTier(morphemeIdx, tiers[i], selectedTypes[i]);
+			needsRefresh |= updateTier(morphemeIdx, tiers[i], selectedTypes[i]);
 		}
 		getEditor().getUndoSupport().endUpdate();
+		if(needsRefresh)
+			getEditor().getEventManager().queueEvent(new EditorEvent(EditorEventType.RECORD_REFRESH_EVT));
 	}
 
-	private void updateTier(int morphemeIdx, String tier, String selectedMorpheme) {
+	private boolean updateTier(int morphemeIdx, String tier, String selectedMorpheme) {
+		boolean needsRefresh = false;
 		int gIdx = tableRowToGroupIndex(morphemeIdx);
 		int mIdx = 0;
 		for(int i = 0; i < gIdx; i++)
@@ -556,12 +560,15 @@ public class TranscriptMapperEditorView extends EditorView {
 		} else {
 			final Tier<TierString> userTier = currentRecord.getTier(tier, TierString.class);
 			final TierString currentVal = (gIdx < userTier.numberOfGroups() ? userTier.getGroup(gIdx) : new TierString());
+			needsRefresh = userTier.numberOfGroups() <= gIdx;
 			if(!currentVal.toString().equals(builder.toString())) {
 				final TierEdit<TierString> edit =
 						new TierEdit<>(getEditor(), userTier, gIdx, new TierString(builder.toString()));
+				edit.setFireHardChangeOnUndo(true);
 				getEditor().getUndoSupport().postEdit(edit);
 			}
 		}
+		return needsRefresh;
 	}
 
 	private TypeMapNode stateFromRecord(Record record) {
