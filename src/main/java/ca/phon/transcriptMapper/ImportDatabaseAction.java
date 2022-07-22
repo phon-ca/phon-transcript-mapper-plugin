@@ -30,7 +30,6 @@ public class ImportDatabaseAction extends TranscriptMapperAction {
 
 		putValue(NAME, TXT);
 		putValue(SHORT_DESCRIPTION, DESC);
-		putValue(SMALL_ICON, IconManager.getInstance().getIcon(ICON, IconSize.SMALL));
 	}
 
 	@Override

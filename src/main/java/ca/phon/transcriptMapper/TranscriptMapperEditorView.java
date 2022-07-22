@@ -57,6 +57,12 @@ public class TranscriptMapperEditorView extends EditorView {
 
 	private JXTable morphemesTable;
 
+	private JLabel alignmentOptionsLabel;
+
+	private AlignmentOptionsTableModel alignmentOptionsTableModel;
+
+	private JXTable alignmentOptionsTable;
+
 	private JWindow suggestionsWindow;
 
 	private JList<String> suggestionsList;
@@ -301,6 +307,15 @@ public class TranscriptMapperEditorView extends EditorView {
 		setupMorphemesTable();
 		morphemeSelectionPanel.add(new JScrollPane(morphemesTable), new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, row));
 
+		++row;
+		alignmentOptionsLabel = new JLabel("Alignment Options");
+		alignmentOptionsLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+		alignmentOptionsLabel.setFont(FontPreferences.getTitleFont());
+		morphemeSelectionPanel.add(alignmentOptionsLabel, new TierDataConstraint(TierDataConstraint.TIER_LABEL_COLUMN, row));
+
+		setupAlignmentOptionsTable();
+		morphemeSelectionPanel.add(new JScrollPane(alignmentOptionsTable), new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, row));
+
 		add(new JScrollPane(morphemeSelectionPanel), BorderLayout.CENTER);
 	}
 
@@ -319,7 +334,11 @@ public class TranscriptMapperEditorView extends EditorView {
 		morphemesTable.setDefaultRenderer(Object.class, new MorphemeTableCellRenderer());
 		morphemesTable.setSortable(false);
 		morphemesTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		morphemesTable.setVisibleRowCount(10);
+		morphemesTable.setVisibleRowCount(8);
+
+		morphemesTable.getSelectionModel().addListSelectionListener(e -> {
+			updateAlignmentOptions();
+		});
 
 		InputMap inputMap = morphemesTable.getInputMap(JComponent.WHEN_FOCUSED);
 		ActionMap actionMap = morphemesTable.getActionMap();
@@ -330,6 +349,22 @@ public class TranscriptMapperEditorView extends EditorView {
 		actionMap.put(morphemeMenuActId, showMorphemeMenuAction);
 		final KeyStroke showMorphemeMenuKs = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
 		inputMap.put(showMorphemeMenuKs, morphemeMenuActId);
+	}
+
+	private void setupAlignmentOptionsTable() {
+		alignmentOptionsTableModel = new AlignmentOptionsTableModel();
+		alignmentOptionsTable = new JXTable(alignmentOptionsTableModel) {
+			public Component prepareRenderer(TableCellRenderer renderer, int row, int column)
+			{
+				Component c = super.prepareRenderer(renderer, row, column);
+				// alternate row color based on group index
+				if (!isRowSelected(row))
+					c.setBackground(row % 2 == 0 ? getBackground() : PhonGuiConstants.PHON_UI_STRIP_COLOR);
+				return c;
+			}
+		};
+		alignmentOptionsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		alignmentOptionsTable.setVisibleRowCount(8);
 	}
 
 	private void setState(TypeMapNode state) {
@@ -350,6 +385,19 @@ public class TranscriptMapperEditorView extends EditorView {
 
 		if(morphemesTableModel != null)
 			morphemesTableModel.fireTableDataChanged();
+		updateAlignmentOptions();
+	}
+
+	private void updateAlignmentOptions() {
+		if(alignmentOptionsTableModel != null) {
+			final int selectedMorpheme = morphemesTable.getSelectedRow();
+			if(selectedMorpheme >= 0) {
+				final String[][] alignmentOptions = alignmentOptionsForMorpheme(selectedMorpheme);
+				alignmentOptionsTableModel.setAlignmentRows(alignmentOptions);
+			} else {
+				alignmentOptionsTableModel.setAlignmentRows(new String[0][]);
+			}
+		}
 	}
 
 	void updateAfterDbLoad() {
@@ -360,6 +408,8 @@ public class TranscriptMapperEditorView extends EditorView {
 
 		if(getEditor().currentRecord() != null) {
 			updateStateAsync(() -> {
+				if(this.alignmentOptionsTableModel != null)
+					this.alignmentOptionsTableModel.fireTableStructureChanged();
 				if(this.morphemesTableModel != null)
 					this.morphemesTableModel.fireTableStructureChanged();
 				this.updateFromCurrentState();
@@ -629,8 +679,31 @@ public class TranscriptMapperEditorView extends EditorView {
 		if(keyTier == null) return;
 
 		final int selectedRow = this.morphemesTable.getSelectedRow();
-		final TypeMapNode leafNode = this.currentState.getLeaves().get(selectedRow);
 
+		if(selectedRow >= 0) {
+			final String[][] optionsForMorpheme = alignmentOptionsForMorpheme(selectedRow);
+			for (int i = 0; i < optionsForMorpheme.length; i++) {
+				final String optionTxt = Arrays.toString(optionsForMorpheme[i]);
+				final PhonUIAction insertAlignedMorphemesAct = new PhonUIAction(this,
+						"insertAlignedMorphemes", optionsForMorpheme[i]);
+				insertAlignedMorphemesAct.putValue(PhonUIAction.NAME, optionTxt);
+				insertAlignedMorphemesAct.putValue(PhonUIAction.SHORT_DESCRIPTION,
+						"Insert aligned values into record, replacing current words/morphemes");
+				builder.addItem(".", insertAlignedMorphemesAct);
+			}
+
+			int ypos = 0;
+			for (int i = 0; i <= selectedRow; i++) {
+				ypos += morphemesTable.getRowHeight(i);
+			}
+			popupMenu.show(this.morphemesTable, 0, ypos);
+		}
+	}
+
+	private String[][] alignmentOptionsForMorpheme(int morphemeIdx) {
+		final TypeMapNode leafNode = this.currentState.getLeaves().get(morphemeIdx);
+
+		final String keyTier = keyTier();
 		final String morpheme = leafNode.getMorpheme(keyTier);
 		final Map<String, String[]> alignmentOptions = leafNode.getAlignedMorphemeOptions();
 
@@ -647,21 +720,7 @@ public class TranscriptMapperEditorView extends EditorView {
 
 		final String[][] product = CartesianProduct.stringArrayProduct(arrays,
 				(set) -> projectDb.includeInCartesianProduct(visibleTiers.toArray(new String[0]), set));
-		for(int i = 0; i < product.length; i++) {
-			final String optionTxt = Arrays.toString(product[i]);
-			final PhonUIAction insertAlignedMorphemesAct = new PhonUIAction(this,
-					"insertAlignedMorphemes", product[i]);
-			insertAlignedMorphemesAct.putValue(PhonUIAction.NAME, optionTxt);
-			insertAlignedMorphemesAct.putValue(PhonUIAction.SHORT_DESCRIPTION,
-					"Insert aligned values into record, replacing current words/morphemes");
-			builder.addItem(".", insertAlignedMorphemesAct);
-		}
-
-		int ypos = 0;
-		for(int i = 0; i <= selectedRow; i++) {
-			ypos += morphemesTable.getRowHeight(i);
-		}
-		popupMenu.show(this.morphemesTable, 0, ypos);
+		return product;
 	}
 
 	public void insertAlignedMorphemes(PhonActionEvent pae) {
@@ -852,6 +911,46 @@ public class TranscriptMapperEditorView extends EditorView {
 			TypeMapNode leafNode = currentState.getLeaves().get(rowIndex);
 			String tierName = (columnIndex < tierNames.size() ? tierNames.get(columnIndex) : null);
 			return (tierName == null ? "" : leafNode.getMorpheme(tierName));
+		}
+
+	}
+
+	private class AlignmentOptionsTableModel extends AbstractTableModel {
+
+		private String[][] alignmentRows;
+
+		public AlignmentOptionsTableModel() {
+			this.alignmentRows = new String[0][];
+		}
+
+		public void setAlignmentRows(String[][] alignmentRows) {
+			this.alignmentRows = alignmentRows;
+			this.fireTableDataChanged();
+		}
+
+		@Override
+		public int getRowCount() {
+			return alignmentRows.length;
+		}
+
+		@Override
+		public int getColumnCount() {
+			return getVisibleTiers().size();
+		}
+
+		public String getColumnName(int colIdx) {
+			return getVisibleTiers().get(colIdx);
+		}
+
+		@Override
+		public Object getValueAt(int rowIndex, int columnIndex) {
+			if(rowIndex < alignmentRows.length) {
+				String[] rowData = alignmentRows[rowIndex];
+				if(columnIndex < rowData.length) {
+					return rowData[columnIndex];
+				}
+			}
+			return "";
 		}
 
 	}
