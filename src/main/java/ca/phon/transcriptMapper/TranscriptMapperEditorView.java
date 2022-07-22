@@ -283,6 +283,8 @@ public class TranscriptMapperEditorView extends EditorView {
 			updateStateAsync(this::updateFromCurrentState);
 			if(this.morphemesTableModel != null)
 				this.morphemesTableModel.fireTableStructureChanged();
+			if(this.alignmentOptionsTableModel != null)
+				this.alignmentOptionsTableModel.fireTableStructureChanged();
 		});
 
 		morphemeSelectionPanel = new TierDataLayoutPanel();
@@ -712,6 +714,8 @@ public class TranscriptMapperEditorView extends EditorView {
 
 		final String keyTier = keyTier();
 		final String morpheme = leafNode.getMorpheme(keyTier);
+		if(morpheme.length() == 0)
+			return new String[0][];
 		final Map<String, String[]> alignmentOptions = leafNode.getAlignedMorphemeOptions();
 
 		final List<String> visibleTiers = getVisibleTiers();

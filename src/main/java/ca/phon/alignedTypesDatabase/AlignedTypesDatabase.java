@@ -316,10 +316,14 @@ public class AlignedTypesDatabase implements Serializable {
 		Optional<TernaryTreeNode<Collection<TypeEntry>>> treeNodeOpt = this.tree.findNode(type);
 		if(treeNodeOpt.isPresent()) {
 			TernaryTreeNode<Collection<TypeEntry>> treeNode = treeNodeOpt.get();
-			Optional<TypeEntry> typeEntryForTier = treeNode.getValue().stream()
-					.filter(e -> e.getTierName(this.tierDescriptionTree).equals(tier))
-					.findAny();
-			return typeEntryForTier.isPresent();
+			if(treeNode.getValue() != null) {
+				Optional<TypeEntry> typeEntryForTier = treeNode.getValue().stream()
+						.filter(e -> e.getTierName(this.tierDescriptionTree).equals(tier))
+						.findAny();
+				return typeEntryForTier.isPresent();
+			} else {
+				return false;
+			}
 		} else {
 			return false;
 		}
@@ -342,6 +346,7 @@ public class AlignedTypesDatabase implements Serializable {
 	}
 
 	private boolean linkExists(TernaryTreeNode<Collection<TypeEntry>> node, String tierName, String linkedTier, String linkedVal) {
+		if(node.getValue() == null) return false;
 		final Optional<TypeEntry> entryForTier = node.getValue()
 				.stream()
 				.filter((e) -> e.getTierName(tierDescriptionTree).equals(tierName))
