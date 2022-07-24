@@ -225,10 +225,12 @@ public class TranscriptMapperEditorView extends EditorView {
 	}
 
 	private void setupDatabaseMenu(MenuBuilder builder) {
-		builder.addItem(".", new ImportDatabaseAction(this));
-		builder.addSeparator(".", "csv");
+		builder.addItem(".", new ScanProjectAction(this));
+		builder.addSeparator(".", "scan");
 		builder.addItem(".", new ImportCSVAction(this));
 		builder.addItem(".", new ExportCSVAction(this));
+		builder.addSeparator(".", "csv");
+		builder.addItem(".", new ImportDatabaseAction(this));
 	}
 
 	private void setupTiersMenu(MenuBuilder builder) {
