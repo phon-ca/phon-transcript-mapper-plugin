@@ -482,9 +482,8 @@ public final class TranscriptMapperEditorView extends EditorView {
 		int mIdx = 0;
 		for(int i = 0; i < gIdx; i++)
 			mIdx += currentState.getChild(i).getLeafCount();
-		StringBuilder builder = new StringBuilder();
-		TypeMapNode groupNode = this.currentState.getChild(gIdx);
-
+		final TypeMapNode groupNode = this.currentState.getChild(gIdx);
+		final StringBuilder builder = new StringBuilder();
 		for(int wIdx = 0; wIdx < groupNode.childCount(); wIdx++) {
 			if(wIdx > 0) builder.append(' ');
 			TypeMapNode wordNode = groupNode.getChild(wIdx);
@@ -496,11 +495,16 @@ public final class TranscriptMapperEditorView extends EditorView {
 				if(mIdx + wmIdx == morphemeIdx) {
 					builder.append(selectedMorpheme);
 				} else {
-					builder.append(morphemeNode.getMorpheme(tier));
+					final String cval = morphemeNode.getMorpheme(tier);
+					if(cval.length() > 0)
+						builder.append(morphemeNode.getMorpheme(tier));
+					else
+						builder.append('*');
 				}
 			}
 			mIdx += wordNode.childCount();
 		}
+
 
 		final Record currentRecord = getEditor().currentRecord();
 		final SystemTierType systemTier = SystemTierType.tierFromString(tier);
@@ -508,21 +512,26 @@ public final class TranscriptMapperEditorView extends EditorView {
 			switch(systemTier) {
 				case Orthography -> {
 					final Orthography currentOrtho = currentRecord.getOrthography().getGroup(gIdx);
-					if(!currentOrtho.toString().equals(builder.toString())) {
-						try {
-							final Orthography newOrtho = Orthography.parseOrthography(builder.toString());
-							final TierEdit<Orthography> edit =
-									new TierEdit<>(getEditor(), currentRecord.getOrthography(), gIdx, newOrtho);
-							getEditor().getUndoSupport().postEdit(edit);
-						} catch (ParseException e) {
-							LogUtil.warning(e);
-							final Orthography ortho = new Orthography();
-							final UnvalidatedValue uv = new UnvalidatedValue(builder.toString(), e);
-							ortho.putExtension(UnvalidatedValue.class, uv);
-							final TierEdit<Orthography> edit =
-									new TierEdit<>(getEditor(), currentRecord.getOrthography(), gIdx, ortho);
-							getEditor().getUndoSupport().postEdit(edit);
+					int currentMorphemeIdx = 0;
+					for(int i = 0; i < gIdx; i++) {
+						Group group = currentRecord.getGroup(i);
+						for(int j = 0; j < group.getAlignedWordCount(); j++) {
+							Word word = group.getAlignedWord(j);
+							AlignedMorphemes alignedMorphemes = word.getExtension(AlignedMorphemes.class);
+							if(alignedMorphemes != null) {
+								currentMorphemeIdx += alignedMorphemes.getMorphemeCount();
+							} else {
+								++currentMorphemeIdx;
+							}
 						}
+					}
+					final OrthographyMorphemeReplacementVisitor visitor = new OrthographyMorphemeReplacementVisitor(morphemeIdx, selectedMorpheme, currentMorphemeIdx);
+					currentOrtho.accept(visitor);
+					final Orthography newOrtho = visitor.getOrthography();
+					if(!currentOrtho.toString().equals(newOrtho.toString())) {
+						final TierEdit<Orthography> edit =
+								new TierEdit<>(getEditor(), currentRecord.getOrthography(), gIdx, newOrtho);
+						getEditor().getUndoSupport().postEdit(edit);
 					}
 				}
 
