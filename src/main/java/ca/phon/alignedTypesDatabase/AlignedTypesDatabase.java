@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
  * the tierNames() or tierInfo() methods.
  *
  */
-public class AlignedTypesDatabase implements Serializable {
+public final class AlignedTypesDatabase implements Serializable {
 
 	private static final long serialVersionUID = -4436233595101310518L;
 

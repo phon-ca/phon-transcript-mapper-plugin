@@ -6,7 +6,7 @@ import ca.phon.plugin.*;
 @PhonPlugin(name = TranscriptMapperEditorView.NAME)
 @EditorViewInfo(category = EditorViewCategory.PLUGINS, icon = TranscriptMapperEditorView.ICON,
 		name = TranscriptMapperEditorView.NAME)
-public class TranscriptMapperEditorViewExtPt implements IPluginExtensionPoint<EditorView> {
+public final class TranscriptMapperEditorViewExtPt implements IPluginExtensionPoint<EditorView> {
 	@Override
 	public Class<?> getExtensionType() {
 		return EditorView.class;

@@ -12,7 +12,7 @@ import java.util.zip.*;
  * Serialization methods {@link AlignedTypesDatabase} including compression.
  *
  */
-public class AlignedTypesDatabaseIO {
+public final class AlignedTypesDatabaseIO {
 
 	/** Default extension for uncompressed database files */
 	public final static String DB_EXT = ".atdb";

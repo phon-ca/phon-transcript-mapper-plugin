@@ -1,21 +1,24 @@
 package ca.phon.transcriptMapper;
 
-import ca.phon.app.log.BufferPanel;
-import ca.phon.app.project.RecentProjects;
+import ca.phon.app.log.*;
+import ca.phon.app.project.*;
 import ca.phon.app.session.SessionSelector;
 import ca.phon.project.Project;
+import ca.phon.project.exceptions.ProjectConfigurationException;
 import ca.phon.session.SessionPath;
 import ca.phon.ui.*;
 import ca.phon.ui.action.*;
 import ca.phon.ui.decorations.DialogHeader;
 import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.menu.MenuBuilder;
+import ca.phon.ui.nativedialogs.*;
 import ca.phon.ui.wizard.*;
 import ca.phon.util.icons.*;
+import ca.phon.worker.*;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
+import java.io.*;
 import java.util.*;
 import java.util.List;
 
@@ -32,6 +35,7 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 
 	public ScanProjectWizard(Project project, String title) {
 		super(title);
+		setWindowName(title);
 
 		this.project = project;
 
@@ -43,7 +47,6 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 		this.reportStep.setPrevStep(0);
 		this.reportStep.setNextStep(-1);
 		addWizardStep(this.reportStep);
-
 	}
 
 	private WizardStep createSelectSessionStep() {
@@ -142,14 +145,46 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 		selectProjectMenu.show(this.projectButton, 0, this.projectButton.getHeight());
 	}
 
-	public void selectProject(Project project) {
-		this.project = project;
-		updateProjectButton();
-		updateSessionSelector();
+	public void selectProject(File projectFolder) {
+		try {
+			this.project = (new DesktopProjectFactory()).openProject(projectFolder);
+			updateProjectButton();
+			sessionSelector.setProject(this.project);
+			updateSessionSelector();
+		} catch (IOException | ProjectConfigurationException e) {
+			Toolkit.getDefaultToolkit().beep();
+			LogUtil.severe(e);
+		}
 	}
 
 	public void onBrowseForProject(PhonActionEvent pae) {
 
+	}
+
+	private void beginProjectScan() {
+		final PhonTask scanProjectTask = new PhonTask() {
+			@Override
+			public void performTask() {
+
+			}
+		};
+
+		PhonWorker.invokeOnNewWorker(scanProjectTask, () -> {
+
+		});
+	}
+
+	@Override
+	protected void next() {
+		if(super.getCurrentStep() == this.selectSessionStep) {
+			if(this.sessionSelector.getSelectedSessions().size() == 0) {
+				showMessageDialog("Scan project", "Please select at least one session", MessageDialogProperties.okOptions);
+				return;
+			} else {
+				beginProjectScan();
+			}
+		}
+		super.next();
 	}
 
 }

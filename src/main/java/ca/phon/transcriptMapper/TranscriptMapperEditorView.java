@@ -9,8 +9,6 @@ import ca.phon.extensions.UnvalidatedValue;
 import ca.phon.ipa.*;
 import ca.phon.ipa.alignment.*;
 import ca.phon.orthography.Orthography;
-import ca.phon.orthography.parser.OrthographyParser;
-import ca.phon.project.Project;
 import ca.phon.session.*;
 import ca.phon.session.Record;
 import ca.phon.session.alignedMorphemes.*;
@@ -19,20 +17,17 @@ import ca.phon.ui.*;
 import ca.phon.ui.action.*;
 import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.menu.MenuBuilder;
-import ca.phon.util.Tuple;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;
-import org.apache.tools.ant.taskdefs.condition.Or;
+import jline.internal.Log;
 import org.jdesktop.swingx.JXTable;
 
 import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.table.*;
-import javax.swing.undo.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.*;
-import java.security.Key;
 import java.text.ParseException;
 import java.util.*;
 import java.util.List;
@@ -44,7 +39,7 @@ import java.util.stream.Collectors;
  * morpheme database(s).
  *
  */
-public class TranscriptMapperEditorView extends EditorView {
+public final class TranscriptMapperEditorView extends EditorView {
 
 	private JToolBar toolbar;
 
@@ -73,11 +68,6 @@ public class TranscriptMapperEditorView extends EditorView {
 	public final static String NAME = "Transcript Mapper";
 
 	public final static String ICON = "blank";
-
-	private final static String PROJECT_DB_FILENAME = "__res/transcriptMapper/typeMap" +
-			AlignedTypesDatabaseIO.DBZ_EXT;
-
-	private AlignedTypesDatabase projectDb;
 
 	private TypeMapNode currentState;
 
@@ -121,14 +111,14 @@ public class TranscriptMapperEditorView extends EditorView {
 	@RunOnEDT
 	public void onTierViewChanged(EditorEvent ee) { updateAfterDbLoad(); }
 
-	private File projectDbFile() {
-		final Project project = getEditor().getProject();
-		final File dbFile = new File(project.getLocation(), PROJECT_DB_FILENAME);
-		return dbFile;
-	}
-
 	AlignedTypesDatabase getProjectDb() {
-		return this.projectDb;
+		final ProjectATDB projectATDB = getEditor().getProject().getExtension(ProjectATDB.class);
+		if(projectATDB != null) {
+			return projectATDB.getATDB();
+		} else {
+			// shouldn't happen
+			return new AlignedTypesDatabase();
+		}
 	}
 
 	private void loadProjectDbAsync(Runnable onFinish) {
@@ -138,13 +128,12 @@ public class TranscriptMapperEditorView extends EditorView {
 	}
 
 	private void loadProjectDb() {
-		this.projectDb = new AlignedTypesDatabase();
-		final File projectDbFile = projectDbFile();
-		if(projectDbFile.exists()) {
+		final ProjectATDB projectATDB = getEditor().getProject().getExtension(ProjectATDB.class);
+		if(projectATDB != null) {
 			try {
-				this.projectDb = AlignedTypesDatabaseIO.readFromFile(projectDbFile);
+				projectATDB.loadATDB();
 			} catch (IOException e) {
-				LogUtil.warning(e);
+				LogUtil.severe(e);
 			}
 		}
 	}
@@ -156,16 +145,13 @@ public class TranscriptMapperEditorView extends EditorView {
 	}
 
 	private void saveProjectDb() {
-		final File projectDbFile = projectDbFile();
-		final File parentFolder = projectDbFile.getParentFile();
-		if(!parentFolder.exists()) {
-			parentFolder.mkdirs();
-		}
-
-		try {
-			AlignedTypesDatabaseIO.writeToFile(this.projectDb, projectDbFile);
-		} catch (IOException e) {
-			LogUtil.severe(e);
+		final ProjectATDB projectATDB = getEditor().getProject().getExtension(ProjectATDB.class);
+		if(projectATDB != null) {
+			try {
+				projectATDB.saveProjectDb();
+			} catch (IOException e) {
+				LogUtil.severe(e);
+			}
 		}
 	}
 
@@ -422,7 +408,7 @@ public class TranscriptMapperEditorView extends EditorView {
 	}
 
 	void updateAfterDbLoad() {
-		if(this.projectDb == null) return;
+		if(getProjectDb() == null) return;
 
 		this.keyTierBox.setModel(new DefaultComboBoxModel<>(getVisibleTiers().toArray(new String[0])));
 		this.keyTierBox.setSelectedItem(SystemTierType.Orthography.getName());
@@ -593,7 +579,10 @@ public class TranscriptMapperEditorView extends EditorView {
 	}
 
 	private TypeMapNode stateFromRecord(Record record) {
-		TypeMapNode root = new TypeMapNode(-1);
+		final TypeMapNode root = new TypeMapNode(-1);
+
+		final AlignedTypesDatabase projectDb = getProjectDb();
+		if(projectDb == null) return root;
 
 		final String keyTier = keyTier();
 		if(keyTier == null) return root;
@@ -618,7 +607,7 @@ public class TranscriptMapperEditorView extends EditorView {
 							currentMorphemes.put(tierName, morpheme.getMorphemeText(tierName));
 						}
 						Map<String, String[]> alignedTypes =
-								this.projectDb.alignedTypesForTier(keyTier, currentMorphemes.get(keyTier), tierList);
+								projectDb.alignedTypesForTier(keyTier, currentMorphemes.get(keyTier), tierList);
 
 						TypeMapNode morphemeNode = new TypeMapNode(midx, currentMorphemes, alignedTypes);
 
@@ -664,8 +653,11 @@ public class TranscriptMapperEditorView extends EditorView {
 	 * @param tierName
 	 */
 	public void toggleTier(String tierName) {
-		Optional<TierInfo> tierInfoOpt =
-				this.projectDb.getTierInfo().stream().filter(ti -> ti.getTierName().equals(tierName)).findAny();
+		final AlignedTypesDatabase projectDb = getProjectDb();
+		if(projectDb == null) return;
+
+		final Optional<TierInfo> tierInfoOpt =
+				projectDb.getTierInfo().stream().filter(ti -> ti.getTierName().equals(tierName)).findAny();
 		if(tierInfoOpt.isPresent()) {
 			TierInfo tierInfo = tierInfoOpt.get();
 			tierInfo.setVisible(!tierInfo.isVisible());
@@ -825,7 +817,7 @@ public class TranscriptMapperEditorView extends EditorView {
 		}
 
 		final String[][] product = CartesianProduct.stringArrayProduct(arrays,
-				(set) -> projectDb.includeInCartesianProduct(visibleTiers.toArray(new String[0]), set));
+				(set) -> getProjectDb().includeInCartesianProduct(visibleTiers.toArray(new String[0]), set));
 		return product;
 	}
 
@@ -857,7 +849,9 @@ public class TranscriptMapperEditorView extends EditorView {
 	public List<String> allTiers() {
 		Set<String> tierSet = new LinkedHashSet<>();
 		tierSet.addAll(sessionGroupedTiers());
-		tierSet.addAll(this.projectDb.tierNames());
+		final AlignedTypesDatabase projectDb = getProjectDb();
+		if(projectDb != null)
+			tierSet.addAll(projectDb.tierNames());
 		return tierSet.stream().collect(Collectors.toList());
 	}
 
@@ -884,8 +878,10 @@ public class TranscriptMapperEditorView extends EditorView {
 	}
 
 	private boolean dbTierVisible(String tierName) {
-		Optional<TierInfo> tierInfoOpt =
-				this.projectDb.getTierInfo().stream().filter(ti -> ti.getTierName().equals(tierName)).findAny();
+		final AlignedTypesDatabase projectDb = getProjectDb();
+		if(projectDb == null) return true;
+		final Optional<TierInfo> tierInfoOpt =
+				projectDb.getTierInfo().stream().filter(ti -> ti.getTierName().equals(tierName)).findAny();
 		if(tierInfoOpt.isPresent()) {
 			return tierInfoOpt.get().isVisible();
 		} else {
@@ -970,7 +966,7 @@ public class TranscriptMapperEditorView extends EditorView {
 			tierList.add(0, keyTierBox.getSelectedItem().toString());
 		}
 		// filter based on database visibility
-		if(this.projectDb != null) {
+		if(getProjectDb() != null) {
 			return tierList.stream().filter(this::dbTierVisible).collect(Collectors.toList());
 		} else {
 			return tierList;
