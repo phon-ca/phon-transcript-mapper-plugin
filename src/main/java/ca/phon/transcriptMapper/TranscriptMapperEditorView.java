@@ -475,6 +475,8 @@ public final class TranscriptMapperEditorView extends EditorView {
 	}
 
 	private boolean updateTier(int morphemeIdx, String tier, String selectedMorpheme) {
+		if(selectedMorpheme.length() == 0) return false;
+
 		boolean needsRefresh = false;
 		int gIdx = tableRowToGroupIndex(morphemeIdx);
 		int mIdx = 0;
