@@ -790,10 +790,14 @@ public final class TranscriptMapperEditorView extends EditorView {
 		List<String> visibleTiers = getVisibleTiers();
 		if(visibleTiers.size() != optionSet.length) return;
 
+		final List<TypeMapNode> leafNodes = this.currentState.getLeaves();
+		if(morphemeIdx >= leafNodes.size()) return;
+		final TypeMapNode leafNode = leafNodes.get(morphemeIdx);
+
 		for(int i = 0; i < optionSet.length; i++) {
 			final String tierName = visibleTiers.get(i);
 			final String option = optionSet[i];
-			final String optionTxt = String.format("<html><b>%s</b>: %s</html>", tierName, option);
+			final String optionTxt = String.format("%s: %s \u2192 %s", tierName, leafNode.getMorpheme(tierName), option);
 			final String descTxt = String.format("Insert/Replace morpheme for tier %s", tierName);
 			final InsertMorphemeForTierData eventData = new InsertMorphemeForTierData();
 			eventData.morphemeIdx = morphemeIdx;
@@ -805,8 +809,15 @@ public final class TranscriptMapperEditorView extends EditorView {
 			builder.addItem(".", insertMorphemeAct);
 		}
 
+		builder.addSeparator(".", "insert_all");
+		final String headerTxt = morphemeSetMenuItemText(getVisibleTiers().toArray(new String[0]));
+		builder.addItem(".", headerTxt).setEnabled(false);
+
+		final InsertAlignedMorphemesData data = new InsertAlignedMorphemesData();
+		data.moprhemeIdx = morphemeIdx;
+		data.options = optionSet;
 		final PhonUIAction insertAlignedMorphemesAct = new PhonUIAction(this,
-				"insertAlignedMorphemes", optionSet);
+				"insertAlignedMorphemes", data);
 		insertAlignedMorphemesAct.putValue(PhonUIAction.NAME, morphemeSetMenuItemText(optionSet));
 		insertAlignedMorphemesAct.putValue(PhonUIAction.SHORT_DESCRIPTION,
 				"Insert aligned values into record, replacing current words/morphemes");
