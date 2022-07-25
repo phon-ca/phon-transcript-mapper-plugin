@@ -59,7 +59,7 @@ public final class AlignedTypesDatabase implements Serializable {
 	 *
 	 * @param tierName
 	 */
-	public void addUserTier(String tierName) throws DuplicateTierEntry {
+	public synchronized void addUserTier(String tierName) throws DuplicateTierEntry {
 		if(tierDescriptionTree.containsKey(tierName)) {
 			throw new DuplicateTierEntry(tierName);
 		}
@@ -75,7 +75,7 @@ public final class AlignedTypesDatabase implements Serializable {
 	 *
 	 * @throws IllegalStateException if unable to add tier name or type to database
 	 */
-	public TernaryTreeNode<Collection<TypeEntry>> addTypeForTier(String tierName, String type) {
+	public synchronized TernaryTreeNode<Collection<TypeEntry>> addTypeForTier(String tierName, String type) {
 		// ensure tier exists
 		Optional<TernaryTreeNode<TierInfo>> tierNameRefOpt = tierDescriptionTree.findNode(tierName);
 		if(tierNameRefOpt.isEmpty()) {
@@ -115,7 +115,7 @@ public final class AlignedTypesDatabase implements Serializable {
 	 *
 	 * @param alignedTypes a map of tierName -> types which will be added to the database
 	 */
-	public void addAlignedTypes(Map<String, String> alignedTypes) {
+	public synchronized void addAlignedTypes(Map<String, String> alignedTypes) {
 		for(var entry:alignedTypes.entrySet()) {
 			addTypeForTier(entry.getKey(), entry.getValue());
 		}
@@ -356,7 +356,7 @@ public final class AlignedTypesDatabase implements Serializable {
 	 *
 	 * @return true if link was removed
 	 */
-	public boolean removeLink(String tierName, String tierVal, String linkedTier, String linkedVal) {
+	public synchronized boolean removeLink(String tierName, String tierVal, String linkedTier, String linkedVal) {
 		final Optional<TernaryTreeNode<Collection<TypeEntry>>> nodeOpt = tree.findNode(tierVal);
 		if(nodeOpt.isEmpty()) return false;
 
