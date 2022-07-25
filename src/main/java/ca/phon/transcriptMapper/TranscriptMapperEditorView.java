@@ -167,7 +167,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		PhonUIAction dbMenuAct = new PhonUIAction(this, "noop");
 		dbMenuAct.putValue(PhonUIAction.NAME, "Database");
 		dbMenuAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Show database menu");
-		dbMenuAct.putValue(PhonUIAction.SMALL_ICON, IconManager.getInstance().getIcon(ICON, IconSize.SMALL));
+		dbMenuAct.putValue(PhonUIAction.SMALL_ICON, IconManager.getInstance().getIcon("development-database", IconSize.SMALL));
 		dbMenuAct.putValue(DropDownButton.ARROW_ICON_GAP, 0);
 		dbMenuAct.putValue(DropDownButton.ARROW_ICON_POSITION, SwingConstants.BOTTOM);
 		dbMenuAct.putValue(DropDownButton.BUTTON_POPUP, dbMenu);
@@ -195,7 +195,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		PhonUIAction tiersMenuAct = new PhonUIAction(this, "noop");
 		tiersMenuAct.putValue(PhonUIAction.NAME, "Tiers");
 		tiersMenuAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Show tiers menu");
-		tiersMenuAct.putValue(PhonUIAction.SMALL_ICON, IconManager.getInstance().getIcon(ICON, IconSize.SMALL));
+		tiersMenuAct.putValue(PhonUIAction.SMALL_ICON, IconManager.getInstance().getIcon("misc/record", IconSize.SMALL));
 		tiersMenuAct.putValue(DropDownButton.ARROW_ICON_GAP, 0);
 		tiersMenuAct.putValue(DropDownButton.ARROW_ICON_POSITION, SwingConstants.BOTTOM);
 		tiersMenuAct.putValue(DropDownButton.BUTTON_POPUP, tiersMenu);
