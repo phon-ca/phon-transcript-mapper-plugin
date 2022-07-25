@@ -717,29 +717,46 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final StringBuilder bulider = new StringBuilder();
 		if(visibleTiers.size() != optionSet.length) return "";
 
-		bulider.append("<html>");
-		for(int i = 0; i < visibleTiers.size(); i++) {
-			final String tierName = visibleTiers.get(i);
+		for(int i = 1; i < visibleTiers.size(); i++) {
 			final String option = optionSet[i];
-			if(i > 0)
-				bulider.append(", ");
-			bulider.append(String.format("<b>%s</b>: %s", tierName, option));
+			if(i > 1)
+				bulider.append(" \u2194 ");
+			bulider.append(option);
 		}
-		bulider.append("</html>");
 
 		return bulider.toString();
 	}
 
 	private void setupMorphemeMenu(MenuBuilder builder, int morphemeIdx, String[][] options) {
+		final String headerTxt = morphemeSetMenuItemText(getVisibleTiers().toArray(new String[0]));
+		builder.addItem(".", headerTxt).setEnabled(false);
+
 		for (int i = 0; i < options.length && i < 10; i++) {
 			final String optionTxt = morphemeSetMenuItemText(options[i]);
+			final InsertAlignedMorphemesData data = new InsertAlignedMorphemesData();
+			data.moprhemeIdx = morphemeIdx;
+			data.options = options[i];
 			final PhonUIAction insertAlignedMorphemesAct = new PhonUIAction(this,
-					"insertAlignedMorphemes", options[i]);
+					"insertAlignedMorphemes", data);
 			insertAlignedMorphemesAct.putValue(PhonUIAction.NAME, optionTxt);
 			insertAlignedMorphemesAct.putValue(PhonUIAction.SHORT_DESCRIPTION,
 					"Insert aligned values into record, replacing current words/morphemes");
 			builder.addItem(".", insertAlignedMorphemesAct);
 		}
+
+		if(options.length > 10) {
+			builder.addSeparator(".", "more_options");
+			final PhonUIAction focusOptionsAct = new PhonUIAction(this, "onFocusAlignmentOptions", Integer.valueOf(10));
+			focusOptionsAct.putValue(PhonUIAction.NAME, "See more below...");
+			focusOptionsAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "View more options in the Alignment Options table");
+			builder.addItem(".", focusOptionsAct);
+		}
+	}
+
+	public void onFocusAlignmentOptions(Integer focusRow) {
+		this.alignmentOptionsTable.getSelectionModel().setSelectionInterval(focusRow, focusRow);
+		this.alignmentOptionsTable.requestFocusInWindow();
+		this.alignmentOptionsTable.scrollRowToVisible(focusRow);
 	}
 
 	public void showAlignmentOptionsMenu(PhonActionEvent pae) {
@@ -836,9 +853,17 @@ public final class TranscriptMapperEditorView extends EditorView {
 		updateTier(data.morphemeIdx, data.tierName, data.morpheme);
 	}
 
+	private class InsertAlignedMorphemesData {
+		int moprhemeIdx = 0;
+		String[] options = new String[0];
+	}
+
 	public void insertAlignedMorphemes(PhonActionEvent pae) {
-		final String[] options = (String[]) pae.getData();
-		updateRecord(morphemesTable.getSelectedRow(), getVisibleTiers().toArray(new String[0]), options);
+		if(!(pae.getData() instanceof InsertAlignedMorphemesData)) {
+			throw new IllegalArgumentException();
+		}
+		final InsertAlignedMorphemesData data = (InsertAlignedMorphemesData) pae.getData();
+		updateRecord(data.moprhemeIdx, getVisibleTiers().toArray(new String[0]), data.options);
 	}
 
 	/**
