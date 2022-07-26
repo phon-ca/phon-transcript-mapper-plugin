@@ -22,7 +22,7 @@ public final class ProjectATDB {
 
 	private Project project;
 
-	private AlignedTypesDatabase atdb;
+	private AlignedTypesDatabase atdb = new AlignedTypesDatabase();
 
 	ProjectATDB(Project project) {
 		this.project = project;

@@ -1,11 +1,13 @@
 package ca.phon.transcriptMapper;
 
+import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
 import ca.phon.app.log.*;
 import ca.phon.app.project.*;
 import ca.phon.app.session.SessionSelector;
 import ca.phon.project.Project;
 import ca.phon.project.exceptions.ProjectConfigurationException;
-import ca.phon.session.SessionPath;
+import ca.phon.session.*;
+import ca.phon.session.alignedMorphemes.AlignedMorphemesScanner;
 import ca.phon.ui.*;
 import ca.phon.ui.action.*;
 import ca.phon.ui.decorations.DialogHeader;
@@ -33,11 +35,14 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 
 	private Project project;
 
-	public ScanProjectWizard(Project project, String title) {
+	private AlignedTypesDatabase db;
+
+	public ScanProjectWizard(Project project, AlignedTypesDatabase db, String title) {
 		super(title);
 		setWindowName(title);
 
 		this.project = project;
+		this.db = db;
 
 		this.selectSessionStep = createSelectSessionStep();
 		this.selectSessionStep.setNextStep(1);
@@ -92,6 +97,7 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 
 		final BufferPanel bufferPanel = new BufferPanel("Scan project");
 		bufferPanel.showBuffer();
+		reportPanel = bufferPanel;
 
 		wizardStep.setLayout(new BorderLayout());
 		wizardStep.add(header, BorderLayout.NORTH);
@@ -165,13 +171,33 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 		final PhonTask scanProjectTask = new PhonTask() {
 			@Override
 			public void performTask() {
+				super.setStatus(TaskStatus.RUNNING);
 
+				reportPanel.getLogBuffer().append(String.format("Scanning project %s (%s)\n", project.getName(), project.getLocation()));
+
+				final AlignedMorphemesScanner scanner = new AlignedMorphemesScanner(db);
+				for(SessionPath sessionPath:sessionSelector.getSelectedSessions()) {
+					reportPanel.getLogBuffer().append(String.format("Scanning %s.%s...\n", sessionPath.getCorpus(), sessionPath.getSession()));
+					try {
+						final Session session = project.openSession(sessionPath.getCorpus(), sessionPath.getSession());
+						scanner.scanSession(session);
+					} catch (IOException e) {
+						super.err = e;
+						LogUtil.severe(e);
+						super.setStatus(TaskStatus.ERROR);
+						return;
+					}
+				}
+				reportPanel.getLogBuffer().append("Scan complete, you may close the window.");
+				super.setStatus(TaskStatus.FINISHED);
 			}
 		};
 
-		PhonWorker.invokeOnNewWorker(scanProjectTask, () -> {
+		PhonWorker.invokeOnNewWorker(scanProjectTask, this::onFinishScan);
+	}
 
-		});
+	public void onFinishScan() {
+
 	}
 
 	@Override

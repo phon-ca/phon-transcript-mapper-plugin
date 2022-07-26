@@ -1,8 +1,11 @@
 package ca.phon.transcriptMapper;
 
+import ca.phon.app.log.LogUtil;
 import ca.phon.project.Project;
 
+import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.io.IOException;
 
 public class ScanProjectAction extends TranscriptMapperAction {
 
@@ -21,7 +24,22 @@ public class ScanProjectAction extends TranscriptMapperAction {
 	public void hookableActionPerformed(ActionEvent actionEvent) {
 		final Project project = getView().getEditor().getProject();
 
-		final ScanProjectWizard wizard = new ScanProjectWizard(project, "Scan Project");
+		final ScanProjectWizard wizard = new ScanProjectWizard(project, getView().getProjectDb(),"Scan Project") {
+			@Override
+			public void onFinishScan() {
+				super.onFinishScan();
+				final ProjectATDB projectATDB = project.getExtension(ProjectATDB.class);
+				if(projectATDB != null) {
+					try {
+						projectATDB.saveProjectDb();
+					} catch (IOException e) {
+						Toolkit.getDefaultToolkit().beep();
+						LogUtil.severe(e);
+					}
+				}
+				getView().updateAfterDbLoad();
+			}
+		};
 		wizard.showWizard();
 	}
 
