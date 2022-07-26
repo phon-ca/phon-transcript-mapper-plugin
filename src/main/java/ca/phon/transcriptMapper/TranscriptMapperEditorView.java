@@ -347,6 +347,12 @@ public final class TranscriptMapperEditorView extends EditorView {
 		actionMap.put(morphemeMenuActId, showMorphemeMenuAction);
 		final KeyStroke showMorphemeMenuKs = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
 		inputMap.put(showMorphemeMenuKs, morphemeMenuActId);
+
+		final PhonUIAction focusAct = new PhonUIAction(this, "onFocusAlignmentOptions", 0);
+		final String focusActId = "focus_alignment_options";
+		final KeyStroke focusKs = KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0);
+		actionMap.put(focusActId, focusAct);
+		inputMap.put(focusKs, focusActId);
 	}
 
 	private void setupAlignmentOptionsTable() {
@@ -372,6 +378,12 @@ public final class TranscriptMapperEditorView extends EditorView {
 		actionMap.put(alignmentOptionsMenuActId, showAlignmentOptionsMenuAct);
 		final KeyStroke showAlignmentOptionsMenuKs = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
 		inputMap.put(showAlignmentOptionsMenuKs, alignmentOptionsMenuActId);
+
+		final PhonUIAction focusAct = new PhonUIAction(this, "onFocusMorphemeTable", 0);
+		final String focusActId = "focus_morpheme_table";
+		final KeyStroke focusKs = KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0);
+		actionMap.put(focusActId, focusAct);
+		inputMap.put(focusKs, focusActId);
 	}
 
 	private void setState(TypeMapNode state) {
@@ -698,6 +710,11 @@ public final class TranscriptMapperEditorView extends EditorView {
 		getEditor().getUndoSupport().endUpdate();
 	}
 
+	public void onFocusMorphemeTable(PhonActionEvent pae) {
+		if(this.morphemesTable != null)
+			this.morphemesTable.requestFocusInWindow();
+	}
+
 	/**
 	 * Show morpheme menu for selected word/morpheme in table
 	 *
@@ -808,9 +825,12 @@ public final class TranscriptMapperEditorView extends EditorView {
 		if(morphemeIdx >= leafNodes.size()) return;
 		final TypeMapNode leafNode = leafNodes.get(morphemeIdx);
 
-		for(int i = 0; i < optionSet.length; i++) {
+		for(int i = 1; i < optionSet.length; i++) {
 			final String tierName = visibleTiers.get(i);
 			final String option = optionSet[i];
+
+			if(option.length() == 0) continue;
+
 			final String optionTxt = String.format("%s: %s \u2192 %s", tierName, leafNode.getMorpheme(tierName), option);
 			final String descTxt = String.format("Insert/Replace morpheme for tier %s", tierName);
 			final InsertMorphemeForTierData eventData = new InsertMorphemeForTierData();
@@ -820,6 +840,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 			final PhonUIAction insertMorphemeAct = new PhonUIAction(this, "insertMorphemeForTier", eventData);
 			insertMorphemeAct.putValue(PhonUIAction.NAME, optionTxt);
 			insertMorphemeAct.putValue(PhonUIAction.SHORT_DESCRIPTION, descTxt);
+			insertMorphemeAct.putValue(PhonUIAction.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_0 + i, 0));
 			builder.addItem(".", insertMorphemeAct);
 		}
 
