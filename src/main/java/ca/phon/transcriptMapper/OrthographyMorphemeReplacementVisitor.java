@@ -48,7 +48,7 @@ public class OrthographyMorphemeReplacementVisitor extends VisitorAdapter<OrthoE
 	@Visits
 	public void visitWordNet(OrthoWordnet wordnet) {
 		var morphemeList = flattenWordnet(wordnet);
-		if(morphemeIdx > currentMorphemeIdx && morphemeIdx <= currentMorphemeIdx + morphemeList.size()) {
+		if(morphemeIdx >= currentMorphemeIdx && morphemeIdx < currentMorphemeIdx + morphemeList.size()) {
 			// replace specific morpheme, recreate wordnet
 			OrthoWord lastWord = (currentMorphemeIdx++ == morphemeIdx ? new OrthoWord(morpheme) : morphemeList.get(0).getObj2());
 			for(int i = 1; i < morphemeList.size(); i++) {

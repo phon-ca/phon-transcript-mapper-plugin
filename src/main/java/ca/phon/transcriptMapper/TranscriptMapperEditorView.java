@@ -531,6 +531,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 					if(!currentOrtho.toString().equals(newOrtho.toString())) {
 						final TierEdit<Orthography> edit =
 								new TierEdit<>(getEditor(), currentRecord.getOrthography(), gIdx, newOrtho);
+						edit.setFireHardChangeOnUndo(true);
 						getEditor().getUndoSupport().postEdit(edit);
 					}
 				}
@@ -555,6 +556,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 							syllabifier.syllabify(newIpa.toList());
 							final TierEdit<IPATranscript> edit =
 									new TierEdit<>(getEditor(), ipaTier, gIdx, newIpa);
+							edit.setFireHardChangeOnUndo(true);
 							getEditor().getUndoSupport().postEdit(edit);
 						} catch (ParseException e) {
 							LogUtil.warning(e);
@@ -571,6 +573,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 								currentRecord.getIPATarget().getGroup(gIdx), currentRecord.getIPAActual().getGroup(gIdx));
 						final TierEdit<PhoneMap> edit =
 								new TierEdit<>(getEditor(), currentRecord.getPhoneAlignment(), gIdx, newAlignment);
+						edit.setFireHardChangeOnUndo(true);
 						getEditor().getUndoSupport().postEdit(edit);
 					}
 				}
