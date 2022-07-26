@@ -145,7 +145,7 @@ public final class AlignedTypesDatabase implements Serializable {
 						typeEntryForTier.addLinkedEntry(linkedEntry);
 						linkedEntry.addLinkedTier(tree, otherNodeRef);
 					} else {
-						linkedEntryOpt.get().addLinkedTier(tree, otherNodeRef);
+						linkedEntryOpt.get().incrementLinkedTier(tree, otherNodeRef);
 					}
 				}
 			}
@@ -208,10 +208,15 @@ public final class AlignedTypesDatabase implements Serializable {
 			String alignedTierName = linkedEntry.getTierName(tierDescriptionTree);
 			boolean includeTier = tierList.size() > 0 ? tierList.contains(alignedTierName) : true;
 			if(!includeTier) continue;
-			String[] alignedTierVals = new String[linkedEntry.getLinkedTierRefs(tree).size()];
+			var linkedTierCounts = linkedEntry.getLinkedTierCounts(tree)
+					.entrySet()
+					.stream()
+					.filter(e -> e.getValue() != null && e.getValue() > 0)
+					.collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
+			String[] alignedTierVals = new String[linkedTierCounts.size()];
 			int i = 0;
-			for(TernaryTreeNode<Collection<TypeEntry>> alignedEntry:linkedEntry.getLinkedTierRefs(tree)) {
-				alignedTierVals[i++] = alignedEntry.getPrefix();
+			for(Map.Entry<TernaryTreeNode<Collection<TypeEntry>>, Integer> alignedEntry:linkedTierCounts.entrySet()) {
+				alignedTierVals[i++] = alignedEntry.getKey().getPrefix();
 			}
 			retVal.put(alignedTierName, alignedTierVals);
 		}
@@ -589,12 +594,12 @@ public final class AlignedTypesDatabase implements Serializable {
 					if(existingLinkedEntry.isEmpty())
 						taggerEntry.getLinkedEntries().add(taggerLinkedEntry);
 
-					for(TernaryTreeNode<Collection<TypeEntry>> importTierNodeRef:importTaggerLinkedEntry.getLinkedTierRefs(importDb.tree)) {
+					for(Map.Entry<TernaryTreeNode<Collection<TypeEntry>>, Integer> importTierNodeRef:importTaggerLinkedEntry.getLinkedTierCounts(importDb.tree).entrySet()) {
 						// find the tree node for the linked type
 						Optional<TernaryTreeNode<Collection<TypeEntry>>> tierNodeRef =
-								tree.findNode(importTierNodeRef.getPrefix());
-						if(tierNodeRef.isPresent() && !taggerLinkedEntry.getLinkedTierRefs(tree).contains(tierNodeRef.get())) {
-							taggerLinkedEntry.addLinkedTier(tree, tierNodeRef.get());
+								tree.findNode(importTierNodeRef.getKey().getPrefix());
+						if(tierNodeRef.isPresent()) {
+							taggerLinkedEntry.getLinkedTierCounts(tree).put(tierNodeRef.get(), importTierNodeRef.getValue());
 						}
 					}
 				}
