@@ -19,7 +19,6 @@ import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.menu.MenuBuilder;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;
-import jline.internal.Log;
 import org.jdesktop.swingx.JXTable;
 
 import javax.swing.*;
@@ -1062,7 +1061,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 				}
 			} else {
 				// check that link exists to key
-				if(!getProjectDb().linkExists(keyTier(), key, tier, morpheme)) {
+				if(!getProjectDb().alignmentExists(keyTier(), key, tier, morpheme)) {
 					retVal.setFont(retVal.getFont().deriveFont(Font.ITALIC));
 				}
 			}
