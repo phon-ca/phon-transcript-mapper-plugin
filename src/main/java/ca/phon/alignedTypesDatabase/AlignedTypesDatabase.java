@@ -110,6 +110,16 @@ public final class AlignedTypesDatabase implements Serializable {
 		}
 	}
 
+	private Tuple<String[], String[]> alignedTypesToArrays(Map<String, String> alignedTypes) {
+		final List<Tuple<String, String>> alignedInfo =
+				alignedTypes.entrySet().stream()
+						.map(e -> new Tuple<String, String>(e.getKey(), e.getValue()))
+						.collect(Collectors.toList());
+		final String[] tierNames = alignedInfo.stream().map(Tuple::getObj1).collect(Collectors.toList()).toArray(new String[0]);
+		final String[] types = alignedInfo.stream().map(Tuple::getObj2).collect(Collectors.toList()).toArray(new String[0]);
+		return new Tuple<>(tierNames, types);
+	}
+
 	/**
 	 * Add aligned types to the database.  This method will add each type as a key in the database
 	 * and setup tier links as necessary.
@@ -117,14 +127,11 @@ public final class AlignedTypesDatabase implements Serializable {
 	 * @param alignedTypes a map of tierName -> types which will be added to the database
 	 */
 	public synchronized void addAlignedTypes(Map<String, String> alignedTypes) {
-		final List<Tuple<String, String>> alignedInfo =
-				alignedTypes.entrySet().stream()
-						.map(e -> new Tuple<String, String>(e.getKey(), e.getValue()))
-						.collect(Collectors.toList());
-		final String[] tierNames = alignedInfo.stream().map(Tuple::getObj1).collect(Collectors.toList()).toArray(new String[0]);
-		final String[] types = alignedInfo.stream().map(Tuple::getObj2).collect(Collectors.toList()).toArray(new String[0]);
+		final Tuple<String[], String[]> alignedArrays = alignedTypesToArrays(alignedTypes);
+		final String[] tierNames = alignedArrays.getObj1();
+		final String[] types = alignedArrays.getObj2();
 		// don't include cycle which already exists
-		if(includeInCartesianProduct(tierNames, types)) {
+		if(hasAlignedTypes(tierNames, types)) {
 			LogUtil.info(String.format("Alignment for tiers %s with types %s already exists",
 					Arrays.toString(tierNames), Arrays.toString(types)));
 			return;
@@ -170,14 +177,11 @@ public final class AlignedTypesDatabase implements Serializable {
 	}
 
 	public synchronized boolean removeAlignedTypes(Map<String, String> alignedTypes) {
-		final List<Tuple<String, String>> alignedInfo =
-				alignedTypes.entrySet().stream()
-						.map(e -> new Tuple<String, String>(e.getKey(), e.getValue()))
-						.collect(Collectors.toList());
-		final String[] tierNames = alignedInfo.stream().map(Tuple::getObj1).collect(Collectors.toList()).toArray(new String[0]);
-		final String[] types = alignedInfo.stream().map(Tuple::getObj2).collect(Collectors.toList()).toArray(new String[0]);
+		final Tuple<String[], String[]> alignedArrays = alignedTypesToArrays(alignedTypes);
+		final String[] tierNames = alignedArrays.getObj1();
+		final String[] types = alignedArrays.getObj2();
 		// don't include cycle which already exists
-		if(!includeInCartesianProduct(tierNames, types)) {
+		if(!hasAlignedTypes(tierNames, types)) {
 			LogUtil.info(String.format("Alignment for tiers %s with types %s does not exist",
 					Arrays.toString(tierNames), Arrays.toString(types)));
 			return false;
@@ -559,7 +563,7 @@ public final class AlignedTypesDatabase implements Serializable {
 				}
 
 				String[][] filteredCartesianProduct =
-						CartesianProduct.stringArrayProduct(typeOpts, (set) -> this.includeInCartesianProduct(tierNames().toArray(new String[0]), set));
+						CartesianProduct.stringArrayProduct(typeOpts, (set) -> this.hasAlignedTypes(tierNames().toArray(new String[0]), set));
 				for(String[] row:filteredCartesianProduct) {
 					writer.writeNext(row);
 				}
@@ -568,7 +572,15 @@ public final class AlignedTypesDatabase implements Serializable {
 		writer.flush();
 	}
 
-	public Boolean includeInCartesianProduct(String tierNames[], String[] rowVals) {
+	public Boolean hasAlignedTypes(Map<String, String> alignedTypes) {
+		final Tuple<String[], String[]> alignedArrays = alignedTypesToArrays(alignedTypes);
+		final String[] tierNames = alignedArrays.getObj1();
+		final String[] types = alignedArrays.getObj2();
+
+		return hasAlignedTypes(tierNames, types);
+	}
+
+	public Boolean hasAlignedTypes(String tierNames[], String[] rowVals) {
 		if(rowVals.length != tierNames.length) return false;
 
 		boolean retVal = true;

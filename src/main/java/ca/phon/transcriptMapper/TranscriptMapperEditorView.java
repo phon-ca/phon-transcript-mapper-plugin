@@ -879,7 +879,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		}
 
 		final String[][] product = CartesianProduct.stringArrayProduct(arrays,
-				(set) -> getProjectDb().includeInCartesianProduct(visibleTiers.toArray(new String[0]), set));
+				(set) -> getProjectDb().hasAlignedTypes(visibleTiers.toArray(new String[0]), set));
 		return product;
 	}
 
