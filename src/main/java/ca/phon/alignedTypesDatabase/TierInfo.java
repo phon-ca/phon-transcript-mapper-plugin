@@ -2,7 +2,7 @@ package ca.phon.alignedTypesDatabase;
 
 import java.io.Serializable;
 
-public class TierInfo implements Serializable {
+public final class TierInfo implements Serializable {
 
 	private static final long serialVersionUID = -5835662467026647994L;
 

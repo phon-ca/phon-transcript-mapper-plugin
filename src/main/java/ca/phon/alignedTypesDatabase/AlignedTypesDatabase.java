@@ -137,6 +137,10 @@ public final class AlignedTypesDatabase implements Serializable {
 			return;
 		}
 
+		addAlignedTypes(tierNames, types);
+	}
+
+	public synchronized void addAlignedTypes(String[] tierNames, String[] types) {
 		for(int i = 0; i < tierNames.length; i++) {
 			final String tierName = tierNames[i];
 			final String type = types[i];
@@ -187,6 +191,10 @@ public final class AlignedTypesDatabase implements Serializable {
 			return false;
 		}
 
+		return removeAlignedTypes(tierNames, types);
+	}
+
+	public synchronized boolean removeAlignedTypes(String[] tierNames, String[] types) {
 		for(int i = 0; i < tierNames.length; i++) {
 			final String tierName = tierNames[i];
 			final String type = types[i];

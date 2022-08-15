@@ -7,7 +7,7 @@ import java.util.function.Function;
 /**
  * Some helpful array methods used by the database
  */
-public class CartesianProduct {
+public final class CartesianProduct {
 
 	/**
 	 * Calculate cartesian set of provided string arrays

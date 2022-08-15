@@ -5,7 +5,7 @@ import ca.hedlund.tst.*;
 import java.io.*;
 import java.util.*;
 
-class TypeEntry implements Serializable {
+final class TypeEntry implements Serializable {
 
 	private static final long serialVersionUID = -8095511445561636192L;
 
