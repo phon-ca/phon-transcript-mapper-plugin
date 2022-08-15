@@ -116,6 +116,9 @@ public final class AlignedTypesDatabase implements Serializable {
 	 * @param alignedTypes a map of tierName -> types which will be added to the database
 	 */
 	public synchronized void addAlignedTypes(Map<String, String> alignedTypes) {
+		if(alignedTypes.get("Orthography").equals("microfoon")) {
+			System.out.println("Here");
+		}
 		for(var entry:alignedTypes.entrySet()) {
 			addTypeForTier(entry.getKey(), entry.getValue());
 		}

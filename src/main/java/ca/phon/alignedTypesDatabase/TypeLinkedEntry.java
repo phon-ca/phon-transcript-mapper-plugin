@@ -82,7 +82,7 @@ class TypeLinkedEntry implements Serializable {
 	                          TernaryTreeNode<Collection<TypeEntry>> linkedNode) {
 		var linkedTierCounts = getLinkedTierCounts(tree);
 		if(!linkedTierCounts.containsKey(linkedNode)) {
-			linkedTierCounts.put(linkedNode, 0);
+			linkedTierCounts.put(linkedNode, 1);
 		}
 	}
 
