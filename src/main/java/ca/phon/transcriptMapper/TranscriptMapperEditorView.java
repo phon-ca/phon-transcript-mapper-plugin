@@ -27,6 +27,7 @@ import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.*;
+import java.security.Key;
 import java.text.ParseException;
 import java.util.*;
 import java.util.List;
@@ -383,6 +384,14 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final KeyStroke focusKs = KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0);
 		actionMap.put(focusActId, focusAct);
 		inputMap.put(focusKs, focusActId);
+
+		final PhonUIAction deleteAlignedTypesAct = new PhonUIAction(this, "onDeleteAlignedTypes");
+		final String deleteAlignedTypesId = "delete_aligned_types";
+		actionMap.put(deleteAlignedTypesId, deleteAlignedTypesAct);
+		final KeyStroke deleteAlignedTypesKs = KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0);
+		final KeyStroke deleteAlignedTypesKs2 = KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, 0);
+		inputMap.put(deleteAlignedTypesKs, deleteAlignedTypesId);
+		inputMap.put(deleteAlignedTypesKs2, deleteAlignedTypesId);
 	}
 
 	private void setState(TypeMapNode state) {
@@ -714,6 +723,28 @@ public final class TranscriptMapperEditorView extends EditorView {
 			this.morphemesTable.requestFocusInWindow();
 	}
 
+	public void onDeleteAlignedTypes(PhonActionEvent pae) {
+		int selectedMorpheme = this.morphemesTable.getSelectedRow();
+		if(selectedMorpheme >= 0 && selectedMorpheme < this.currentState.getLeafCount()) {
+			TypeMapNode morphemeNode = this.currentState.getLeaves().get(selectedMorpheme);
+			final int selectedAlignment = this.alignmentOptionsTable.getSelectedRow();
+			if(selectedAlignment >= 0 && selectedAlignment < this.alignmentOptionsTableModel.alignmentRows.length) {
+				final String[] alignedTypes = this.alignmentOptionsTableModel.alignmentRows[selectedAlignment];
+
+				getProjectDb().removeAlignedTypes(getVisibleTiers().toArray(new String[0]), alignedTypes);
+				saveProjectDbAsync(() -> {
+					updateFromCurrentState();
+					SwingUtilities.invokeLater(() -> {
+						morphemesTable.getSelectionModel().setSelectionInterval(selectedMorpheme, selectedMorpheme);
+						SwingUtilities.invokeLater(() -> {
+							alignmentOptionsTable.getSelectionModel().setSelectionInterval(selectedAlignment, selectedAlignment);
+						});
+					});
+				});
+			}
+		}
+	}
+
 	/**
 	 * Show morpheme menu for selected word/morpheme in table
 	 *
@@ -856,6 +887,13 @@ public final class TranscriptMapperEditorView extends EditorView {
 		insertAlignedMorphemesAct.putValue(PhonUIAction.SHORT_DESCRIPTION,
 				"Insert aligned values into record, replacing current words/morphemes");
 		builder.addItem(".", insertAlignedMorphemesAct);
+
+		builder.addSeparator(".", "delete");
+		final PhonUIAction deleteAlignedTypesAct = new PhonUIAction(this, "onDeleteAlignedTypes");
+		deleteAlignedTypesAct.putValue(PhonUIAction.NAME, "Remove alignment from database");
+		deleteAlignedTypesAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Remove aligned types from database");
+		deleteAlignedTypesAct.putValue(PhonUIAction.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0));
+		builder.addItem(".", deleteAlignedTypesAct);
 	}
 
 	private String[][] alignmentOptionsForMorpheme(int morphemeIdx) {
