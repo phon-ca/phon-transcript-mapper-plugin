@@ -387,16 +387,20 @@ public final class AlignedTypesDatabase implements Serializable {
 				.filter((r) -> r.getPrefix().equals(linkedVal))
 				.findAny();
 		if(linkedValOpt.isPresent()) {
-			linkedEntry.getLinkedTierRefs(tree).remove(linkedValOpt.get());
+			int linkCnt = linkedEntry.getLinkedTierCount(tree, linkedValOpt.get());
+			if(linkCnt > 0) {
+				linkCnt = linkedEntry.decrementLinkedTier(tree, linkedValOpt.get());
+				if(linkCnt == 0) {
+					if (linkedEntry.getLinkedTierRefs(tree).size() == 0) {
+						taggerEntry.getLinkedEntries().remove(linkedEntry);
 
-			if(linkedEntry.getLinkedTierRefs(tree).size() == 0) {
-				taggerEntry.getLinkedEntries().remove(linkedEntry);
-
-				if(taggerEntry.getLinkedEntries().size() == 0) {
-					node.getValue().remove(taggerEntry);
+						if (taggerEntry.getLinkedEntries().size() == 0) {
+							node.getValue().remove(taggerEntry);
+						}
+					}
 				}
+				return true;
 			}
-			return true;
 		}
 		return false;
 	}
@@ -422,8 +426,12 @@ public final class AlignedTypesDatabase implements Serializable {
 				.stream()
 				.filter((r) -> r.getPrefix().equals(linkedVal))
 				.findAny();
-
-		return linkedValOpt.isPresent();
+		if(linkedValOpt.isPresent()) {
+			final int linkCnt = linkedEntry.getLinkedTierCount(tree, linkedValOpt.get());
+			return linkCnt > 0;
+		} else {
+			return false;
+		}
 	}
 
 	/**

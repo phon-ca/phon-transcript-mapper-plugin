@@ -31,6 +31,7 @@ class TypeLinkedEntry implements Serializable {
 
 	public String getTierName(TernaryTree<TierInfo> tierDescriptionTree) {
 		if(this.tierNameRef == null) {
+			// lazy-load after serialization
 			if(this.tierNamePath != null) {
 				Optional<TernaryTreeNode<TierInfo>> tierInfoOpt =
 						tierDescriptionTree.findNode(this.tierNamePath);
@@ -46,6 +47,7 @@ class TypeLinkedEntry implements Serializable {
 
 	public Map<TernaryTreeNode<Collection<TypeEntry>>, Integer> getLinkedTierCounts(TernaryTree<Collection<TypeEntry>> tree) {
 		if(this.linkedTierCounts == null) {
+			// lazy-load after serialization
 			if(this.linkedNodePaths != null) {
 				this.linkedTierCounts = new LinkedHashMap<>();
 				for(var path:this.linkedNodePaths.keySet()) {
@@ -90,12 +92,14 @@ class TypeLinkedEntry implements Serializable {
 	 *
 	 * @param tree
 	 * @param linkedNode
+	 * @return new value of link count
 	 */
-	public void incrementLinkedTier(TernaryTree<Collection<TypeEntry>> tree,
+	public int incrementLinkedTier(TernaryTree<Collection<TypeEntry>> tree,
 	                           TernaryTreeNode<Collection<TypeEntry>> linkedNode) {
 		var linkedTierCounts = getLinkedTierCounts(tree);
 		int newCnt = getLinkedTierCount(tree, linkedNode) + 1;
 		linkedTierCounts.put(linkedNode, newCnt);
+		return Math.max(newCnt, 0);
 	}
 
 	/**
@@ -103,8 +107,9 @@ class TypeLinkedEntry implements Serializable {
 	 *
 	 * @param tree
 	 * @param linkedNode
+	 * @return new value of link count
 	 */
-	public void decrementLinkedTier(TernaryTree<Collection<TypeEntry>> tree,
+	public int decrementLinkedTier(TernaryTree<Collection<TypeEntry>> tree,
 			TernaryTreeNode<Collection<TypeEntry>> linkedNode) {
 		var linkedTierCounts = getLinkedTierCounts(tree);
 		int newCnt = getLinkedTierCount(tree, linkedNode) - 1;
@@ -112,6 +117,7 @@ class TypeLinkedEntry implements Serializable {
 			linkedTierCounts.put(linkedNode, newCnt);
 		else
 			linkedTierCounts.remove(linkedNode);
+		return Math.max(newCnt, 0);
 	}
 
 	private void readObject(ObjectInputStream oin) throws IOException, ClassNotFoundException {
