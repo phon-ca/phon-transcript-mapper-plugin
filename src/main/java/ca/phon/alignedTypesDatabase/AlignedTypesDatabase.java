@@ -4,6 +4,7 @@ import au.com.bytecode.opencsv.*;
 import ca.hedlund.tst.*;
 import ca.phon.app.log.LogUtil;
 import ca.phon.session.*;
+import ca.phon.util.Tuple;
 import org.apache.commons.io.output.StringBuilderWriter;
 
 import java.io.*;
@@ -116,9 +117,20 @@ public final class AlignedTypesDatabase implements Serializable {
 	 * @param alignedTypes a map of tierName -> types which will be added to the database
 	 */
 	public synchronized void addAlignedTypes(Map<String, String> alignedTypes) {
-		if(alignedTypes.get("Orthography").equals("microfoon")) {
-			System.out.println("Here");
+		final List<Tuple<String, String>> alignedInfo =
+				alignedTypes.entrySet().stream()
+						.map(e -> new Tuple<String, String>(e.getKey(), e.getValue()))
+						.collect(Collectors.toList());
+		final String[] tierNames = alignedInfo.stream().map(Tuple::getObj1).collect(Collectors.toList()).toArray(new String[0]);
+		final String[] vals = alignedInfo.stream().map(Tuple::getObj2).collect(Collectors.toList()).toArray(new String[0]);
+		// don't include cycle which already exists
+		if(includeInCartesianProduct(tierNames, vals)) {
+			LogUtil.info(String.format("Alignment for tiers %s with types %s already exists",
+					Arrays.toString(tierNames), Arrays.toString(vals)));
+			return;
 		}
+
+		// bail if cycle already exists
 		for(var entry:alignedTypes.entrySet()) {
 			addTypeForTier(entry.getKey(), entry.getValue());
 		}
