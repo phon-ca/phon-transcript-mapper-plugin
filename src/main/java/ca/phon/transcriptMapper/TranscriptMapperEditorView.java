@@ -27,7 +27,7 @@ import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.table.*;
 import java.awt.*;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
 import java.io.*;
 import java.security.Key;
 import java.text.ParseException;
@@ -351,6 +351,37 @@ public final class TranscriptMapperEditorView extends EditorView {
 			updateAlignmentOptions();
 		});
 
+		final MouseAdapter ctxHandler = new MouseAdapter() {
+
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if(e.isPopupTrigger()) {
+					showCtxMenu(e);
+				}
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				if(e.isPopupTrigger()) {
+					showCtxMenu(e);
+				}
+			}
+
+			private void showCtxMenu(MouseEvent e) {
+				final int row = morphemesTable.rowAtPoint(e.getPoint());
+				if(row >= 0 && row < morphemesTable.getRowCount()) {
+					morphemesTable.getSelectionModel().setSelectionInterval(row, row);
+
+					final String[][] optionsForMorpheme = alignmentOptionsForMorpheme(row);
+					final JPopupMenu menu = new JPopupMenu();
+					setupMorphemeMenu(new MenuBuilder(menu), row, optionsForMorpheme);
+					menu.show(morphemesTable, e.getX(), e.getY());
+				}
+			}
+
+		};
+		morphemesTable.addMouseListener(ctxHandler);
+
 		final InputMap inputMap = morphemesTable.getInputMap(JComponent.WHEN_FOCUSED);
 		final ActionMap actionMap = morphemesTable.getActionMap();
 
@@ -383,6 +414,36 @@ public final class TranscriptMapperEditorView extends EditorView {
 		alignmentOptionsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		alignmentOptionsTable.setVisibleRowCount(8);
 		alignmentOptionsTable.setSortable(false);
+
+		final MouseAdapter ctxHandler = new MouseAdapter() {
+
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if(e.isPopupTrigger()) {
+					showCtxMenu(e);
+				}
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				if(e.isPopupTrigger()) {
+					showCtxMenu(e);
+				}
+			}
+
+			private void showCtxMenu(MouseEvent e) {
+				final int row = alignmentOptionsTable.rowAtPoint(e.getPoint());
+				if(row >= 0 && row < alignmentOptionsTable.getRowCount()) {
+					alignmentOptionsTable.getSelectionModel().setSelectionInterval(row, row);
+
+					final JPopupMenu menu = new JPopupMenu();
+					setupAlignmentOptionsMenu(new MenuBuilder(menu), morphemesTable.getSelectedRow(), row, alignmentOptionsTableModel.alignmentRows);
+					menu.show(alignmentOptionsTable, e.getX(), e.getY());
+				}
+			}
+
+		};
+		alignmentOptionsTable.addMouseListener(ctxHandler);
 
 		final InputMap inputMap = alignmentOptionsTable.getInputMap(JComponent.WHEN_FOCUSED);
 		final ActionMap actionMap = alignmentOptionsTable.getActionMap();
