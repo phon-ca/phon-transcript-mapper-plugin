@@ -17,6 +17,7 @@ import ca.phon.ui.*;
 import ca.phon.ui.action.*;
 import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.menu.MenuBuilder;
+import ca.phon.util.Tuple;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;
 import org.jdesktop.swingx.JXTable;
@@ -27,7 +28,6 @@ import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.*;
-import java.security.Key;
 import java.text.ParseException;
 import java.util.*;
 import java.util.List;
@@ -445,6 +445,33 @@ public final class TranscriptMapperEditorView extends EditorView {
 		}
 	}
 
+	/**
+	 * Called after adding or removing aligned types to the database
+	 *
+	 */
+	void updateAfterDbChange() {
+		final int selectedMorpheme = this.morphemesTable.getSelectedRow();
+		final int selectedOption = this.alignmentOptionsTable.getSelectedRow();
+
+		saveProjectDbAsync(() -> {
+			updateStateAsync(() -> {
+				updateFromCurrentState();
+				SwingUtilities.invokeLater(() -> {
+					if(selectedMorpheme >= 0 && selectedMorpheme < this.morphemesTableModel.getRowCount()) {
+						this.morphemesTable.getSelectionModel().setSelectionInterval(selectedMorpheme, selectedMorpheme);
+						if(selectedOption >= 0) {
+							SwingUtilities.invokeLater(() -> {
+								if(selectedOption < this.alignmentOptionsTableModel.getRowCount()) {
+									this.alignmentOptionsTable.getSelectionModel().setSelectionInterval(selectedOption, selectedOption);
+								}
+							});
+						}
+					}
+				});
+			});
+		});
+	}
+
 	@Override
 	public String getName() {
 		return NAME;
@@ -733,15 +760,10 @@ public final class TranscriptMapperEditorView extends EditorView {
 				alignedTypes.put(tierName, morphemeNode.getMorpheme(tierName));
 			}
 
-			getProjectDb().addAlignedTypes(alignedTypes);
-			saveProjectDbAsync(() -> {
-				updateStateAsync(() -> {
-					updateFromCurrentState();
-					SwingUtilities.invokeLater(() -> {
-						this.morphemesTable.getSelectionModel().setSelectionInterval(selectedMorpheme, selectedMorpheme);
-					});
-				});
-			});
+			final Tuple<String[], String[]> alignedTypeArrays = AlignedTypesDatabase.alignedTypesToArrays(alignedTypes);
+			final AlignedTypesEdit edit = new AlignedTypesEdit(getEditor(), this,
+					AlignedTypesEdit.Operation.ADD, alignedTypeArrays.getObj1(), alignedTypeArrays.getObj2());
+			getEditor().getUndoSupport().postEdit(edit);
 		}
 	}
 
@@ -753,18 +775,9 @@ public final class TranscriptMapperEditorView extends EditorView {
 			if(selectedAlignment >= 0 && selectedAlignment < this.alignmentOptionsTableModel.alignmentRows.length) {
 				final String[] alignedTypes = this.alignmentOptionsTableModel.alignmentRows[selectedAlignment];
 
-				getProjectDb().removeAlignedTypes(getVisibleTiers().toArray(new String[0]), alignedTypes);
-				saveProjectDbAsync(() -> {
-					updateStateAsync(() -> {
-						updateFromCurrentState();
-						SwingUtilities.invokeLater(() -> {
-							morphemesTable.getSelectionModel().setSelectionInterval(selectedMorpheme, selectedMorpheme);
-							SwingUtilities.invokeLater(() -> {
-								alignmentOptionsTable.getSelectionModel().setSelectionInterval(selectedAlignment, selectedAlignment);
-							});
-						});
-					});
-				});
+				final AlignedTypesEdit edit = new AlignedTypesEdit(getEditor(), this,
+						AlignedTypesEdit.Operation.REMOVE, getVisibleTiers().toArray(new String[0]), alignedTypes);
+				getEditor().getUndoSupport().postEdit(edit);
 			}
 		}
 	}

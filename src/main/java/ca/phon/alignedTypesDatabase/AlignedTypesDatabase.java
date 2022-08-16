@@ -110,7 +110,7 @@ public final class AlignedTypesDatabase implements Serializable {
 		}
 	}
 
-	private Tuple<String[], String[]> alignedTypesToArrays(Map<String, String> alignedTypes) {
+	public static Tuple<String[], String[]> alignedTypesToArrays(Map<String, String> alignedTypes) {
 		final List<Tuple<String, String>> alignedInfo =
 				alignedTypes.entrySet().stream()
 						.map(e -> new Tuple<String, String>(e.getKey(), e.getValue()))
