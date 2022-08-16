@@ -8,6 +8,7 @@ import ca.phon.app.session.editor.view.common.*;
 import ca.phon.extensions.UnvalidatedValue;
 import ca.phon.ipa.*;
 import ca.phon.ipa.alignment.*;
+import ca.phon.ipadictionary.IPADictionaryLibrary;
 import ca.phon.orthography.Orthography;
 import ca.phon.session.*;
 import ca.phon.session.Record;
@@ -17,7 +18,7 @@ import ca.phon.ui.*;
 import ca.phon.ui.action.*;
 import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.menu.MenuBuilder;
-import ca.phon.util.Tuple;
+import ca.phon.util.*;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;
 import org.jdesktop.swingx.JXTable;
@@ -216,7 +217,19 @@ public final class TranscriptMapperEditorView extends EditorView {
 		builder.addItem(".", new ImportCSVAction(this));
 		builder.addItem(".", new ExportCSVAction(this));
 		builder.addSeparator(".", "csv");
+
+		final JMenu importDictMenu = builder.addMenu(".", "Import IPA dictionary");
+		final MenuBuilder importBuilder = new MenuBuilder(importDictMenu);
+		setupImportDictionaryMenu(importBuilder);
+
+		builder.addSeparator(".", "import_dict");
 		builder.addItem(".", new ImportDatabaseAction(this));
+	}
+
+	private void setupImportDictionaryMenu(MenuBuilder builder) {
+		for(Language dictLang:IPADictionaryLibrary.getInstance().availableLanguages()) {
+			builder.addItem(".", new ImportIPADictionaryAction(this, dictLang));
+		}
 	}
 
 	private void setupTiersMenu(MenuBuilder builder) {

@@ -593,7 +593,7 @@ public final class AlignedTypesDatabase implements Serializable {
 
 		boolean retVal = true;
 		// only include row if all values have links between them
-		for(int i = 1; i < rowVals.length-1; i++) {
+		for(int i = 0; i < rowVals.length-1; i++) {
 			String v1 = rowVals[i];
 			if(v1 == null) continue; // ignore empty tier values
 			String t1 = tierNames[i];
