@@ -29,6 +29,7 @@ import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.*;
+import java.security.Key;
 import java.text.ParseException;
 import java.util.*;
 import java.util.List;
@@ -210,7 +211,6 @@ public final class TranscriptMapperEditorView extends EditorView {
 		toolbar.add(dbBtn);
 		toolbar.add(tiersBtn);
 	}
-
 	private void setupDatabaseMenu(MenuBuilder builder) {
 		builder.addItem(".", new ScanProjectAction(this));
 		builder.addSeparator(".", "scan");
@@ -406,6 +406,14 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final KeyStroke deleteAlignedTypesKs2 = KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, 0);
 		inputMap.put(deleteAlignedTypesKs, deleteAlignedTypesId);
 		inputMap.put(deleteAlignedTypesKs2, deleteAlignedTypesId);
+
+		for(int i = 1; i < 10; i++) {
+			final PhonUIAction selectTypeAction = new PhonUIAction(this, "onSelectTierOption", Integer.valueOf(i));
+			final String selectTypeId = "select_tier_option_" + i;
+			final KeyStroke selectTypeKs = KeyStroke.getKeyStroke(KeyEvent.VK_0 + i, 0);
+			actionMap.put(selectTypeId, selectTypeAction);
+			inputMap.put(selectTypeKs, selectTypeId);
+		}
 	}
 
 	private void setState(TypeMapNode state) {
@@ -883,6 +891,22 @@ public final class TranscriptMapperEditorView extends EditorView {
 		this.alignmentOptionsTable.scrollRowToVisible(focusRow);
 	}
 
+	public void onSelectTierOption(Integer tierNum) {
+		final int selectedMorpheme = this.morphemesTable.getSelectedRow();
+		if(selectedMorpheme < 0 || selectedMorpheme >= this.currentState.getLeafCount()) return;
+
+		final int selectedOption = this.alignmentOptionsTable.getSelectedRow();
+		if(selectedOption < 0 || selectedOption >= this.alignmentOptionsTableModel.alignmentRows.length) return;
+
+		final String[] types = this.alignmentOptionsTableModel.alignmentRows[selectedOption];
+		if(tierNum > 0 && tierNum < getVisibleTiers().size()) {
+			final String tierName = getVisibleTiers().get(tierNum);
+			final String selectedType = types[tierNum];
+
+			updateTier(selectedMorpheme, tierName, selectedType);
+		}
+	}
+
 	public void showAlignmentOptionsMenu(PhonActionEvent pae) {
 		final JPopupMenu popupMenu = new JPopupMenu();
 		final MenuBuilder builder = new MenuBuilder(popupMenu);
@@ -1227,7 +1251,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		}
 
 		public String getColumnName(int colIdx) {
-			return getVisibleTiers().get(colIdx);
+			return getVisibleTiers().get(colIdx) + (colIdx > 0 ? " (" + colIdx + ")" : "");
 		}
 
 		@Override
