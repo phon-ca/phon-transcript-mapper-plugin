@@ -29,7 +29,6 @@ import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
-import java.security.Key;
 import java.text.ParseException;
 import java.util.*;
 import java.util.List;
@@ -77,7 +76,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		super(editor);
 
 		init();
-		loadProjectDbAsync(this::updateAfterDbLoad);
+		loadUserDbAsync(this::updateAfterDbLoad);
 
 		setupEditorEvenListeners();
 	}
@@ -113,44 +112,39 @@ public final class TranscriptMapperEditorView extends EditorView {
 	@RunOnEDT
 	public void onTierViewChanged(EditorEvent ee) { updateAfterDbLoad(); }
 
-	AlignedTypesDatabase getProjectDb() {
-		final ProjectATDB projectATDB = getEditor().getProject().getExtension(ProjectATDB.class);
-		if(projectATDB != null) {
-			return projectATDB.getATDB();
-		} else {
-			// shouldn't happen
-			return new AlignedTypesDatabase();
-		}
+	AlignedTypesDatabase getUserDb() {
+		final UserATDB userATDB = UserATDB.getInstance();
+		return userATDB.getATDB();
 	}
 
-	private void loadProjectDbAsync(Runnable onFinish) {
-		final PhonTask task = PhonWorker.invokeOnNewWorker(this::loadProjectDb, onFinish, LogUtil::warning);
-		task.setName("Loading aligned morpheme database");
+	private void loadUserDbAsync(Runnable onFinish) {
+		final PhonTask task = PhonWorker.invokeOnNewWorker(this::loadUserDb, onFinish, LogUtil::warning);
+		task.setName("Loading aligned types database");
 		getEditor().getStatusBar().watchTask(task);
 	}
 
-	private void loadProjectDb() {
-		final ProjectATDB projectATDB = getEditor().getProject().getExtension(ProjectATDB.class);
-		if(projectATDB != null) {
+	private void loadUserDb() {
+		final UserATDB userATDB = UserATDB.getInstance();
+		if(!userATDB.isATDBLoaded()) {
 			try {
-				projectATDB.loadATDB();
+				userATDB.loadATDB();
 			} catch (IOException e) {
 				LogUtil.severe(e);
 			}
 		}
 	}
 
-	void saveProjectDbAsync(Runnable onFinish) {
-		final PhonTask task = PhonWorker.invokeOnNewWorker(this::saveProjectDb, onFinish, LogUtil::warning);
+	void saveUserDbAsync(Runnable onFinish) {
+		final PhonTask task = PhonWorker.invokeOnNewWorker(this::saveUserDb, onFinish, LogUtil::warning);
 		task.setName("Saving aligned morpheme database");
 		getEditor().getStatusBar().watchTask(task);
 	}
 
-	private void saveProjectDb() {
-		final ProjectATDB projectATDB = getEditor().getProject().getExtension(ProjectATDB.class);
-		if(projectATDB != null) {
+	private void saveUserDb() {
+		final UserATDB userATDB = UserATDB.getInstance();
+		if(userATDB != null) {
 			try {
-				projectATDB.saveProjectDb();
+				userATDB.saveDb();
 			} catch (IOException e) {
 				LogUtil.severe(e);
 			}
@@ -511,7 +505,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	}
 
 	void updateAfterDbLoad() {
-		if(getProjectDb() == null) return;
+		if(getUserDb() == null) return;
 
 		this.keyTierBox.setModel(new DefaultComboBoxModel<>(getVisibleTiers().toArray(new String[0])));
 		this.keyTierBox.setSelectedItem(SystemTierType.Orthography.getName());
@@ -528,28 +522,26 @@ public final class TranscriptMapperEditorView extends EditorView {
 	}
 
 	/**
-	 * Called after adding or removing aligned types to the database
+	 * Called after adding or removing aligned types to the database retains table selection
 	 *
 	 */
 	void updateAfterDbChange() {
 		final int selectedMorpheme = this.morphemesTable.getSelectedRow();
 		final int selectedOption = this.alignmentOptionsTable.getSelectedRow();
 
-		saveProjectDbAsync(() -> {
-			updateStateAsync(() -> {
-				updateFromCurrentState();
-				SwingUtilities.invokeLater(() -> {
-					if(selectedMorpheme >= 0 && selectedMorpheme < this.morphemesTableModel.getRowCount()) {
-						this.morphemesTable.getSelectionModel().setSelectionInterval(selectedMorpheme, selectedMorpheme);
-						if(selectedOption >= 0) {
-							SwingUtilities.invokeLater(() -> {
-								if(selectedOption < this.alignmentOptionsTableModel.getRowCount()) {
-									this.alignmentOptionsTable.getSelectionModel().setSelectionInterval(selectedOption, selectedOption);
-								}
-							});
-						}
+		updateStateAsync(() -> {
+			updateFromCurrentState();
+			SwingUtilities.invokeLater(() -> {
+				if(selectedMorpheme >= 0 && selectedMorpheme < this.morphemesTableModel.getRowCount()) {
+					this.morphemesTable.getSelectionModel().setSelectionInterval(selectedMorpheme, selectedMorpheme);
+					if(selectedOption >= 0) {
+						SwingUtilities.invokeLater(() -> {
+							if(selectedOption < this.alignmentOptionsTableModel.getRowCount()) {
+								this.alignmentOptionsTable.getSelectionModel().setSelectionInterval(selectedOption, selectedOption);
+							}
+						});
 					}
-				});
+				}
 			});
 		});
 	}
@@ -725,7 +717,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	private TypeMapNode stateFromRecord(Record record) {
 		final TypeMapNode root = new TypeMapNode(-1);
 
-		final AlignedTypesDatabase projectDb = getProjectDb();
+		final AlignedTypesDatabase projectDb = getUserDb();
 		if(projectDb == null) return root;
 
 		final String keyTier = keyTier();
@@ -797,7 +789,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	 * @param tierName
 	 */
 	public void toggleTier(String tierName) {
-		final AlignedTypesDatabase projectDb = getProjectDb();
+		final AlignedTypesDatabase projectDb = getUserDb();
 		if(projectDb == null) return;
 
 		final Optional<TierInfo> tierInfoOpt =
@@ -806,7 +798,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 			TierInfo tierInfo = tierInfoOpt.get();
 			tierInfo.setVisible(!tierInfo.isVisible());
 
-			saveProjectDbAsync(this::updateAfterDbLoad);
+			saveUserDbAsync(this::updateAfterDbLoad);
 		}
 	}
 
@@ -937,7 +929,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		for(String tierName:getVisibleTiers()) {
 			alignedTypes.put(tierName, morphemeNode.getMorpheme(tierName));
 		}
-		if(!this.getProjectDb().hasAlignedTypes(alignedTypes)) {
+		if(!this.getUserDb().hasAlignedTypes(alignedTypes)) {
 			builder.addSeparator(".", "add_alignment");
 			final PhonUIAction onAddAlignedTypesAct = new PhonUIAction(this, "onAddAlignedTypes");
 			onAddAlignedTypesAct.putValue(PhonUIAction.NAME, "Add alignment to database");
@@ -1065,7 +1057,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		}
 
 		final String[][] product = CartesianProduct.stringArrayProduct(arrays,
-				(set) -> getProjectDb().hasAlignedTypes(visibleTiers.toArray(new String[0]), set));
+				(set) -> getUserDb().hasAlignedTypes(visibleTiers.toArray(new String[0]), set));
 		return product;
 	}
 
@@ -1105,7 +1097,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	public List<String> allTiers() {
 		Set<String> tierSet = new LinkedHashSet<>();
 		tierSet.addAll(sessionGroupedTiers());
-		final AlignedTypesDatabase projectDb = getProjectDb();
+		final AlignedTypesDatabase projectDb = getUserDb();
 		if(projectDb != null)
 			tierSet.addAll(projectDb.tierNames());
 		return tierSet.stream().collect(Collectors.toList());
@@ -1134,7 +1126,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	}
 
 	private boolean dbTierVisible(String tierName) {
-		final AlignedTypesDatabase projectDb = getProjectDb();
+		final AlignedTypesDatabase projectDb = getUserDb();
 		if(projectDb == null) return true;
 		final Optional<TierInfo> tierInfoOpt =
 				projectDb.getTierInfo().stream().filter(ti -> ti.getTierName().equals(tierName)).findAny();
@@ -1222,7 +1214,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 			tierList.add(0, keyTierBox.getSelectedItem().toString());
 		}
 		// filter based on database visibility
-		if(getProjectDb() != null) {
+		if(getUserDb() != null) {
 			return tierList.stream().filter(this::dbTierVisible).collect(Collectors.toList());
 		} else {
 			return tierList;
@@ -1242,12 +1234,12 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 			if(column == 0) {
 				// check that key exists in database
-				if(!getProjectDb().typeExistsInTier(key, keyTier())) {
+				if(!getUserDb().typeExistsInTier(key, keyTier())) {
 					retVal.setFont(retVal.getFont().deriveFont(Font.ITALIC));
 				}
 			} else {
 				// check that link exists to key
-				if(!getProjectDb().alignmentExists(keyTier(), key, tier, morpheme)) {
+				if(!getUserDb().alignmentExists(keyTier(), key, tier, morpheme)) {
 					retVal.setFont(retVal.getFont().deriveFont(Font.ITALIC));
 				}
 			}

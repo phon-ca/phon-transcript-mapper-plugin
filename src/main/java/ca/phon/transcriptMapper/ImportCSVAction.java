@@ -1,11 +1,11 @@
 package ca.phon.transcriptMapper;
 
-import ca.phon.alignedTypesDatabase.*;
 import ca.phon.app.log.LogUtil;
 import ca.phon.ui.nativedialogs.*;
 import ca.phon.ui.nativedialogs.FileFilter;
 import ca.phon.worker.*;
 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.*;
@@ -48,7 +48,7 @@ public class ImportCSVAction extends TranscriptMapperAction {
 			public void performTask() {
 				super.setStatus(TaskStatus.RUNNING);
 				try {
-					getView().getProjectDb().importFromCSV(new File(filename));
+					getView().getUserDb().importFromCSV(new File(filename));
 					super.setStatus(TaskStatus.FINISHED);
 				} catch (IOException e) {
 					Toolkit.getDefaultToolkit().beep();
@@ -62,7 +62,8 @@ public class ImportCSVAction extends TranscriptMapperAction {
 
 		getView().getEditor().getStatusBar().watchTask(importTask);
 		PhonWorker.invokeOnNewWorker(importTask, () -> {
-			getView().saveProjectDbAsync(getView()::updateAfterDbLoad);
+			SwingUtilities.invokeLater(getView()::updateAfterDbLoad);
+			getView().saveUserDbAsync(() -> {});
 		});
 	}
 

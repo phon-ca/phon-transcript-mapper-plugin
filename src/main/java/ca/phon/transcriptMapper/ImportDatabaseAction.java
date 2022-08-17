@@ -1,14 +1,11 @@
 package ca.phon.transcriptMapper;
 
 import ca.phon.alignedTypesDatabase.*;
-import ca.phon.app.hooks.HookableAction;
 import ca.phon.app.log.LogUtil;
-import ca.phon.app.session.editor.*;
 import ca.phon.ui.nativedialogs.*;
-import ca.phon.util.icons.*;
 import ca.phon.worker.*;
-import jline.internal.Log;
 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.IOException;
@@ -66,7 +63,7 @@ public class ImportDatabaseAction extends TranscriptMapperAction {
 
 					// TODO display interface for modifying imported values
 
-					getView().getProjectDb().importDatabase(importDb);
+					getView().getUserDb().importDatabase(importDb);
 					super.setStatus(TaskStatus.FINISHED);
 				} catch (IOException e) {
 					Toolkit.getDefaultToolkit().beep();
@@ -80,7 +77,8 @@ public class ImportDatabaseAction extends TranscriptMapperAction {
 
 		getView().getEditor().getStatusBar().watchTask(importTask);
 		PhonWorker.invokeOnNewWorker(importTask, () -> {
-			getView().saveProjectDbAsync(getView()::updateAfterDbLoad);
+			SwingUtilities.invokeLater(getView()::updateAfterDbLoad);
+			getView().saveUserDbAsync(() -> {});
 		});
 	}
 

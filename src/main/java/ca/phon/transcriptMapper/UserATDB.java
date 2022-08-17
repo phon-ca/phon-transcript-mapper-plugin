@@ -25,7 +25,7 @@ public class UserATDB {
 		return _instance;
 	}
 
-	UserATDB() {
+	private UserATDB() {
 	}
 
 	public boolean isATDBLoaded() {
@@ -61,16 +61,17 @@ public class UserATDB {
 		}
 	}
 
-	public synchronized void backupProjectDb() throws IOException {
+	public synchronized void backupDb() throws IOException {
 		FileUtils.copyFile(projectDbFile(), projectBackupFile());
 	}
 
-	public synchronized void saveProjectDb() throws  IOException {
+	public synchronized void saveDb() throws  IOException {
 		final File projectDbFile = projectDbFile();
 		final File parentFolder = projectDbFile.getParentFile();
 		if(!parentFolder.exists()) {
 			parentFolder.mkdirs();
 		}
+		backupDb();
 		AlignedTypesDatabaseIO.writeToFile(this.atdb, projectDbFile);
 	}
 

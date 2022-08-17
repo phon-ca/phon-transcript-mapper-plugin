@@ -4,9 +4,6 @@ import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
 import ca.phon.app.session.editor.SessionEditor;
 import ca.phon.app.session.editor.undo.SessionEditorUndoableEdit;
 
-import javax.swing.undo.UndoableEdit;
-import java.util.Map;
-
 public class AlignedTypesEdit extends SessionEditorUndoableEdit {
 
 	public static enum Operation {
@@ -39,7 +36,7 @@ public class AlignedTypesEdit extends SessionEditorUndoableEdit {
 
 	@Override
 	public void doIt() {
-		final AlignedTypesDatabase db = view.getProjectDb();
+		final AlignedTypesDatabase db = view.getUserDb();
 		switch (operation) {
 			case ADD -> db.addAlignedTypes(tierNames, types);
 			case REMOVE -> db.removeAlignedTypes(tierNames, types);
@@ -49,7 +46,7 @@ public class AlignedTypesEdit extends SessionEditorUndoableEdit {
 
 	@Override
 	public void undo() {
-		final AlignedTypesDatabase db = view.getProjectDb();
+		final AlignedTypesDatabase db = view.getUserDb();
 		switch (operation) {
 			case ADD -> db.removeAlignedTypes(tierNames, types);
 			case REMOVE -> db.addAlignedTypes(tierNames, types);

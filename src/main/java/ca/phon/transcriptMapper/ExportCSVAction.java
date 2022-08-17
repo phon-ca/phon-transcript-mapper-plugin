@@ -1,6 +1,5 @@
 package ca.phon.transcriptMapper;
 
-import ca.phon.alignedTypesDatabase.*;
 import ca.phon.app.log.LogUtil;
 import ca.phon.ui.nativedialogs.*;
 import ca.phon.ui.nativedialogs.FileFilter;
@@ -47,7 +46,7 @@ public class ExportCSVAction extends TranscriptMapperAction {
 			public void performTask() {
 				super.setStatus(TaskStatus.RUNNING);
 				try {
-					getView().getProjectDb().exportToCSV(getView().keyTier(), new File(filename), "UTF-8");
+					getView().getUserDb().exportToCSV(getView().keyTier(), new File(filename), "UTF-8");
 					super.setStatus(TaskStatus.FINISHED);
 				} catch (IOException e) {
 					Toolkit.getDefaultToolkit().beep();

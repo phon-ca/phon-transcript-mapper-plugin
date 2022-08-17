@@ -36,7 +36,7 @@ public class ImportIPADictionaryAction extends TranscriptMapperAction {
 				// and randomize them for efficiency
 				final List<Map<String, String>> alignedTypesList = new ArrayList<>();
 
-				final AlignedTypesDatabase db = getView().getProjectDb();
+				final AlignedTypesDatabase db = getView().getUserDb();
 				final List<IPADictionary> dicts = IPADictionaryLibrary.getInstance().dictionariesForLanguage(dictLang);
 				for(IPADictionary dict:dicts) {
 					OrthoKeyIterator keyItr = dict.getExtension(OrthoKeyIterator.class);
