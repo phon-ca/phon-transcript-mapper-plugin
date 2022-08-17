@@ -32,6 +32,10 @@ public class ImportIPADictionaryAction extends TranscriptMapperAction {
 			public void performTask() {
 				super.setStatus(TaskStatus.RUNNING);
 
+				// entries will be given in alphabetical order, we need to collect
+				// and randomize them for efficiency
+				final List<Map<String, String>> alignedTypesList = new ArrayList<>();
+
 				final AlignedTypesDatabase db = getView().getProjectDb();
 				final List<IPADictionary> dicts = IPADictionaryLibrary.getInstance().dictionariesForLanguage(dictLang);
 				for(IPADictionary dict:dicts) {
@@ -49,10 +53,16 @@ public class ImportIPADictionaryAction extends TranscriptMapperAction {
 								alignedTypes.put(SystemTierType.IPAActual.getName(), opt);
 								alignedTypes.put("Language", dictLang.toString());
 
-								db.addAlignedTypes(alignedTypes);
+								alignedTypesList.add(alignedTypes);
 							}
 						}
 					}
+				}
+
+				// randomize entries
+				Collections.shuffle(alignedTypesList);
+				for(Map<String, String> alignedTypes:alignedTypesList) {
+					db.addAlignedTypes(alignedTypes);
 				}
 
 				super.setStatus(TaskStatus.FINISHED);
