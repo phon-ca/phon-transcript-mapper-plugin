@@ -8,6 +8,7 @@ import ca.phon.ui.action.PhonUIAction;
 import ca.phon.util.Language;
 import ca.phon.worker.*;
 
+import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.util.*;
 

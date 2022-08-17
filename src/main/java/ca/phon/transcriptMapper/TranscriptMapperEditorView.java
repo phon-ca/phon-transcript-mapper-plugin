@@ -798,7 +798,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 			TierInfo tierInfo = tierInfoOpt.get();
 			tierInfo.setVisible(!tierInfo.isVisible());
 
-			saveUserDbAsync(this::updateAfterDbLoad);
+			this.updateAfterDbLoad();
 		}
 	}
 

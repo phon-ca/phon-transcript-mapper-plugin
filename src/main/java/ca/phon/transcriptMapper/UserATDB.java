@@ -41,12 +41,12 @@ public class UserATDB {
 		return atdb;
 	}
 
-	private File projectDbFile() {
+	private File getDbFile() {
 		final File dbFile = new File(PrefHelper.getUserDataFolder(), USER_DB_FILENAME);
 		return dbFile;
 	}
 
-	private File projectBackupFile() {
+	private File backupDbFile() {
 		final File dbFile = new File(PrefHelper.getUserDataFolder(), BACKUP_DB_FILENAME);
 		return dbFile;
 	}
@@ -55,24 +55,25 @@ public class UserATDB {
 	 * Load the project {@link AlignedTypesDatabase}
 	 */
 	public synchronized void loadATDB() throws IOException {
-		final File projectDbFile = projectDbFile();
+		final File projectDbFile = getDbFile();
 		if(projectDbFile.exists()) {
 			this.atdb = AlignedTypesDatabaseIO.readFromFile(projectDbFile);
 		}
 	}
 
 	public synchronized void backupDb() throws IOException {
-		FileUtils.copyFile(projectDbFile(), projectBackupFile());
+		FileUtils.copyFile(getDbFile(), backupDbFile());
 	}
 
 	public synchronized void saveDb() throws  IOException {
-		final File projectDbFile = projectDbFile();
-		final File parentFolder = projectDbFile.getParentFile();
+		final File dbFile = getDbFile();
+		final File parentFolder = dbFile.getParentFile();
 		if(!parentFolder.exists()) {
 			parentFolder.mkdirs();
 		}
-		backupDb();
-		AlignedTypesDatabaseIO.writeToFile(this.atdb, projectDbFile);
+		if(dbFile.exists())
+			backupDb();
+		AlignedTypesDatabaseIO.writeToFile(this.atdb, dbFile);
 	}
 
 }

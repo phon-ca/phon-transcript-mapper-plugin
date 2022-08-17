@@ -61,10 +61,7 @@ public class ImportCSVAction extends TranscriptMapperAction {
 		importTask.setName(DESC);
 
 		getView().getEditor().getStatusBar().watchTask(importTask);
-		PhonWorker.invokeOnNewWorker(importTask, () -> {
-			SwingUtilities.invokeLater(getView()::updateAfterDbLoad);
-			getView().saveUserDbAsync(() -> {});
-		});
+		PhonWorker.invokeOnNewWorker(importTask, getView()::updateAfterDbChange);
 	}
 
 }
