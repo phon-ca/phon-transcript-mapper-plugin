@@ -10,6 +10,7 @@ import ca.phon.ipa.*;
 import ca.phon.ipa.alignment.*;
 import ca.phon.ipadictionary.IPADictionaryLibrary;
 import ca.phon.orthography.Orthography;
+import ca.phon.project.Project;
 import ca.phon.session.*;
 import ca.phon.session.Record;
 import ca.phon.session.alignedMorphemes.*;
@@ -783,23 +784,33 @@ public final class TranscriptMapperEditorView extends EditorView {
 		keyTierBox.setSelectedItem(keyTier);
 	}
 
+	private String tierVisiblityProp() {
+		final Project project = getEditor().getProject();
+		final Session session = getEditor().getSession();
+
+		final String prop = String.format("%s.%s.%s.transcriptMapper.hiddenTiers",
+				project.getUUID().toString(), session.getCorpus(), session.getName());
+		return prop;
+	}
+
 	/**
 	 * Toggle database visibility of specified tier
 	 *
 	 * @param tierName
 	 */
 	public void toggleTier(String tierName) {
-		final AlignedTypesDatabase projectDb = getUserDb();
-		if(projectDb == null) return;
-
-		final Optional<TierInfo> tierInfoOpt =
-				projectDb.getTierInfo().stream().filter(ti -> ti.getTierName().equals(tierName)).findAny();
-		if(tierInfoOpt.isPresent()) {
-			TierInfo tierInfo = tierInfoOpt.get();
-			tierInfo.setVisible(!tierInfo.isVisible());
-
-			this.updateAfterDbLoad();
+		final String hiddenTiers = PrefHelper.getUserPreferences().get(tierVisiblityProp(), "");
+		final List<String> tierNames = new ArrayList<>();
+		tierNames.addAll(List.of(hiddenTiers.split(",")));
+		if(tierNames.contains(tierName)) {
+			tierNames.remove(tierName);
+		} else {
+			tierNames.add(tierName);
 		}
+		final String newHiddenTiers = tierNames.stream().collect(Collectors.joining(","));
+		PrefHelper.getUserPreferences().put(tierVisiblityProp(), newHiddenTiers);
+
+		updateAfterDbLoad();
 	}
 
 	/**
@@ -1126,15 +1137,9 @@ public final class TranscriptMapperEditorView extends EditorView {
 	}
 
 	private boolean dbTierVisible(String tierName) {
-		final AlignedTypesDatabase projectDb = getUserDb();
-		if(projectDb == null) return true;
-		final Optional<TierInfo> tierInfoOpt =
-				projectDb.getTierInfo().stream().filter(ti -> ti.getTierName().equals(tierName)).findAny();
-		if(tierInfoOpt.isPresent()) {
-			return tierInfoOpt.get().isVisible();
-		} else {
-			return false;
-		}
+		final String hiddenTiers = PrefHelper.get(tierVisiblityProp(), "");
+		final List<String> tierNames = List.of(hiddenTiers.split(","));
+		return !tierNames.contains(tierName);
 	}
 
 	private boolean isGroupedTier(String tierName) {
