@@ -3,7 +3,9 @@ package ca.phon.transcriptMapper;
 import ca.phon.alignedTypesDatabase.*;
 import ca.phon.util.PrefHelper;
 import org.apache.commons.io.FileUtils;
+import org.apache.tools.ant.taskdefs.Property;
 
+import java.beans.*;
 import java.io.*;
 
 public class UserATDB {
@@ -15,6 +17,10 @@ public class UserATDB {
 			AlignedTypesDatabaseIO.DBZ_EXT;
 
 	private AlignedTypesDatabase atdb = new AlignedTypesDatabase();
+
+	private volatile boolean modified = false;
+
+	private final PropertyChangeSupport propSupport = new PropertyChangeSupport(this);
 
 	private static UserATDB _instance;
 
@@ -55,9 +61,12 @@ public class UserATDB {
 	 * Load the project {@link AlignedTypesDatabase}
 	 */
 	public synchronized void loadATDB() throws IOException {
+		if(isATDBLoaded()) return;
 		final File projectDbFile = getDbFile();
 		if(projectDbFile.exists()) {
 			this.atdb = AlignedTypesDatabaseIO.readFromFile(projectDbFile);
+
+			propSupport.firePropertyChange("loaded", false, true);
 		}
 	}
 
@@ -74,6 +83,44 @@ public class UserATDB {
 		if(dbFile.exists())
 			backupDb();
 		AlignedTypesDatabaseIO.writeToFile(this.atdb, dbFile);
+
+		boolean oldVal = this.modified;
+		this.modified = false;
+		propSupport.firePropertyChange("modified", oldVal, this.modified);
 	}
+
+	public void addPropertyChangeListener(PropertyChangeListener listener) {
+		propSupport.addPropertyChangeListener(listener);
+	}
+
+	public void removePropertyChangeListener(PropertyChangeListener listener) {
+		propSupport.removePropertyChangeListener(listener);
+	}
+
+	public PropertyChangeListener[] getPropertyChangeListeners() {
+		return propSupport.getPropertyChangeListeners();
+	}
+
+	public void addPropertyChangeListener(String propertyName, PropertyChangeListener listener) {
+		propSupport.addPropertyChangeListener(propertyName, listener);
+	}
+
+	public void removePropertyChangeListener(String propertyName, PropertyChangeListener listener) {
+		propSupport.removePropertyChangeListener(propertyName, listener);
+	}
+
+	public PropertyChangeListener[] getPropertyChangeListeners(String propertyName) {
+		return propSupport.getPropertyChangeListeners(propertyName);
+	}
+
+	public boolean hasListeners(String propertyName) {
+		return propSupport.hasListeners(propertyName);
+	}
+
+	private final AlignedTypesDatabaseListener listener = (evt) -> {
+		boolean oldVal = this.modified;
+		this.modified = true;
+		propSupport.firePropertyChange("modified", oldVal, this.modified);
+	};
 
 }
