@@ -4,13 +4,11 @@ import java.io.Serializable;
 
 public final class TierInfo implements Serializable {
 
-	private static final long serialVersionUID = -5835662467026647994L;
+	private static final long serialVersionUID = 1812799037424107905L;
 
 	private final String tierName;
 
 	private String tierFont;
-
-	private boolean visible = true;
 
 	private int order = -1;
 
@@ -35,14 +33,6 @@ public final class TierInfo implements Serializable {
 		this.tierFont = tierFont;
 	}
 
-	public boolean isVisible() {
-		return visible;
-	}
-
-	public void setVisible(boolean visible) {
-		this.visible = visible;
-	}
-
 	public int getOrder() {
 		return order;
 	}
@@ -54,7 +44,6 @@ public final class TierInfo implements Serializable {
 	public TierInfo clone() {
 		TierInfo retVal = new TierInfo(tierName);
 		retVal.setTierFont(tierFont);
-		retVal.setVisible(visible);
 		retVal.setOrder(order);
 		return  retVal;
 	}
