@@ -7,6 +7,7 @@ import ca.phon.session.*;
 import ca.phon.util.Tuple;
 import org.apache.commons.io.output.StringBuilderWriter;
 
+import java.beans.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -67,6 +68,8 @@ public final class AlignedTypesDatabase implements Serializable {
 		final TierInfo userTierInfo = new TierInfo(tierName);
 		userTierInfo.setOrder(tierDescriptionTree.size());
 		tierDescriptionTree.put(tierName, userTierInfo);
+
+		fireDatabaseEvent(new AlignedTypesDatabaseEvent(AlignedTypesDatabaseEvent.EventType.TierAdded, tierName));
 	}
 
 	/**
@@ -103,6 +106,9 @@ public final class AlignedTypesDatabase implements Serializable {
 			if(entryOpt.isEmpty()) {
 				TypeEntry entry = new TypeEntry(tierNameRef);
 				typeNode.getValue().add(entry);
+
+				fireDatabaseEvent(new AlignedTypesDatabaseEvent(AlignedTypesDatabaseEvent.EventType.TypeInserted,
+						new Tuple<String, String>(tierName, type)));
 			}
 			return typeNode;
 		} else {
@@ -174,8 +180,14 @@ public final class AlignedTypesDatabase implements Serializable {
 				TypeLinkedEntry linkedEntry = new TypeLinkedEntry(alignedTierNameNode);
 				typeEntryForTier.addLinkedEntry(linkedEntry);
 				linkedEntry.addLinkedTier(tree, alignedTypeNode);
+
+				fireDatabaseEvent(new AlignedTypesDatabaseEvent(AlignedTypesDatabaseEvent.EventType.AlignmentAdded,
+						new Tuple<Tuple<String, String>, Tuple<String, String>>(new Tuple<>(tierName, type), new Tuple<>(alignedTierName, alignedType))));
 			} else {
 				linkedEntryOpt.get().incrementLinkedTier(tree, alignedTypeNode);
+
+				fireDatabaseEvent(new AlignedTypesDatabaseEvent(AlignedTypesDatabaseEvent.EventType.AlignmentIncremented,
+						new Tuple<Tuple<String, String>, Tuple<String, String>>(new Tuple<>(tierName, type), new Tuple<>(alignedTierName, alignedType))));
 			}
 		}
 	}
@@ -414,14 +426,14 @@ public final class AlignedTypesDatabase implements Serializable {
 	 * type is also removed for that tier
 	 *
 	 * @param tierName
-	 * @param tierVal
-	 * @param linkedTier
-	 * @param linkedVal
+	 * @param type
+	 * @param alignedTierName
+	 * @param alignedType
 	 *
 	 * @return true if link was removed
 	 */
-	public synchronized boolean removeAlignment(String tierName, String tierVal, String linkedTier, String linkedVal) {
-		final Optional<TernaryTreeNode<Collection<TypeEntry>>> nodeOpt = tree.findNode(tierVal);
+	public synchronized boolean removeAlignment(String tierName, String type, String alignedTierName, String alignedType) {
+		final Optional<TernaryTreeNode<Collection<TypeEntry>>> nodeOpt = tree.findNode(type);
 		if(nodeOpt.isEmpty()) return false;
 
 		final var node = nodeOpt.get();
@@ -436,14 +448,14 @@ public final class AlignedTypesDatabase implements Serializable {
 		final TypeEntry taggerEntry = entryForTier.get();
 		final Optional<TypeLinkedEntry> linkedEntryOpt = taggerEntry.getLinkedEntries()
 				.stream()
-				.filter((e) -> e.getTierName(tierDescriptionTree).equals(linkedTier))
+				.filter((e) -> e.getTierName(tierDescriptionTree).equals(alignedTierName))
 				.findAny();
 		if(linkedEntryOpt.isEmpty()) return false;
 
 		final TypeLinkedEntry linkedEntry = linkedEntryOpt.get();
 		final Optional<TernaryTreeNode<Collection<TypeEntry>>> linkedValOpt = linkedEntry.getLinkedTierRefs(tree)
 				.stream()
-				.filter((r) -> r.getPrefix().equals(linkedVal))
+				.filter((r) -> r.getPrefix().equals(alignedType))
 				.findAny();
 		if(linkedValOpt.isPresent()) {
 			int linkCnt = linkedEntry.getLinkedTierCount(tree, linkedValOpt.get());
@@ -456,7 +468,13 @@ public final class AlignedTypesDatabase implements Serializable {
 						if (taggerEntry.getLinkedEntries().size() == 0) {
 							node.getValue().remove(taggerEntry);
 						}
+
+						fireDatabaseEvent(new AlignedTypesDatabaseEvent(AlignedTypesDatabaseEvent.EventType.AlignmentRemoved,
+								new Tuple<Tuple<String, String>, Tuple<String, String>>(new Tuple<>(tierName, type), new Tuple<>(alignedTierName, alignedType))));
 					}
+				} else{
+					fireDatabaseEvent(new AlignedTypesDatabaseEvent(AlignedTypesDatabaseEvent.EventType.AlignmentDecremented,
+							new Tuple<Tuple<String, String>, Tuple<String, String>>(new Tuple<>(tierName, type), new Tuple<>(alignedTierName, alignedType))));
 				}
 				return true;
 			}
@@ -678,6 +696,30 @@ public final class AlignedTypesDatabase implements Serializable {
 						}
 					}
 				}
+			}
+		}
+	}
+
+	// events
+	private final List<AlignedTypesDatabaseListener> listenerList = Collections.synchronizedList(new ArrayList<>());
+
+	public synchronized void addDatabaseListener(AlignedTypesDatabaseListener listener) {
+		synchronized (listenerList) {
+			if (!listenerList.contains(listener))
+				listenerList.add(listener);
+		}
+	}
+
+	public synchronized void removeDatabaseListener(AlignedTypesDatabaseListener listener) {
+		synchronized (listenerList) {
+			listenerList.remove(listener);
+		}
+	}
+
+	private synchronized void fireDatabaseEvent(AlignedTypesDatabaseEvent evt) {
+		synchronized (listenerList) {
+			for(AlignedTypesDatabaseListener listener:listenerList) {
+				listener.databaseEvent(evt);
 			}
 		}
 	}
