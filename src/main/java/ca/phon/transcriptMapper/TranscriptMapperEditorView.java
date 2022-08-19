@@ -137,7 +137,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		}
 
 		final String newHiddenTiers = tierNames.stream().collect(Collectors.joining(","));
-		sharedProps.put(tierVisiblityProp, newHiddenTiers);
+		sharedProps.setProperty(tierVisiblityProp, newHiddenTiers);
 
 		try {
 			saveSharedProps();
