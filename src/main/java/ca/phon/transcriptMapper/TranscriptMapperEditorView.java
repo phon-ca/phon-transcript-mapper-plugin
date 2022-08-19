@@ -22,6 +22,7 @@ import ca.phon.ui.menu.MenuBuilder;
 import ca.phon.util.*;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;
+import com.jcraft.jsch.IO;
 import org.jdesktop.swingx.JXTable;
 
 import javax.swing.*;
@@ -31,6 +32,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.text.ParseException;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -75,7 +77,86 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 	public final static String ICON = "blank";
 
+	// current internal state represented in a tree structure
 	private TypeMapNode currentState;
+
+	// shared properties
+	private final static String SHARED_PROPS_FILE = PrefHelper.getUserDataFolder() + "/transcriptMapper/transcriptMapper.props";
+
+	private static Properties _sharedProps;
+
+	private synchronized static Properties getSharedProps() {
+		if(_sharedProps == null) {
+			try {
+				_sharedProps = loadSharedProps();
+			} catch (IOException e) {
+				_sharedProps = new Properties();
+			}
+		}
+		return _sharedProps;
+	}
+
+	private synchronized static Properties loadSharedProps() throws IOException {
+		final File propsFile = new File(SHARED_PROPS_FILE);
+		Properties retVal = new Properties();
+		if(propsFile.exists()) {
+			retVal.load(new InputStreamReader(new FileInputStream(propsFile)));
+		}
+		return retVal;
+	}
+
+	private synchronized static void saveSharedProps() throws IOException {
+		final File propsFile = new File(SHARED_PROPS_FILE);
+		final File parentFolder = propsFile.getParentFile();
+		if(!parentFolder.exists()) {
+			parentFolder.mkdirs();
+		}
+		getSharedProps().store(new OutputStreamWriter(new FileOutputStream(propsFile)), LocalDateTime.now().toString());
+	}
+
+	private static String tierVisiblityProp(Project project, SessionPath sessionPath) {
+		final String prop = String.format("%s.%s.%s.hiddenTiers",
+				project.getUUID(), sessionPath.getCorpus(), sessionPath.getSession());
+		return prop;
+	}
+
+	private synchronized static void setTierHidden(Project project, SessionPath sessionPath,
+	                                               String tierName, boolean hidden) {
+		final Properties sharedProps = getSharedProps();
+		final String tierVisiblityProp = tierVisiblityProp(project, sessionPath);
+
+		String hiddenTiers = sharedProps.getProperty(tierVisiblityProp, "");
+		final List<String> tierNames = new ArrayList<>();
+		if(hiddenTiers.trim().length() > 0)
+			tierNames.addAll(List.of(hiddenTiers.split(",")));
+
+		if(!hidden && tierNames.contains(tierName)) {
+			tierNames.remove(tierName);
+		} else if(hidden && !tierNames.contains(tierName)) {
+			tierNames.add(tierName);
+		}
+
+		final String newHiddenTiers = tierNames.stream().collect(Collectors.joining(","));
+		sharedProps.put(tierVisiblityProp, newHiddenTiers);
+
+		try {
+			saveSharedProps();
+		} catch (IOException e) {
+			LogUtil.severe(e);
+		}
+	}
+
+	private synchronized static boolean isTierHidden(Project project, SessionPath sessionPath, String tierName) {
+		final Properties sharedProps = getSharedProps();
+		final String tierVisiblityProp = tierVisiblityProp(project, sessionPath);
+
+		String hiddenTiers = sharedProps.getProperty(tierVisiblityProp, "");
+		final List<String> tierNames = new ArrayList<>();
+		if(hiddenTiers.trim().length() > 0)
+			tierNames.addAll(List.of(hiddenTiers.split(",")));
+
+		return tierNames.contains(tierName);
+	}
 
 	public TranscriptMapperEditorView(SessionEditor editor) {
 		super(editor);
@@ -817,32 +898,15 @@ public final class TranscriptMapperEditorView extends EditorView {
 		keyTierBox.setSelectedItem(keyTier);
 	}
 
-	private String tierVisiblityProp() {
-		final Project project = getEditor().getProject();
-		final Session session = getEditor().getSession();
-
-		final String prop = String.format("%s.%s.%s.transcriptMapper.hiddenTiers",
-				Long.toString(project.getUUID().getMostSignificantBits(), 16), session.getCorpus(), session.getName());
-		return prop;
-	}
-
 	/**
 	 * Toggle database visibility of specified tier
 	 *
 	 * @param tierName
 	 */
 	public void toggleTier(String tierName) {
-		final String hiddenTiers = PrefHelper.getUserPreferences().get(tierVisiblityProp(), "");
-		final List<String> tierNames = new ArrayList<>();
-		tierNames.addAll(List.of(hiddenTiers.split(",")));
-		if(tierNames.contains(tierName)) {
-			tierNames.remove(tierName);
-		} else {
-			tierNames.add(tierName);
-		}
-		final String newHiddenTiers = tierNames.stream().collect(Collectors.joining(","));
-		PrefHelper.getUserPreferences().put(tierVisiblityProp(), newHiddenTiers);
-
+		final Project project = getEditor().getProject();
+		final SessionPath sp = new SessionPath(getEditor().getSession().getCorpus(), getEditor().getSession().getName());
+		setTierHidden(project, sp, tierName, !isTierHidden(project, sp, tierName));
 		updateAfterDbLoad();
 	}
 
@@ -1170,9 +1234,8 @@ public final class TranscriptMapperEditorView extends EditorView {
 	}
 
 	private boolean dbTierVisible(String tierName) {
-		final String hiddenTiers = PrefHelper.get(tierVisiblityProp(), "");
-		final List<String> tierNames = List.of(hiddenTiers.split(","));
-		return !tierNames.contains(tierName);
+		return !isTierHidden(getEditor().getProject(),
+				new SessionPath(getEditor().getSession().getCorpus(), getEditor().getSession().getName()), tierName);
 	}
 
 	private boolean isGroupedTier(String tierName) {
