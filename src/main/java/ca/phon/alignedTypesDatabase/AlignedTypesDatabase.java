@@ -701,27 +701,29 @@ public final class AlignedTypesDatabase implements Serializable {
 	}
 
 	// events
-	private final List<AlignedTypesDatabaseListener> listenerList = Collections.synchronizedList(new ArrayList<>());
+	private transient List<AlignedTypesDatabaseListener> listenerList = Collections.synchronizedList(new ArrayList<>());
 
 	public synchronized void addDatabaseListener(AlignedTypesDatabaseListener listener) {
-		synchronized (listenerList) {
-			if (!listenerList.contains(listener))
-				listenerList.add(listener);
-		}
+		if (!listenerList.contains(listener))
+			listenerList.add(listener);
+
 	}
 
 	public synchronized void removeDatabaseListener(AlignedTypesDatabaseListener listener) {
-		synchronized (listenerList) {
-			listenerList.remove(listener);
-		}
+		listenerList.remove(listener);
 	}
 
 	private synchronized void fireDatabaseEvent(AlignedTypesDatabaseEvent evt) {
-		synchronized (listenerList) {
-			for(AlignedTypesDatabaseListener listener:listenerList) {
-				listener.databaseEvent(evt);
-			}
+		for(AlignedTypesDatabaseListener listener:listenerList) {
+			listener.databaseEvent(evt);
 		}
+	}
+
+	@Serial
+	private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+		ois.defaultReadObject();
+
+		this.listenerList = Collections.synchronizedList(new ArrayList<>());
 	}
 
 	public static class DuplicateTierEntry extends Exception {

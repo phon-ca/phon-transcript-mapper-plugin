@@ -16,7 +16,7 @@ public class UserATDB {
 	private final static String BACKUP_DB_FILENAME = "transcriptMapper/typeMap-backup" +
 			AlignedTypesDatabaseIO.DBZ_EXT;
 
-	private AlignedTypesDatabase atdb = new AlignedTypesDatabase();
+	private AlignedTypesDatabase atdb = null;
 
 	private volatile boolean modified = false;
 
@@ -36,6 +36,10 @@ public class UserATDB {
 
 	public boolean isATDBLoaded() {
 		return this.atdb != null;
+	}
+
+	public boolean isModified() {
+		return this.modified;
 	}
 
 	/**
@@ -65,9 +69,11 @@ public class UserATDB {
 		final File projectDbFile = getDbFile();
 		if(projectDbFile.exists()) {
 			this.atdb = AlignedTypesDatabaseIO.readFromFile(projectDbFile);
-
-			propSupport.firePropertyChange("loaded", false, true);
+		} else {
+			this.atdb = new AlignedTypesDatabase();
 		}
+		this.atdb.addDatabaseListener(listener);
+		propSupport.firePropertyChange("loaded", false, true);
 	}
 
 	public synchronized void backupDb() throws IOException {

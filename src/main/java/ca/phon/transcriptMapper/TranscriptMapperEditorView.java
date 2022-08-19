@@ -45,6 +45,10 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 	private JToolBar toolbar;
 
+	private DropDownButton databaseButton;
+
+	private DropDownButton tiersButton;
+
 	private JLabel keyLabel;
 
 	private JComboBox<String> keyTierBox;
@@ -133,6 +137,9 @@ public final class TranscriptMapperEditorView extends EditorView {
 				LogUtil.severe(e);
 			}
 		}
+		userATDB.addPropertyChangeListener("modified", (e) -> {
+			updateDatabaseButtonState();
+		});
 	}
 
 	void saveUserDbAsync(Runnable onFinish) {
@@ -158,8 +165,24 @@ public final class TranscriptMapperEditorView extends EditorView {
 		add(toolbar, BorderLayout.NORTH);
 
 		final JPopupMenu dbMenu = new JPopupMenu("Database");
-		final MenuBuilder dbMenuBuilder = new MenuBuilder(dbMenu);
-		setupDatabaseMenu(dbMenuBuilder);
+		dbMenu.addPopupMenuListener(new PopupMenuListener() {
+			@Override
+			public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+				dbMenu.removeAll();
+				final MenuBuilder dbMenuBuilder = new MenuBuilder(dbMenu);
+				setupDatabaseMenu(dbMenuBuilder);
+			}
+
+			@Override
+			public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+
+			}
+
+			@Override
+			public void popupMenuCanceled(PopupMenuEvent e) {
+
+			}
+		});
 
 		PhonUIAction dbMenuAct = new PhonUIAction(this, "noop");
 		dbMenuAct.putValue(PhonUIAction.NAME, "Database");
@@ -197,16 +220,19 @@ public final class TranscriptMapperEditorView extends EditorView {
 		tiersMenuAct.putValue(DropDownButton.ARROW_ICON_POSITION, SwingConstants.BOTTOM);
 		tiersMenuAct.putValue(DropDownButton.BUTTON_POPUP, tiersMenu);
 
-		DropDownButton dbBtn = new DropDownButton(dbMenuAct);
-		dbBtn.setOnlyPopup(true);
+		databaseButton = new DropDownButton(dbMenuAct);
+		databaseButton.setOnlyPopup(true);
 
-		DropDownButton tiersBtn = new DropDownButton(tiersMenuAct);
-		tiersBtn.setOnlyPopup(true);
+		tiersButton = new DropDownButton(tiersMenuAct);
+		tiersButton.setOnlyPopup(true);
 
-		toolbar.add(dbBtn);
-		toolbar.add(tiersBtn);
+		toolbar.add(databaseButton);
+		toolbar.add(tiersButton);
 	}
+
 	private void setupDatabaseMenu(MenuBuilder builder) {
+		builder.addItem(".", new SaveDatabaseAction(this)).setEnabled(UserATDB.getInstance().isModified());
+		builder.addSeparator(".", "save");
 		builder.addItem(".", new ScanProjectAction(this));
 		builder.addSeparator(".", "scan");
 		builder.addItem(".", new ImportCSVAction(this));
@@ -505,6 +531,13 @@ public final class TranscriptMapperEditorView extends EditorView {
 		}
 	}
 
+	public void updateDatabaseButtonState() {
+		if(UserATDB.getInstance().isModified())
+			databaseButton.setText("Database *");
+		else
+			databaseButton.setText("Database");
+	}
+
 	void updateAfterDbLoad() {
 		if(getUserDb() == null) return;
 
@@ -789,7 +822,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final Session session = getEditor().getSession();
 
 		final String prop = String.format("%s.%s.%s.transcriptMapper.hiddenTiers",
-				project.getUUID().toString(), session.getCorpus(), session.getName());
+				Long.toString(project.getUUID().getMostSignificantBits(), 16), session.getCorpus(), session.getName());
 		return prop;
 	}
 
