@@ -326,8 +326,9 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final MenuBuilder importBuilder = new MenuBuilder(importDictMenu);
 		setupImportDictionaryMenu(importBuilder);
 
-		builder.addSeparator(".", "import_dict");
-		builder.addItem(".", new ImportDatabaseAction(this));
+		// TODO Fix database import
+//		builder.addSeparator(".", "import_dict");
+//		builder.addItem(".", new ImportDatabaseAction(this));
 	}
 
 	private void setupImportDictionaryMenu(MenuBuilder builder) {
