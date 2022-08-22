@@ -23,6 +23,8 @@ public class UserATDB {
 
 	private volatile boolean modified = false;
 
+	private volatile boolean saving = false;
+
 	private final PropertyChangeSupport propSupport = new PropertyChangeSupport(this);
 
 	private static UserATDB _instance;
@@ -44,6 +46,8 @@ public class UserATDB {
 	public boolean isModified() {
 		return this.modified;
 	}
+
+	public boolean isSaving() { return this.saving; }
 
 	/**
 	 * Return the user's aligned types database.
@@ -93,6 +97,7 @@ public class UserATDB {
 	}
 
 	public void saveDb() throws  IOException {
+		this.saving = true;
 		final File dbFile = getDbFile();
 		final File parentFolder = dbFile.getParentFile();
 		if(!parentFolder.exists()) {
@@ -104,6 +109,7 @@ public class UserATDB {
 
 		boolean oldVal = this.modified;
 		this.modified = false;
+		this.saving = false;
 		propSupport.firePropertyChange("modified", oldVal, this.modified);
 	}
 

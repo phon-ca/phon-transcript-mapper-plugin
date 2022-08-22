@@ -314,7 +314,10 @@ public final class TranscriptMapperEditorView extends EditorView {
 	}
 
 	private void setupDatabaseMenu(MenuBuilder builder) {
-		builder.addItem(".", new SaveDatabaseAction(this)).setEnabled(UserATDB.getInstance().isModified());
+		final SaveDatabaseAction saveDatabaseAction = new SaveDatabaseAction(this);
+		if(UserATDB.getInstance().isSaving())
+			saveDatabaseAction.putValue(PhonUIAction.NAME, "Saving...");
+		builder.addItem(".", saveDatabaseAction).setEnabled(UserATDB.getInstance().isModified() && !UserATDB.getInstance().isSaving());
 		builder.addSeparator(".", "save");
 		builder.addItem(".", new ScanProjectAction(this));
 		builder.addSeparator(".", "scan");
@@ -349,6 +352,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 				toggleTierVisibleAct.putValue(PhonUIAction.SHORT_DESCRIPTION, String.format("Toggle tier %s", tierName));
 				toggleTierVisibleAct.putValue(PhonUIAction.SELECTED_KEY, dbTierVisible(tierName));
 				final JCheckBoxMenuItem toggleTierItem = new JCheckBoxMenuItem(toggleTierVisibleAct);
+				toggleTierItem.setEnabled(!tierName.equals(keyTier()));
 				if(!isGroupedTier(tierName)) {
 					toggleTierItem.setEnabled(false);
 					toggleTierItem.setToolTipText(String.format("%s is not a group tier", tierName));
