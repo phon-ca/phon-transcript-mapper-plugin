@@ -226,7 +226,9 @@ public final class TranscriptMapperEditorView extends EditorView {
 	void saveUserDbAsync(Runnable onFinish) {
 		final PhonTask task = PhonWorker.invokeOnNewWorker(this::saveUserDb, onFinish, LogUtil::warning);
 		task.setName("Saving aligned morpheme database");
-		getEditor().getStatusBar().watchTask(task);
+		SwingUtilities.invokeLater(() -> {
+			getEditor().getStatusBar().watchTask(task);
+		});
 	}
 
 	private void saveUserDb() {

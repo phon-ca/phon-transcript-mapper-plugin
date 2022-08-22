@@ -1,12 +1,14 @@
 package ca.phon.transcriptMapper;
 
 import ca.phon.alignedTypesDatabase.*;
+import ca.phon.app.log.LogUtil;
 import ca.phon.util.PrefHelper;
 import org.apache.commons.io.FileUtils;
 import org.apache.tools.ant.taskdefs.Property;
 
 import java.beans.*;
 import java.io.*;
+import java.util.concurrent.locks.*;
 
 public class UserATDB {
 
@@ -15,6 +17,8 @@ public class UserATDB {
 
 	private final static String BACKUP_DB_FILENAME = "transcriptMapper/typeMap-backup" +
 			AlignedTypesDatabaseIO.DBZ_EXT;
+
+	private final ReentrantLock loadLock = new ReentrantLock();
 
 	private AlignedTypesDatabase atdb = null;
 
@@ -47,7 +51,14 @@ public class UserATDB {
 	 *
 	 * @return ATDB for project, null if project has not been loaded
 	 */
-	public synchronized AlignedTypesDatabase getATDB() {
+	public AlignedTypesDatabase getATDB() {
+		if(!isATDBLoaded()) {
+			try {
+				loadATDB();
+			} catch (IOException e) {
+				LogUtil.severe(e);
+			}
+		}
 		return atdb;
 	}
 
@@ -64,8 +75,9 @@ public class UserATDB {
 	/**
 	 * Load the project {@link AlignedTypesDatabase}
 	 */
-	public synchronized void loadATDB() throws IOException {
+	public void loadATDB() throws IOException {
 		if(isATDBLoaded()) return;
+		loadLock.lock();
 		final File projectDbFile = getDbFile();
 		if(projectDbFile.exists()) {
 			this.atdb = AlignedTypesDatabaseIO.readFromFile(projectDbFile);
@@ -73,14 +85,15 @@ public class UserATDB {
 			this.atdb = new AlignedTypesDatabase();
 		}
 		this.atdb.addDatabaseListener(listener);
+		loadLock.unlock();
 		propSupport.firePropertyChange("loaded", false, true);
 	}
 
-	public synchronized void backupDb() throws IOException {
+	public void backupDb() throws IOException {
 		FileUtils.copyFile(getDbFile(), backupDbFile());
 	}
 
-	public synchronized void saveDb() throws  IOException {
+	public void saveDb() throws  IOException {
 		final File dbFile = getDbFile();
 		final File parentFolder = dbFile.getParentFile();
 		if(!parentFolder.exists()) {
