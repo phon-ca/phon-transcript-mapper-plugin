@@ -12,6 +12,7 @@ import ca.phon.ui.*;
 import ca.phon.ui.action.*;
 import ca.phon.ui.decorations.DialogHeader;
 import ca.phon.ui.fonts.FontPreferences;
+import ca.phon.ui.jbreadcrumb.BreadcrumbButton;
 import ca.phon.ui.menu.MenuBuilder;
 import ca.phon.ui.nativedialogs.*;
 import ca.phon.ui.wizard.*;
@@ -19,12 +20,15 @@ import ca.phon.util.icons.*;
 import ca.phon.worker.*;
 
 import javax.swing.*;
+import javax.swing.event.*;
 import java.awt.*;
 import java.io.*;
 import java.util.*;
 import java.util.List;
 
 public class ScanProjectWizard extends BreadcrumbWizardFrame {
+
+	private BreadcrumbButton btnStop;
 
 	private WizardStep selectSessionStep;
 	private MultiActionButton projectButton;
@@ -43,6 +47,13 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 
 		this.project = project;
 		this.db = db;
+
+		btnStop = new BreadcrumbButton();
+		btnStop.setFont(FontPreferences.getTitleFont().deriveFont(Font.BOLD));
+		btnStop.setText("Stop");
+		btnStop.setBackground(Color.red);
+		btnStop.setForeground(Color.white);
+		btnStop.addActionListener( (e) -> close() );
 
 		this.selectSessionStep = createSelectSessionStep();
 		this.selectSessionStep.setNextStep(1);
@@ -99,6 +110,23 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 		bufferPanel.showBuffer();
 		reportPanel = bufferPanel;
 
+		bufferPanel.getLogBuffer().getDocument().addDocumentListener(new DocumentListener() {
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				bufferPanel.getLogBuffer().setCaretPosition(e.getOffset());
+			}
+
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+
+			}
+
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+
+			}
+		});
+
 		wizardStep.setLayout(new BorderLayout());
 		wizardStep.add(header, BorderLayout.NORTH);
 		wizardStep.add(bufferPanel, BorderLayout.CENTER);
@@ -112,6 +140,27 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 
 		final ImageIcon icon = IconManager.getInstance().getSystemIconForPath(project.getLocation(), "actions/document-open", IconSize.SMALL);
 		projectButton.getBottomLabel().setIcon(icon);
+	}
+
+	@Override
+	protected void updateBreadcrumbButtons() {
+		super.updateBreadcrumbButtons();
+
+		if(this.getCurrentStep() == reportStep) {
+			if(scanProjectTask.getStatus() == PhonTask.TaskStatus.RUNNING) {
+				btnStop.setBackground(Color.red);
+				btnStop.setForeground(Color.white);
+				btnStop.setText("Stop");
+			} else {
+				btnStop.setText("Close window");
+				btnStop.setBackground(nextButton.getBackground());
+				btnStop.setForeground(Color.black);
+			}
+			breadCrumbViewer.add(btnStop);
+			setBounds(btnStop);
+		} else {
+			breadCrumbViewer.remove(btnStop);
+		}
 	}
 
 	private void updateSessionSelector() {
@@ -182,36 +231,22 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 	}
 
 	private void beginProjectScan() {
-		final PhonTask scanProjectTask = new PhonTask() {
-			@Override
-			public void performTask() {
-				super.setStatus(TaskStatus.RUNNING);
-
-				reportPanel.getLogBuffer().append(String.format("Scanning project %s (%s)\n", project.getName(), project.getLocation()));
-
-				final AlignedMorphemesScanner scanner = new AlignedMorphemesScanner(db);
-				for(SessionPath sessionPath:sessionSelector.getSelectedSessions()) {
-					reportPanel.getLogBuffer().append(String.format("Scanning %s.%s...\n", sessionPath.getCorpus(), sessionPath.getSession()));
-					try {
-						final Session session = project.openSession(sessionPath.getCorpus(), sessionPath.getSession());
-						scanner.scanSession(session);
-					} catch (IOException e) {
-						super.err = e;
-						LogUtil.severe(e);
-						super.setStatus(TaskStatus.ERROR);
-						return;
-					}
-				}
-				reportPanel.getLogBuffer().append("Scan complete, you may close the window.");
-				super.setStatus(TaskStatus.FINISHED);
-			}
-		};
-
 		PhonWorker.invokeOnNewWorker(scanProjectTask, this::onFinishScan);
 	}
 
 	public void onFinishScan() {
+		SwingUtilities.invokeLater(() -> {
+			updateBreadcrumbButtons();
+		});
+	}
 
+	@Override
+	public void close() {
+		if(scanProjectTask.getStatus() == PhonTask.TaskStatus.RUNNING) {
+			scanProjectTask.shutdown();
+		} else {
+			super.close();
+		}
 	}
 
 	@Override
@@ -226,5 +261,34 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 		}
 		super.next();
 	}
+
+	private final PhonTask scanProjectTask = new PhonTask() {
+		@Override
+		public void performTask() {
+			super.setStatus(TaskStatus.RUNNING);
+
+			reportPanel.getLogBuffer().append(String.format("Scanning project %s (%s)\n", project.getName(), project.getLocation()));
+
+			final AlignedMorphemesScanner scanner = new AlignedMorphemesScanner(db);
+			for(SessionPath sessionPath:sessionSelector.getSelectedSessions()) {
+				if(isShutdown()) {
+					reportPanel.getLogBuffer().append("Project scan canceled by user");
+					return;
+				}
+				reportPanel.getLogBuffer().append(String.format("Scanning %s.%s...\n", sessionPath.getCorpus(), sessionPath.getSession()));
+				try {
+					final Session session = project.openSession(sessionPath.getCorpus(), sessionPath.getSession());
+					scanner.scanSession(session);
+				} catch (IOException e) {
+					super.err = e;
+					LogUtil.severe(e);
+					super.setStatus(TaskStatus.ERROR);
+					return;
+				}
+			}
+			reportPanel.getLogBuffer().append("Scan complete, you may close the window.");
+			super.setStatus(TaskStatus.FINISHED);
+		}
+	};
 
 }
