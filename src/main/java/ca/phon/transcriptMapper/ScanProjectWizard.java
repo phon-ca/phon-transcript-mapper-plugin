@@ -164,7 +164,21 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 	}
 
 	public void onBrowseForProject(PhonActionEvent pae) {
+		final OpenDialogProperties props = new OpenDialogProperties();
+		props.setCanChooseDirectories(true);
+		props.setCanChooseFiles(false);
+		props.setAllowMultipleSelection(false);
+		props.setCanCreateDirectories(true);
+		props.setParentWindow(CommonModuleFrame.getCurrentFrame());
+		props.setTitle("Open Project");
+		props.setListener((e) -> {
+			final String projectLocal = e.getDialogData() != null ? e.getDialogData().toString() : "";
+			SwingUtilities.invokeLater(() -> {
+				selectProject(new File(projectLocal));
+			});
+		});
 
+		NativeDialogs.showOpenDialog(props);
 	}
 
 	private void beginProjectScan() {
