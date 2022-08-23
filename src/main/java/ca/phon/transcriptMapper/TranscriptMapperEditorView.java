@@ -22,7 +22,6 @@ import ca.phon.ui.menu.MenuBuilder;
 import ca.phon.util.*;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;
-import com.jcraft.jsch.IO;
 import org.jdesktop.swingx.JXTable;
 
 import javax.swing.*;
@@ -66,10 +65,6 @@ public final class TranscriptMapperEditorView extends EditorView {
 	private AlignmentOptionsTableModel alignmentOptionsTableModel;
 
 	private JXTable alignmentOptionsTable;
-
-	private JWindow suggestionsWindow;
-
-	private JList<String> suggestionsList;
 
 	private TierDataLayoutPanel morphemeSelectionPanel;
 
@@ -946,7 +941,8 @@ public final class TranscriptMapperEditorView extends EditorView {
 			final TypeMapNode morphemeNode = this.currentState.getLeaves().get(selectedMorpheme);
 			final Map<String, String> alignedTypes = new LinkedHashMap<>();
 			for(String tierName:getVisibleTiers()) {
-				alignedTypes.put(tierName, morphemeNode.getMorpheme(tierName));
+				final String morpheme = morphemeNode.getMorpheme(tierName);
+				alignedTypes.put(tierName, "*".equals(morpheme) ? "" : morphemeNode.getMorpheme(tierName));
 			}
 
 			final Tuple<String[], String[]> alignedTypeArrays = AlignedTypesDatabase.alignedTypesToArrays(alignedTypes);
@@ -1042,7 +1038,8 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final TypeMapNode morphemeNode = this.currentState.getLeaves().get(morphemeIdx);
 		final Map<String, String> alignedTypes = new LinkedHashMap<>();
 		for(String tierName:getVisibleTiers()) {
-			alignedTypes.put(tierName, morphemeNode.getMorpheme(tierName));
+			final String morpheme = morphemeNode.getMorpheme(tierName);
+			alignedTypes.put(tierName, "*".equals(morpheme) ? "" : morphemeNode.getMorpheme(tierName));
 		}
 		if(!this.getUserDb().hasAlignedTypes(alignedTypes)) {
 			builder.addSeparator(".", "add_alignment");
@@ -1347,7 +1344,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 				}
 			} else {
 				// check that link exists to key
-				if(!getUserDb().alignmentExists(keyTier(), key, tier, morpheme)) {
+				if(!getUserDb().alignmentExists(keyTier(), key, tier, morpheme) && !"*".equals(morpheme)) {
 					retVal.setFont(retVal.getFont().deriveFont(Font.ITALIC));
 				}
 			}
