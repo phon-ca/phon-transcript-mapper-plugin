@@ -1,5 +1,6 @@
 package ca.phon.transcriptMapper;
 
+import ca.phon.ui.nativedialogs.FileFilter;
 import ca.phon.util.alignedTypesDatabase.*;
 import ca.phon.app.log.LogUtil;
 import ca.phon.ui.nativedialogs.*;
@@ -8,7 +9,7 @@ import ca.phon.worker.*;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.io.IOException;
+import java.io.*;
 
 /**
  * Import an existing {@link AlignedTypesDatabase} into
@@ -54,25 +55,7 @@ public class ImportDatabaseAction extends TranscriptMapperAction {
 	}
 
 	private void importDatabaseFromFile(String filename) {
-		final PhonTask importTask = new PhonTask() {
-			@Override
-			public void performTask() {
-				super.setStatus(TaskStatus.RUNNING);
-				try {
-					AlignedTypesDatabase importDb = AlignedTypesDatabaseIO.readFromFile(filename);
-
-					// TODO display interface for modifying imported values
-
-					getView().getUserDb().importDatabase(importDb);
-					super.setStatus(TaskStatus.FINISHED);
-				} catch (IOException e) {
-					Toolkit.getDefaultToolkit().beep();
-					LogUtil.severe(e);
-					super.err = e;
-					super.setStatus(TaskStatus.ERROR);
-				}
-			}
-		};
+		final ImportDatabaseTask importTask = new ImportDatabaseTask(getView().getUserDb(), new File(filename));
 		importTask.setName(DESC);
 
 		getView().getEditor().getStatusBar().watchTask(importTask);
