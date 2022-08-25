@@ -43,6 +43,7 @@ import javax.swing.event.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.beans.*;
 import java.io.*;
 import java.text.ParseException;
 import java.time.LocalDateTime;
@@ -171,7 +172,23 @@ public final class TranscriptMapperEditorView extends EditorView {
 		super(editor);
 
 		init();
-		loadUserDbAsync(this::updateAfterDbLoad);
+
+		final PropertyChangeListener changeListener = (e) -> {
+			updateDatabaseButtonState();
+		};
+		if(UserATDB.getInstance().isATDBLoaded()) {
+			updateAfterDbLoad();
+			UserATDB.getInstance().addPropertyChangeListener("modified", changeListener);
+		} else {
+			UserATDB.getInstance().addPropertyChangeListener("loaded", new PropertyChangeListener() {
+				@Override
+				public void propertyChange(PropertyChangeEvent evt) {
+					SwingUtilities.invokeLater(() -> updateAfterDbLoad());
+					UserATDB.getInstance().removePropertyChangeListener("loaded", this);
+					UserATDB.getInstance().addPropertyChangeListener("modified", changeListener);
+				}
+			});
+		}
 
 		setupEditorEvenListeners();
 	}
@@ -209,28 +226,32 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 	AlignedTypesDatabase getUserDb() {
 		final UserATDB userATDB = UserATDB.getInstance();
-		return userATDB.getATDB();
-	}
-
-	private void loadUserDbAsync(Runnable onFinish) {
-		final PhonTask task = PhonWorker.invokeOnNewWorker(this::loadUserDb, onFinish, LogUtil::warning);
-		task.setName("Loading aligned types database");
-		getEditor().getStatusBar().watchTask(task);
-	}
-
-	private void loadUserDb() {
-		final UserATDB userATDB = UserATDB.getInstance();
 		if(!userATDB.isATDBLoaded()) {
-			try {
-				userATDB.loadATDB();
-			} catch (IOException e) {
-				LogUtil.severe(e);
-			}
+			return new AlignedTypesDatabase();
+		} else {
+			return userATDB.getATDB();
 		}
-		userATDB.addPropertyChangeListener("modified", (e) -> {
-			updateDatabaseButtonState();
-		});
 	}
+
+//	private void loadUserDbAsync(Runnable onFinish) {
+//		final PhonTask task = PhonWorker.invokeOnNewWorker(this::loadUserDb, onFinish, LogUtil::warning);
+//		task.setName("Loading aligned types database");
+//		getEditor().getStatusBar().watchTask(task);
+//	}
+//
+//	private void loadUserDb() {
+//		final UserATDB userATDB = UserATDB.getInstance();
+//		if(!userATDB.isATDBLoaded()) {
+//			try {
+//				userATDB.loadATDB();
+//			} catch (IOException e) {
+//				LogUtil.severe(e);
+//			}
+//		}
+//		userATDB.addPropertyChangeListener("modified", (e) -> {
+//			updateDatabaseButtonState();
+//		});
+//	}
 
 	void saveUserDbAsync(Runnable onFinish) {
 		final PhonTask task = PhonWorker.invokeOnNewWorker(this::saveUserDb, onFinish, LogUtil::warning);
