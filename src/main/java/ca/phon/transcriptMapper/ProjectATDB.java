@@ -1,6 +1,6 @@
 package ca.phon.transcriptMapper;
 
-import ca.phon.alignedTypesDatabase.*;
+import ca.phon.util.alignedTypesDatabase.*;
 import ca.phon.project.Project;
 import ca.phon.util.alignedTypesDatabase.*;
 import org.apache.commons.io.*;

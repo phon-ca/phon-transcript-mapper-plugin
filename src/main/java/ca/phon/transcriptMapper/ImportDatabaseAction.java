@@ -1,6 +1,6 @@
 package ca.phon.transcriptMapper;
 
-import ca.phon.alignedTypesDatabase.*;
+import ca.phon.util.alignedTypesDatabase.*;
 import ca.phon.app.log.LogUtil;
 import ca.phon.ui.nativedialogs.*;
 import ca.phon.util.alignedTypesDatabase.*;
