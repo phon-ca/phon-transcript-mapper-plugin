@@ -3,15 +3,15 @@ package ca.phon.transcriptMapper;
 import ca.phon.alignedTypesDatabase.*;
 import ca.phon.app.log.LogUtil;
 import ca.phon.ui.nativedialogs.*;
+import ca.phon.util.alignedTypesDatabase.*;
 import ca.phon.worker.*;
 
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.IOException;
 
 /**
- * Import an existing {@link ca.phon.alignedTypesDatabase.AlignedTypesDatabase} into
+ * Import an existing {@link AlignedTypesDatabase} into
  * this database.
  */
 public class ImportDatabaseAction extends TranscriptMapperAction {

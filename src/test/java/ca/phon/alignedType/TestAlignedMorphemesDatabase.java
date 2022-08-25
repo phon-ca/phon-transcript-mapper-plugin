@@ -1,14 +1,11 @@
 package ca.phon.alignedType;
 
-import ca.phon.session.SystemTierType;
-import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
-import ca.phon.syllabifier.Syllabifier;
+import ca.phon.util.alignedTypesDatabase.AlignedTypesDatabase;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import java.io.*;
-import java.util.*;
 
 @RunWith(JUnit4.class)
 public class TestAlignedMorphemesDatabase {

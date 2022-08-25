@@ -1,11 +1,6 @@
-package ca.phon.alignedTypesDatabase;
-
-import com.jcraft.jsch.IO;
-import org.apache.commons.io.Charsets;
-import org.apache.tools.ant.taskdefs.Zip;
+package ca.phon.util.alignedTypesDatabase;
 
 import java.io.*;
-import java.nio.charset.Charset;
 import java.util.zip.*;
 
 /**

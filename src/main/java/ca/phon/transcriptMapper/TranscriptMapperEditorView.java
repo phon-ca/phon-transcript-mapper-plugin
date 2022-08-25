@@ -20,6 +20,7 @@ import ca.phon.ui.action.*;
 import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.menu.MenuBuilder;
 import ca.phon.util.*;
+import ca.phon.util.alignedTypesDatabase.*;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;
 import org.jdesktop.swingx.JXTable;

@@ -1,4 +1,4 @@
-package ca.phon.alignedTypesDatabase;
+package ca.phon.util.alignedTypesDatabase;
 
 import au.com.bytecode.opencsv.*;
 import ca.hedlund.tst.*;

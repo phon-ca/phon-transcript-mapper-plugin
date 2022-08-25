@@ -1,6 +1,6 @@
 package ca.phon.transcriptMapper;
 
-import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
+import ca.phon.util.alignedTypesDatabase.AlignedTypesDatabase;
 import ca.phon.ipadictionary.*;
 import ca.phon.ipadictionary.spi.OrthoKeyIterator;
 import ca.phon.session.SystemTierType;
@@ -8,7 +8,6 @@ import ca.phon.ui.action.PhonUIAction;
 import ca.phon.util.Language;
 import ca.phon.worker.*;
 
-import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.util.*;
 

@@ -3,6 +3,7 @@ package ca.phon.transcriptMapper;
 import ca.phon.alignedTypesDatabase.*;
 import ca.phon.app.log.LogUtil;
 import ca.phon.util.PrefHelper;
+import ca.phon.util.alignedTypesDatabase.*;
 import org.apache.commons.io.FileUtils;
 
 import java.beans.*;

@@ -1,6 +1,6 @@
 package ca.phon.transcriptMapper;
 
-import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
+import ca.phon.util.alignedTypesDatabase.AlignedTypesDatabase;
 import ca.phon.app.session.editor.SessionEditor;
 import ca.phon.app.session.editor.undo.SessionEditorUndoableEdit;
 

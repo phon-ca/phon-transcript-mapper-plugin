@@ -1,9 +1,8 @@
 package ca.phon.transcriptMapper;
 
 import ca.phon.alignedTypesDatabase.*;
-import ca.phon.app.log.LogUtil;
 import ca.phon.project.Project;
-import ca.phon.util.FileUtil;
+import ca.phon.util.alignedTypesDatabase.*;
 import org.apache.commons.io.*;
 
 import java.io.*;

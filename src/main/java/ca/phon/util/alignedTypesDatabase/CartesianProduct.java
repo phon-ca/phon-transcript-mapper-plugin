@@ -1,4 +1,4 @@
-package ca.phon.alignedTypesDatabase;
+package ca.phon.util.alignedTypesDatabase;
 
 import java.lang.reflect.Array;
 import java.util.*;

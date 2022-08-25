@@ -1,4 +1,4 @@
-package ca.phon.alignedTypesDatabase;
+package ca.phon.util.alignedTypesDatabase;
 
 @FunctionalInterface
 public interface AlignedTypesDatabaseListener {
