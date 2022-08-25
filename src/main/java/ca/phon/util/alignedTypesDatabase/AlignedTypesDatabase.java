@@ -3,7 +3,7 @@ package ca.phon.util.alignedTypesDatabase;
 import au.com.bytecode.opencsv.*;
 import ca.hedlund.tst.*;
 import ca.phon.app.log.LogUtil;
-import ca.phon.session.*;
+import ca.phon.session.SystemTierType;
 import ca.phon.util.Tuple;
 import org.apache.commons.io.output.StringBuilderWriter;
 
