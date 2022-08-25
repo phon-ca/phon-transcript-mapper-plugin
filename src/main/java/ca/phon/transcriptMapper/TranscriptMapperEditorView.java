@@ -14,19 +14,18 @@
 
 package ca.phon.transcriptMapper;
 
-import ca.phon.util.alignedTypesDatabase.*;
 import ca.phon.app.log.LogUtil;
 import ca.phon.app.session.editor.*;
 import ca.phon.app.session.editor.undo.*;
 import ca.phon.app.session.editor.view.common.*;
 import ca.phon.extensions.UnvalidatedValue;
-import ca.phon.ipa.*;
+import ca.phon.ipa.IPATranscript;
 import ca.phon.ipa.alignment.*;
 import ca.phon.ipadictionary.IPADictionaryLibrary;
 import ca.phon.orthography.Orthography;
 import ca.phon.project.Project;
-import ca.phon.session.*;
 import ca.phon.session.Record;
+import ca.phon.session.*;
 import ca.phon.session.alignedMorphemes.*;
 import ca.phon.syllabifier.*;
 import ca.phon.ui.*;
@@ -47,8 +46,8 @@ import java.awt.event.*;
 import java.io.*;
 import java.text.ParseException;
 import java.time.LocalDateTime;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**

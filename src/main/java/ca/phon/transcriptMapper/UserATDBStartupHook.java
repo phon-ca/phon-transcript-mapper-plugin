@@ -18,7 +18,6 @@ import ca.phon.app.hooks.PhonStartupHook;
 import ca.phon.app.log.LogUtil;
 import ca.phon.plugin.*;
 import ca.phon.worker.PhonWorker;
-import jline.internal.Log;
 
 import java.io.IOException;
 

@@ -18,7 +18,6 @@ import ca.phon.orthography.*;
 import ca.phon.util.Tuple;
 import ca.phon.visitor.VisitorAdapter;
 import ca.phon.visitor.annotation.Visits;
-import org.apache.tools.ant.taskdefs.condition.Or;
 
 import java.util.*;
 

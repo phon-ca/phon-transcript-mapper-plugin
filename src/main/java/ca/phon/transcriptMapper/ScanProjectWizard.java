@@ -14,7 +14,6 @@
 
 package ca.phon.transcriptMapper;
 
-import ca.phon.util.alignedTypesDatabase.AlignedTypesDatabase;
 import ca.phon.app.log.*;
 import ca.phon.app.project.*;
 import ca.phon.app.session.SessionSelector;
@@ -30,6 +29,7 @@ import ca.phon.ui.jbreadcrumb.BreadcrumbButton;
 import ca.phon.ui.menu.MenuBuilder;
 import ca.phon.ui.nativedialogs.*;
 import ca.phon.ui.wizard.*;
+import ca.phon.util.alignedTypesDatabase.AlignedTypesDatabase;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;
 
@@ -37,8 +37,8 @@ import javax.swing.*;
 import javax.swing.event.*;
 import java.awt.*;
 import java.io.*;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 public class ScanProjectWizard extends BreadcrumbWizardFrame {
 

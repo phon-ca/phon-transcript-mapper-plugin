@@ -14,16 +14,12 @@
 
 package ca.phon.transcriptMapper;
 
-import ca.phon.ui.nativedialogs.FileFilter;
-import ca.phon.util.alignedTypesDatabase.*;
-import ca.phon.app.log.LogUtil;
 import ca.phon.ui.nativedialogs.*;
 import ca.phon.util.alignedTypesDatabase.*;
-import ca.phon.worker.*;
+import ca.phon.worker.PhonWorker;
 
-import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.io.*;
+import java.io.File;
 
 /**
  * Import an existing {@link AlignedTypesDatabase} into

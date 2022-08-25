@@ -14,14 +14,11 @@
 
 package ca.phon.transcriptMapper;
 
-import ca.phon.app.log.LogUtil;
 import ca.phon.ui.nativedialogs.*;
-import ca.phon.ui.nativedialogs.FileFilter;
-import ca.phon.worker.*;
+import ca.phon.worker.PhonWorker;
 
-import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.io.*;
+import java.io.File;
 
 public class ExportCSVAction extends TranscriptMapperAction {
 
