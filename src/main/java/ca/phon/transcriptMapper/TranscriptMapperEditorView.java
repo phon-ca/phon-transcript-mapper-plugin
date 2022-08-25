@@ -84,7 +84,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 	public final static String NAME = "Transcript Mapper";
 
-	public final static String ICON = "blank";
+	public final static String ICON = "transcript-mapper";
 
 	// current internal state represented in a tree structure
 	private TypeMapNode currentState;
