@@ -41,21 +41,8 @@ public class ExportCSVAction extends TranscriptMapperAction {
 	}
 
 	private void exportDatabaseAsCSV(String filename) {
-		final PhonTask exportTask = new PhonTask() {
-			@Override
-			public void performTask() {
-				super.setStatus(TaskStatus.RUNNING);
-				try {
-					getView().getUserDb().exportToCSV(getView().keyTier(), new File(filename), "UTF-8");
-					super.setStatus(TaskStatus.FINISHED);
-				} catch (IOException e) {
-					Toolkit.getDefaultToolkit().beep();
-					LogUtil.severe(e);
-					super.err = e;
-					super.setStatus(TaskStatus.ERROR);
-				}
-			}
-		};
+		final ExportCSVTask exportTask = new ExportCSVTask(getView().getUserDb(), new File(filename),
+				getView().keyTier(), getView().getVisibleTiers().toArray(new String[0]));
 		exportTask.setName(DESC);
 
 		getView().getEditor().getStatusBar().watchTask(exportTask);

@@ -43,21 +43,7 @@ public class ImportCSVAction extends TranscriptMapperAction {
 	}
 
 	private void importDatabaseFromCSV(String filename) {
-		final PhonTask importTask = new PhonTask() {
-			@Override
-			public void performTask() {
-				super.setStatus(TaskStatus.RUNNING);
-				try {
-					getView().getUserDb().importFromCSV(new File(filename));
-					super.setStatus(TaskStatus.FINISHED);
-				} catch (IOException e) {
-					Toolkit.getDefaultToolkit().beep();
-					LogUtil.severe(e);
-					super.err = e;
-					super.setStatus(TaskStatus.ERROR);
-				}
-			}
-		};
+		final ImportCSVTask importTask = new ImportCSVTask(getView().getUserDb(), new File(filename));
 		importTask.setName(DESC);
 
 		getView().getEditor().getStatusBar().watchTask(importTask);

@@ -14,15 +14,12 @@
  */
 package ca.phon.util.alignedTypesDatabase;
 
-import au.com.bytecode.opencsv.*;
 import ca.hedlund.tst.*;
 import ca.phon.app.log.LogUtil;
 import ca.phon.session.SystemTierType;
 import ca.phon.util.Tuple;
-import org.apache.commons.io.output.StringBuilderWriter;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
@@ -390,6 +387,27 @@ public final class AlignedTypesDatabase implements Serializable {
 		}
 	}
 
+	/**
+	 * Return all types for given keyTier
+	 *
+	 * @param keyTier
+	 * @return all types which appear for the given keyTier
+	 */
+	public Collection<String> typesForTier(String keyTier) {
+		final List<String> retVal = new ArrayList<>();
+		Set<Map.Entry<String, Collection<TypeEntry>>> entrySet = tree.entrySet();
+		for (Map.Entry<String, Collection<TypeEntry>> entry : entrySet) {
+			Optional<TypeEntry> entryForKeyTier = entry.getValue()
+					.stream()
+					.filter((e) -> e.getTierName(tierDescriptionTree).equals(keyTier))
+					.findAny();
+			if (entryForKeyTier.isPresent()) {
+				retVal.add(entry.getKey());
+			}
+		}
+		return retVal;
+	}
+
 	private Collection<TypeEntry> typeEntries(String key) {
 		try {
 			readWriteLock.readLock().lock();
@@ -400,71 +418,6 @@ public final class AlignedTypesDatabase implements Serializable {
 			return node.get().getValue();
 		} finally {
 			readWriteLock.readLock().unlock();
-		}
-	}
-
-	/**
-	 * Import entries from the provided (utf-8) csv file
-	 *
-	 * @param csvFile
-	 */
-	public void importFromCSV(File csvFile) throws IOException {
-		importFromCSV(csvFile, "UTF-8");
-	}
-
-	/**
-	 * Import entries from the provided csv file. The first row of the
-	 * csv file will be read as the tier name
-	 *
-	 * @param csvFile
-	 * @param encoding
-	 */
-	public void importFromCSV(File csvFile, String encoding) throws IOException {
-		try (CSVReader reader = new CSVReader(new InputStreamReader(new FileInputStream(csvFile), encoding))) {
-			importFromCSV(reader);
-		}
-	}
-
-	/**
-	 * Import entries from the given csv data.  The first row of the
-	 * 	 * csv file will be read as the tier name
-	 *
-	 * @param csvData
-	 */
-	public void importFromCSV(String csvData) throws IOException {
-		try (CSVReader reader = new CSVReader(new InputStreamReader(
-				new ByteArrayInputStream(csvData.getBytes(StandardCharsets.UTF_8))))) {
-			importFromCSV(reader);
-		}
-	}
-
-	private void importFromCSV(CSVReader csvReader) throws IOException {
-		try {
-			readWriteLock.writeLock().lock();
-
-			final String[] cols = csvReader.readNext();
-			for (String tierName : cols) {
-				if (!tierDescriptionTree.containsKey(tierName)) {
-					try {
-						addUserTier(tierName);
-					} catch (DuplicateTierEntry e) {
-						throw new IOException(e);
-					}
-				}
-			}
-
-			String[] row = null;
-			while ((row = csvReader.readNext()) != null) {
-				Map<String, String> alignedTypes = new HashMap<>();
-				for (int i = 0; i < cols.length; i++) {
-					String tierName = cols[i];
-					String type = (i < row.length ? row[i] : "");
-					alignedTypes.put(tierName, type);
-				}
-				addAlignedTypes(alignedTypes);
-			}
-		} finally {
-			readWriteLock.writeLock().unlock();
 		}
 	}
 
@@ -608,99 +561,6 @@ public final class AlignedTypesDatabase implements Serializable {
 			} else {
 				return false;
 			}
-		} finally {
-			readWriteLock.readLock().unlock();
-		}
-	}
-
-	/**
-	 * Export alignment data for given keyTier to csvFile include all tiers
-	 *
-	 * @param keyTier
-	 * @param csvFile
-	 * @throws IOException
-	 */
-	public void exportToCSV(String keyTier, File csvFile, String encoding) throws IOException {
-		exportToCSV(keyTier, tierNames(), csvFile, encoding);
-	}
-
-	/**
-	 * Export alignment data for given keyTier to csvFile include only specified tiers
-	 *
-	 * @param keyTier
-	 * @param tierNames
-	 * @param csvFile
-	 * @throws IOException
-	 */
-	public void exportToCSV(String keyTier, Collection<String> tierNames, File csvFile, String encoding) throws IOException {
-		try (CSVWriter writer = new CSVWriter(new OutputStreamWriter(new FileOutputStream(csvFile), encoding))) {
-			exportToCSV(keyTier, tierNames, writer);
-		}
-	}
-
-	/**
-	 * Export alignment data for given keyTier to StringBuilder include all tiers
-	 *
-	 * @param keyTier
-	 * @param builder
-	 * @throws IOException
-	 */
-	public void exportToCSV(String keyTier, StringBuilder builder) throws IOException {
-		exportToCSV(keyTier, tierNames(), builder);
-	}
-
-	/**
-	 * Export alignment data for given keyTier to StringBuilder include only specified tiers
-	 *
-	 * @param keyTier
-	 * @param tierNames
-	 * @param builder
-	 * @throws IOException
-	 */
-	public void exportToCSV(String keyTier, Collection<String> tierNames, StringBuilder builder) throws IOException {
-		try (CSVWriter writer = new CSVWriter(new StringBuilderWriter(builder))) {
-			exportToCSV(keyTier, tierNames, writer);
-		}
-	}
-
-	private void exportToCSV(String keyTier, Collection<String> tierNames, CSVWriter writer) throws IOException {
-		try {
-			readWriteLock.readLock().lock();
-
-			List<String> tiers = new ArrayList<>(tierNames);
-			tiers.remove(keyTier);
-			tiers.add(0, keyTier);
-
-			// write header
-			writer.writeNext(tiers.toArray(new String[0]));
-
-			Set<Map.Entry<String, Collection<TypeEntry>>> entrySet = tree.entrySet();
-			for(Map.Entry<String, Collection<TypeEntry>> entry:entrySet) {
-				Optional<TypeEntry> entryForKeyTier = entry.getValue()
-						.stream()
-						.filter((e) -> e.getTierName(tierDescriptionTree).equals(keyTier))
-						.findAny();
-				if(entryForKeyTier.isPresent()) {
-					Map<String, String[]> alignedTypes = alignedTypesForEntry(entryForKeyTier.get());
-
-					String[][] typeOpts = new String[tiers.size()][];
-					typeOpts[0] = new String[] { entry.getKey() };
-					for(int i = 1; i < tiers.size(); i++) {
-						String tierName = tiers.get(i);
-						String[] tierOpts = alignedTypes.get(tierName);
-						if(tierOpts == null)
-							tierOpts = new String[0];
-						typeOpts[i] = tierOpts;
-					}
-
-					String[][] filteredCartesianProduct =
-							CartesianProduct.stringArrayProduct(typeOpts, (set) -> this.hasAlignedTypes(tierNames().toArray(new String[0]), set));
-					for(String[] row:filteredCartesianProduct) {
-						writer.writeNext(row);
-					}
-				}
-			}
-			writer.flush();
 		} finally {
 			readWriteLock.readLock().unlock();
 		}
