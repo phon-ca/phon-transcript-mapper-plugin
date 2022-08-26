@@ -16,7 +16,6 @@ package ca.phon.transcriptMapper;
 
 import ca.phon.app.actions.CheckForChangesOnExit;
 import ca.phon.plugin.*;
-import com.sun.jna.platform.win32.Netapi32Util;
 
 import java.io.IOException;
 
