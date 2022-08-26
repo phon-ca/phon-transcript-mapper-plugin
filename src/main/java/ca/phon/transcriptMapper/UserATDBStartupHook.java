@@ -21,7 +21,7 @@ import ca.phon.worker.PhonWorker;
 
 import java.io.IOException;
 
-public class UserATDBStartupHook implements PhonStartupHook, IPluginExtensionPoint<PhonStartupHook> {
+public final class UserATDBStartupHook implements PhonStartupHook, IPluginExtensionPoint<PhonStartupHook> {
 
 	@Override
 	public void startup() throws PluginException {

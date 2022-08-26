@@ -14,36 +14,35 @@
 
 package ca.phon.transcriptMapper;
 
-import ca.phon.app.hooks.PhonShutdownHook;
-import ca.phon.app.log.LogUtil;
+import ca.phon.app.actions.CheckForChangesOnExit;
 import ca.phon.plugin.*;
+import com.sun.jna.platform.win32.Netapi32Util;
 
 import java.io.IOException;
 
-public class UserATDBShutdownHook implements PhonShutdownHook, IPluginExtensionPoint<PhonShutdownHook> {
+public class SaveUserATDBOnExit implements CheckForChangesOnExit, IPluginExtensionPoint<CheckForChangesOnExit> {
+	@Override
+	public String getName() {
+		return "Aligned types database";
+	}
 
 	@Override
-	public void shutdown() throws PluginException {
-		final UserATDB userATDB = UserATDB.getInstance();
-		if(userATDB.isATDBLoaded() && userATDB.isModified()) {
-			LogUtil.info("[TranscriptMapper] Saving user aligned types database");
-			try {
-				userATDB.saveDb();
-				LogUtil.info("[TranscriptMapper] Finished saving user aligned types database");
-			} catch (IOException e) {
-				LogUtil.warning(e);
-				throw new PluginException(e);
-			}
-		}
+	public boolean hasChanges() {
+		return UserATDB.getInstance().isATDBLoaded() && UserATDB.getInstance().isModified();
+	}
+
+	@Override
+	public void save() throws IOException {
+		UserATDB.getInstance().saveDb();
 	}
 
 	@Override
 	public Class<?> getExtensionType() {
-		return PhonShutdownHook.class;
+		return CheckForChangesOnExit.class;
 	}
 
 	@Override
-	public IPluginExtensionFactory<PhonShutdownHook> getFactory() {
+	public IPluginExtensionFactory<CheckForChangesOnExit> getFactory() {
 		return (args -> this);
 	}
 }

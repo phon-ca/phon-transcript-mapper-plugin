@@ -23,7 +23,7 @@ import java.beans.*;
 import java.io.*;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class UserATDB {
+public final class UserATDB {
 
 	private final static String USER_DB_FILENAME = "transcriptMapper/typeMap" +
 			AlignedTypesDatabaseIO.DBZ_EXT;

@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.*;
 
 public class ScanProjectWizard extends BreadcrumbWizardFrame {
-
 	private BreadcrumbButton btnStop;
 
 	private WizardStep selectSessionStep;
