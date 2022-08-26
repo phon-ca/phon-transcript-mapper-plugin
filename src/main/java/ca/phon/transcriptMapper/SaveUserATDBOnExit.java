@@ -22,7 +22,7 @@ import java.io.IOException;
 public class SaveUserATDBOnExit implements CheckForChangesOnExit, IPluginExtensionPoint<CheckForChangesOnExit> {
 	@Override
 	public String getName() {
-		return "Aligned types database";
+		return "[Transcript Mapper] Aligned types database";
 	}
 
 	@Override
