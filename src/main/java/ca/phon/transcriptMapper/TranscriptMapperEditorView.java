@@ -33,7 +33,7 @@ import ca.phon.ui.action.*;
 import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.menu.MenuBuilder;
 import ca.phon.util.*;
-import ca.phon.util.alignedTypesDatabase.*;
+import ca.phon.alignedTypesDatabase.*;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;
 import org.jdesktop.swingx.JXTable;
@@ -227,7 +227,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	AlignedTypesDatabase getUserDb() {
 		final UserATDB userATDB = UserATDB.getInstance();
 		if(!userATDB.isATDBLoaded()) {
-			return new AlignedTypesDatabase();
+			return (new AlignedTypesDatabaseFactory()).createDatabase();
 		} else {
 			return userATDB.getATDB();
 		}
@@ -980,7 +980,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 				alignedTypes.put(tierName, "*".equals(morpheme) ? "" : morphemeNode.getMorpheme(tierName));
 			}
 
-			final Tuple<String[], String[]> alignedTypeArrays = AlignedTypesDatabase.alignedTypesToArrays(alignedTypes);
+			final Tuple<String[], String[]> alignedTypeArrays = AlignedTypesUtil.alignedTypesToArrays(alignedTypes);
 			final AlignedTypesEdit edit = new AlignedTypesEdit(getEditor(), this,
 					AlignedTypesEdit.Operation.ADD, alignedTypeArrays.getObj1(), alignedTypeArrays.getObj2());
 			getEditor().getUndoSupport().postEdit(edit);

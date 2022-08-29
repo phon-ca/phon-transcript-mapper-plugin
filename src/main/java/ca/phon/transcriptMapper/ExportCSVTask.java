@@ -15,7 +15,7 @@
 package ca.phon.transcriptMapper;
 
 import au.com.bytecode.opencsv.CSVWriter;
-import ca.phon.util.alignedTypesDatabase.*;
+import ca.phon.alignedTypesDatabase.*;
 import ca.phon.worker.PhonTask;
 
 import java.io.*;

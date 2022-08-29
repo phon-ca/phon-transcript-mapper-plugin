@@ -16,7 +16,7 @@ package ca.phon.transcriptMapper;
 
 import ca.phon.app.log.LogUtil;
 import ca.phon.util.PrefHelper;
-import ca.phon.util.alignedTypesDatabase.*;
+import ca.phon.alignedTypesDatabase.*;
 import org.apache.commons.io.FileUtils;
 
 import java.beans.*;
@@ -99,7 +99,7 @@ public final class UserATDB {
 		if(projectDbFile.exists()) {
 			this.atdb = AlignedTypesDatabaseIO.readFromFile(projectDbFile);
 		} else {
-			this.atdb = new AlignedTypesDatabase();
+			this.atdb = (new AlignedTypesDatabaseFactory()).createDatabase();
 		}
 		this.atdb.addDatabaseListener(listener);
 		loadLock.unlock();

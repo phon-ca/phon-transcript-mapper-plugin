@@ -14,7 +14,7 @@
 
 package ca.phon.transcriptMapper;
 
-import ca.phon.util.alignedTypesDatabase.AlignedTypesDatabase;
+import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
 import ca.phon.worker.PhonTask;
 
 import java.io.File;

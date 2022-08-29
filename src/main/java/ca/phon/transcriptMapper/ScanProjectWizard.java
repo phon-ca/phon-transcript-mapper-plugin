@@ -29,7 +29,7 @@ import ca.phon.ui.jbreadcrumb.BreadcrumbButton;
 import ca.phon.ui.menu.MenuBuilder;
 import ca.phon.ui.nativedialogs.*;
 import ca.phon.ui.wizard.*;
-import ca.phon.util.alignedTypesDatabase.AlignedTypesDatabase;
+import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;
 

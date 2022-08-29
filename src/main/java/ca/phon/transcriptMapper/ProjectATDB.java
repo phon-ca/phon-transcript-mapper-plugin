@@ -15,7 +15,7 @@
 package ca.phon.transcriptMapper;
 
 import ca.phon.project.Project;
-import ca.phon.util.alignedTypesDatabase.*;
+import ca.phon.alignedTypesDatabase.*;
 import org.apache.commons.io.FileUtils;
 
 import java.io.*;
@@ -34,10 +34,12 @@ public final class ProjectATDB {
 
 	private Project project;
 
-	private AlignedTypesDatabase atdb = new AlignedTypesDatabase();
+	private AlignedTypesDatabase atdb;
 
 	ProjectATDB(Project project) {
 		this.project = project;
+
+		this.atdb = (new AlignedTypesDatabaseFactory()).createDatabase();
 	}
 
 	public boolean isATDBLoaded() {

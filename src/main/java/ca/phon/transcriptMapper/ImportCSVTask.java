@@ -15,7 +15,7 @@
 package ca.phon.transcriptMapper;
 
 import au.com.bytecode.opencsv.CSVReader;
-import ca.phon.util.alignedTypesDatabase.AlignedTypesDatabase;
+import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
 import ca.phon.worker.PhonTask;
 
 import java.io.*;
@@ -47,11 +47,7 @@ public class ImportCSVTask extends PhonTask {
 
 			final String[] cols = csvReader.readNext();
 			for (String tierName : cols) {
-				try {
-					db.addUserTier(tierName);
-				} catch (AlignedTypesDatabase.DuplicateTierEntry e) {
-					// tier already exists
-				}
+				db.addUserTier(tierName);
 			}
 
 			String[] row = null;
