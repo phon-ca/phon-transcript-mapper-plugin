@@ -57,11 +57,11 @@ public class ImportCSVTask extends PhonTask {
 			}
 			Collections.shuffle(allRows);
 
-			for(String[] row:allRows) {
+			for(String[] currentRow:allRows) {
 				Map<String, String> alignedTypes = new HashMap<>();
 				for (int i = 0; i < cols.length; i++) {
 					String tierName = cols[i];
-					String type = (i < row.length ? row[i] : "");
+					String type = (i < currentRow.length ? currentRow[i] : "");
 					alignedTypes.put(tierName, type);
 				}
 				db.addAlignedTypes(alignedTypes);
