@@ -15,6 +15,7 @@
 package ca.phon.transcriptMapper;
 
 import ca.phon.orthography.*;
+import ca.phon.session.Word;
 import ca.phon.util.Tuple;
 import ca.phon.visitor.VisitorAdapter;
 import ca.phon.visitor.annotation.Visits;
@@ -80,11 +81,16 @@ public class OrthographyMorphemeReplacementVisitor extends VisitorAdapter<OrthoE
 
 	@Visits
 	public void orthoWord(OrthoWord word) {
-		if(currentMorphemeIdx++ == morphemeIdx) {
-			// replace morpheme
-			builder.append(morpheme);
-		} else {
+		if(word.getPrefix() != null && word.getPrefix().getType() == WordPrefixType.OMISSION) {
+			// append word without incrementing morpheme index
 			builder.append(word);
+		} else {
+			if (currentMorphemeIdx++ == morphemeIdx) {
+				// replace morpheme
+				builder.append(morpheme);
+			} else {
+				builder.append(word);
+			}
 		}
 	}
 
