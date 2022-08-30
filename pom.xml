@@ -3,14 +3,14 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ca.phon</groupId>
-	<artifactId>phon-morpheme-mapper-plugin</artifactId>
+	<artifactId>phon-transcript-mapper-plugin</artifactId>
 	<version>1</version>
 
 	<distributionManagement>
 		<repository>
 			<id>github</id>
 			<name>GitHub phon-ca Apache Maven Packages</name>
-			<url>https://maven.pkg.github.com/phon-ca/phon-morpheme-mapper-plugin</url>
+			<url>https://maven.pkg.github.com/phon-ca/phon-transcript-mapper-plugin</url>
 		</repository>
 	</distributionManagement>
 
@@ -33,11 +33,6 @@
 			<groupId>ca.phon</groupId>
 			<artifactId>phon-app</artifactId>
 			<version>${ca.phon.phon-app.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>ca.phon</groupId>
-			<artifactId>phon-groovy-plugin</artifactId>
-			<version>5</version>
 		</dependency>
 	</dependencies>
 
