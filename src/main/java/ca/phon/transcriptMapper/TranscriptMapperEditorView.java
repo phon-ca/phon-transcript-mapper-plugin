@@ -212,11 +212,20 @@ public final class TranscriptMapperEditorView extends EditorView {
 	@RunOnEDT
 	public void onTierChanged(EditorEvent ee) {
 		final int selectedRow = this.morphemesTable.getSelectedRow();
+		final int selectedOption = this.alignmentOptionsTable.getSelectedRow();
 		updateStateAsync(() -> {
 			this.updateFromCurrentState();
 			if(selectedRow >= 0 && selectedRow < this.morphemesTableModel.getRowCount()) {
-				SwingUtilities.invokeLater(() ->
-						this.morphemesTable.getSelectionModel().setSelectionInterval(selectedRow, selectedRow));
+				SwingUtilities.invokeLater(() -> {
+					this.morphemesTable.getSelectionModel().setSelectionInterval(selectedRow, selectedRow);
+					if(selectedOption >= 0) {
+						SwingUtilities.invokeLater(() -> {
+							if(selectedOption < this.alignmentOptionsTable.getRowCount()) {
+								this.alignmentOptionsTable.getSelectionModel().setSelectionInterval(selectedOption, selectedOption);
+							}
+						});
+					}
+				});
 			}
 		});
 	}
