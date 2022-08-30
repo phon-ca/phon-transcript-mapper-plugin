@@ -51,7 +51,13 @@ public class ImportCSVTask extends PhonTask {
 			}
 
 			String[] row = null;
+			final List<String[]> allRows = new ArrayList<>();
 			while ((row = csvReader.readNext()) != null) {
+				allRows.add(row);
+			}
+			Collections.shuffle(allRows);
+
+			for(String[] row:allRows) {
 				Map<String, String> alignedTypes = new HashMap<>();
 				for (int i = 0; i < cols.length; i++) {
 					String tierName = cols[i];
