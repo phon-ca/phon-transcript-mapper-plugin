@@ -52,29 +52,36 @@ public class ExportCSVTask extends PhonTask {
 			final CSVWriter writer = createWriter();
 
 			List<String> tiers = new ArrayList<>();
+			tiers.addAll(List.of(tierNames));
 			tiers.remove(keyTier);
 			tiers.add(0, keyTier);
 
 			// write header
 			writer.writeNext(tiers.toArray(new String[0]));
+			writer.flush();
 
-			for(String type: db.typesForTier(keyTier)) {
-				Map<String, String[]> alignedTypes = db.alignedTypesForTier(keyTier, type, tiers);
+			final Collection<String> typesForTier = db.typesForTier(keyTier);
+			for(String type: typesForTier) {
+				if(tiers.size() == 1) {
 
-				String[][] typeOpts = new String[tiers.size()][];
-				typeOpts[0] = new String[]{type};
-				for (int i = 1; i < tiers.size(); i++) {
-					String tierName = tiers.get(i);
-					String[] tierOpts = alignedTypes.get(tierName);
-					if (tierOpts == null)
-						tierOpts = new String[0];
-					typeOpts[i] = tierOpts;
-				}
+				} else {
+					Map<String, String[]> alignedTypes = db.alignedTypesForTier(keyTier, type, tiers);
 
-				String[][] filteredCartesianProduct =
-						CartesianProduct.stringArrayProduct(typeOpts, (set) -> db.hasAlignedTypes(tiers.toArray(new String[0]), set));
-				for (String[] row : filteredCartesianProduct) {
-					writer.writeNext(row);
+					String[][] typeOpts = new String[tiers.size()][];
+					typeOpts[0] = new String[]{type};
+					for (int i = 1; i < tiers.size(); i++) {
+						String tierName = tiers.get(i);
+						String[] tierOpts = alignedTypes.get(tierName);
+						if (tierOpts == null)
+							tierOpts = new String[0];
+						typeOpts[i] = tierOpts;
+					}
+
+					String[][] filteredCartesianProduct =
+							CartesianProduct.stringArrayProduct(typeOpts, (set) -> db.hasAlignedTypes(tiers.toArray(new String[0]), set));
+					for (String[] row : filteredCartesianProduct) {
+						writer.writeNext(row);
+					}
 				}
 			}
 
