@@ -1087,6 +1087,19 @@ public final class TranscriptMapperEditorView extends EditorView {
 				alignedTypes.put(tierName, "*".equals(morpheme) ? "" : morphemeNode.getMorpheme(tierName));
 			}
 
+			final String sessionLanguages = getEditor().getSession().getLanguage();
+			if(!alignedTypes.containsKey("Language") && sessionLanguages.length() > 0) {
+				String[] langIds = sessionLanguages.split(",");
+				if(langIds.length > 0) {
+					LanguageEntry primaryLang = LanguageParser.getInstance().getEntryById(langIds[0]);
+					if(primaryLang != null) {
+						alignedTypes.put("Language", primaryLang.getId());
+					}
+				}
+			}
+
+			alignedTypes.put(TypeMapMetadataTier.PROJECT_ID.getTierName(), getEditor().getProject().getUUID().toString());
+
 			final Tuple<String[], String[]> alignedTypeArrays = AlignedTypesUtil.alignedTypesToArrays(alignedTypes);
 			final AlignedTypesEdit edit = new AlignedTypesEdit(getEditor(), this,
 					AlignedTypesEdit.Operation.ADD, alignedTypeArrays.getObj1(), alignedTypeArrays.getObj2());
