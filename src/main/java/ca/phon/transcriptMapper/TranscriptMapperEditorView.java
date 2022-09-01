@@ -130,6 +130,64 @@ public final class TranscriptMapperEditorView extends EditorView {
 		return prop;
 	}
 
+	private static String dbOnlyTierVisibilityProp(Project project, SessionPath sessionPath) {
+		final String prop = String.format("%s.%s.%s.dbOnlyVisibleTiers",
+				project.getUUID(), sessionPath.getCorpus(), sessionPath.getSession());
+		return prop;
+	}
+
+	private synchronized static void setTierVisible(Project project, SessionPath sessionPath,
+	                                               String tierName, boolean visible) {
+		final Properties sharedProps = getSharedProps();
+		final String tierVisiblityProp = tierVisiblityProp(project, sessionPath);
+
+		String hiddenTiers = sharedProps.getProperty(tierVisiblityProp, "");
+		final List<String> tierNames = new ArrayList<>();
+		if(hiddenTiers.trim().length() > 0)
+			tierNames.addAll(List.of(hiddenTiers.split(",")));
+
+		if(visible && tierNames.contains(tierName)) {
+			tierNames.remove(tierName);
+		} else if(!visible && !tierNames.contains(tierName)) {
+			tierNames.add(tierName);
+		}
+
+		final String newHiddenTiers = tierNames.stream().collect(Collectors.joining(","));
+		sharedProps.setProperty(tierVisiblityProp, newHiddenTiers);
+
+		try {
+			saveSharedProps();
+		} catch (IOException e) {
+			LogUtil.severe(e);
+		}
+	}
+
+	private synchronized static void setDbOnlyTierVisible(Project project, SessionPath sessionPath,
+	                                                String tierName, boolean visible) {
+		final Properties sharedProps = getSharedProps();
+		final String tierVisiblityProp = dbOnlyTierVisibilityProp(project, sessionPath);
+
+		String visibleTiers = sharedProps.getProperty(tierVisiblityProp, "");
+		final List<String> tierNames = new ArrayList<>();
+		if(visibleTiers.trim().length() > 0)
+			tierNames.addAll(List.of(visibleTiers.split(",")));
+
+		if(visible && !visibleTiers.contains(tierName)) {
+			tierNames.add(tierName);
+		} else if(!visible && visibleTiers.contains(tierName)) {
+			tierNames.remove(tierName);
+		}
+
+		final String newHiddenTiers = tierNames.stream().collect(Collectors.joining(","));
+		sharedProps.setProperty(tierVisiblityProp, newHiddenTiers);
+
+		try {
+			saveSharedProps();
+		} catch (IOException e) {
+			LogUtil.severe(e);
+		}
+	}
+
 	private synchronized static void setTierHidden(Project project, SessionPath sessionPath,
 	                                               String tierName, boolean hidden) {
 		final Properties sharedProps = getSharedProps();
@@ -164,6 +222,18 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final List<String> tierNames = new ArrayList<>();
 		if(hiddenTiers.trim().length() > 0)
 			tierNames.addAll(List.of(hiddenTiers.split(",")));
+
+		return tierNames.contains(tierName);
+	}
+
+	private synchronized static boolean isDbOnlyTierVisible(Project project, SessionPath sessionPath, String tierName) {
+		final Properties sharedProps = getSharedProps();
+		final String tierVisiblityProp = dbOnlyTierVisibilityProp(project, sessionPath);
+
+		String visibleTiers = sharedProps.getProperty(tierVisiblityProp, "");
+		final List<String> tierNames = new ArrayList<>();
+		if(visibleTiers.trim().length() > 0)
+			tierNames.addAll(List.of(visibleTiers.split(",")));
 
 		return tierNames.contains(tierName);
 	}
@@ -402,7 +472,8 @@ public final class TranscriptMapperEditorView extends EditorView {
 				}
 				builder.addItem(".", toggleTierItem);
 			} else {
-				dbOnlyTiers.add(tierName);
+				if(!tierName.startsWith("__"))
+					dbOnlyTiers.add(tierName);
 			}
 		}
 
@@ -417,10 +488,20 @@ public final class TranscriptMapperEditorView extends EditorView {
 			builder.addItem(".", msgItem);
 
 			for(String tierName:dbOnlyTiers) {
+				final JMenu dbOnlyTierMenu = builder.addMenu(".", tierName);
+				final MenuBuilder dbOnlyTierMenuBuilder = new MenuBuilder(dbOnlyTierMenu);
+
 				final PhonUIAction createTierAct = new PhonUIAction(this, "createTiers", List.of(tierName));
-				createTierAct.putValue(PhonUIAction.NAME, "Add tier: " + tierName);
+				createTierAct.putValue(PhonUIAction.NAME, "Add tier to session");
 				createTierAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Add tier " + tierName + " to session");
-				builder.addItem(".", createTierAct);
+				dbOnlyTierMenuBuilder.addItem(".", createTierAct);
+
+				final PhonUIAction showTierAct = new PhonUIAction(this, "toggleDbOnlyTier", tierName);
+				showTierAct.putValue(PhonUIAction.NAME, "Show tier in alignment options table");
+				showTierAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Show tier '" + tierName + "' in alignment options table");
+				showTierAct.putValue(PhonUIAction.SELECTED_KEY, dbOnlyTierVisible(tierName));
+				final JCheckBoxMenuItem showTierItem = new JCheckBoxMenuItem(showTierAct);
+				dbOnlyTierMenuBuilder.addItem(".", showTierItem);
 			}
 
 			if(dbOnlyTiers.size() > 1) {
@@ -669,7 +750,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	void updateAfterDbLoad() {
 		if(getUserDb() == null) return;
 
-		this.keyTierBox.setModel(new DefaultComboBoxModel<>(getVisibleTiers().toArray(new String[0])));
+		this.keyTierBox.setModel(new DefaultComboBoxModel<>(getVisibleAlignmentTiers().toArray(new String[0])));
 		this.keyTierBox.setSelectedItem(SystemTierType.Orthography.getName());
 
 		if(getEditor().currentRecord() != null) {
@@ -885,7 +966,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final String keyTier = keyTier();
 		if(keyTier == null) return root;
 
-		List<String> tierList = getVisibleTiers();
+		List<String> tierList = getVisibleOptionsTiers();
 		for(int gidx = 0; gidx < record.numberOfGroups(); gidx++) {
 			Group grp = record.getGroup(gidx);
 			TypeMapNode grpNode = new TypeMapNode(gidx);
@@ -975,6 +1056,15 @@ public final class TranscriptMapperEditorView extends EditorView {
 		getEditor().getUndoSupport().endUpdate();
 	}
 
+	public void toggleDbOnlyTier(PhonActionEvent pae) {
+		final String tierName = pae.getData().toString();
+		setDbOnlyTierVisible(getEditor().getProject(), new SessionPath(getEditor().getSession().getCorpus(), getEditor().getSession().getName()),
+				tierName, !dbOnlyTierVisible(tierName));
+		if(this.alignmentOptionsTableModel != null) {
+			this.alignmentOptionsTableModel.fireTableStructureChanged();
+		}
+	}
+
 	public void onFocusMorphemeTable(PhonActionEvent pae) {
 		if(this.morphemesTable != null)
 			this.morphemesTable.requestFocusInWindow();
@@ -985,7 +1075,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		if(selectedMorpheme >= 0 && selectedMorpheme < this.morphemesTableModel.getRowCount()) {
 			final TypeMapNode morphemeNode = this.currentState.getLeaves().get(selectedMorpheme);
 			final Map<String, String> alignedTypes = new LinkedHashMap<>();
-			for(String tierName:getVisibleTiers()) {
+			for(String tierName:getVisibleAlignmentTiers()) {
 				final String morpheme = morphemeNode.getMorpheme(tierName);
 				alignedTypes.put(tierName, "*".equals(morpheme) ? "" : morphemeNode.getMorpheme(tierName));
 			}
@@ -1006,7 +1096,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 				final String[] alignedTypes = this.alignmentOptionsTableModel.alignmentRows[selectedAlignment];
 
 				final AlignedTypesEdit edit = new AlignedTypesEdit(getEditor(), this,
-						AlignedTypesEdit.Operation.REMOVE, getVisibleTiers().toArray(new String[0]), alignedTypes);
+						AlignedTypesEdit.Operation.REMOVE, getVisibleOptionsTiers().toArray(new String[0]), alignedTypes);
 				getEditor().getUndoSupport().postEdit(edit);
 			}
 		}
@@ -1041,9 +1131,8 @@ public final class TranscriptMapperEditorView extends EditorView {
 	}
 
 	private String morphemeSetMenuItemText(String[] optionSet) {
-		final List<String> visibleTiers = getVisibleTiers();
+		final List<String> visibleTiers = getVisibleAlignmentTiers();
 		final StringBuilder bulider = new StringBuilder();
-		if(visibleTiers.size() != optionSet.length) return "";
 
 		for(int i = 1; i < visibleTiers.size(); i++) {
 			final String option = optionSet[i];
@@ -1056,7 +1145,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	}
 
 	private void setupMorphemeMenu(MenuBuilder builder, int morphemeIdx, String[][] options) {
-		final String headerTxt = morphemeSetMenuItemText(getVisibleTiers().toArray(new String[0]));
+		final String headerTxt = morphemeSetMenuItemText(getVisibleAlignmentTiers().toArray(new String[0]));
 		builder.addItem(".", headerTxt).setEnabled(false);
 
 		for (int i = 0; i < options.length && i < 10; i++) {
@@ -1082,7 +1171,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 		final TypeMapNode morphemeNode = this.currentState.getLeaves().get(morphemeIdx);
 		final Map<String, String> alignedTypes = new LinkedHashMap<>();
-		for(String tierName:getVisibleTiers()) {
+		for(String tierName:getVisibleAlignmentTiers()) {
 			final String morpheme = morphemeNode.getMorpheme(tierName);
 			alignedTypes.put(tierName, "*".equals(morpheme) ? "" : morphemeNode.getMorpheme(tierName));
 		}
@@ -1109,8 +1198,8 @@ public final class TranscriptMapperEditorView extends EditorView {
 		if(selectedOption < 0 || selectedOption >= this.alignmentOptionsTableModel.alignmentRows.length) return;
 
 		final String[] types = this.alignmentOptionsTableModel.alignmentRows[selectedOption];
-		if(tierNum > 0 && tierNum < getVisibleTiers().size()) {
-			final String tierName = getVisibleTiers().get(tierNum);
+		if(tierNum > 0 && tierNum < getVisibleAlignmentTiers().size()) {
+			final String tierName = getVisibleAlignmentTiers().get(tierNum);
 			final String selectedType = types[tierNum];
 
 			updateTier(selectedMorpheme, tierName, selectedType);
@@ -1145,14 +1234,13 @@ public final class TranscriptMapperEditorView extends EditorView {
 	private void setupAlignmentOptionsMenu(MenuBuilder builder, int morphemeIdx,
 	                                       int selectedSet, String[][] options) {
 		String[] optionSet = (selectedSet < options.length ? options[selectedSet] : new String[0]);
-		List<String> visibleTiers = getVisibleTiers();
-		if(visibleTiers.size() != optionSet.length) return;
+		List<String> visibleTiers = getVisibleAlignmentTiers();
 
 		final List<TypeMapNode> leafNodes = this.currentState.getLeaves();
 		if(morphemeIdx >= leafNodes.size()) return;
 		final TypeMapNode leafNode = leafNodes.get(morphemeIdx);
 
-		for(int i = 1; i < optionSet.length; i++) {
+		for(int i = 1; i < visibleTiers.size(); i++) {
 			final String tierName = visibleTiers.get(i);
 			final String option = optionSet[i];
 
@@ -1167,12 +1255,13 @@ public final class TranscriptMapperEditorView extends EditorView {
 			final PhonUIAction insertMorphemeAct = new PhonUIAction(this, "insertMorphemeForTier", eventData);
 			insertMorphemeAct.putValue(PhonUIAction.NAME, optionTxt);
 			insertMorphemeAct.putValue(PhonUIAction.SHORT_DESCRIPTION, descTxt);
-			insertMorphemeAct.putValue(PhonUIAction.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_0 + i, 0));
+			if(i < 9)
+				insertMorphemeAct.putValue(PhonUIAction.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_0 + i, 0));
 			builder.addItem(".", insertMorphemeAct);
 		}
 
 		builder.addSeparator(".", "insert_all");
-		final String headerTxt = morphemeSetMenuItemText(getVisibleTiers().toArray(new String[0]));
+		final String headerTxt = morphemeSetMenuItemText(getVisibleAlignmentTiers().toArray(new String[0]));
 		builder.addItem(".", headerTxt).setEnabled(false);
 
 		final InsertAlignedMorphemesData data = new InsertAlignedMorphemesData();
@@ -1202,7 +1291,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 			return new String[0][];
 		final Map<String, String[]> alignmentOptions = leafNode.getAlignedMorphemeOptions();
 
-		final List<String> visibleTiers = getVisibleTiers();
+		final List<String> visibleTiers = getVisibleOptionsTiers();
 		final String[][] arrays = new String[visibleTiers.size()][];
 
 		int idx = 0;
@@ -1243,7 +1332,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 			throw new IllegalArgumentException();
 		}
 		final InsertAlignedMorphemesData data = (InsertAlignedMorphemesData) pae.getData();
-		updateRecord(data.moprhemeIdx, getVisibleTiers().toArray(new String[0]), data.options);
+		updateRecord(data.moprhemeIdx, getVisibleAlignmentTiers().toArray(new String[0]), data.options);
 	}
 
 	/**
@@ -1284,6 +1373,11 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 	private boolean dbTierVisible(String tierName) {
 		return !isTierHidden(getEditor().getProject(),
+				new SessionPath(getEditor().getSession().getCorpus(), getEditor().getSession().getName()), tierName);
+	}
+
+	private boolean dbOnlyTierVisible(String tierName) {
+		return isDbOnlyTierVisible(getEditor().getProject(),
 				new SessionPath(getEditor().getSession().getCorpus(), getEditor().getSession().getName()), tierName);
 	}
 
@@ -1345,7 +1439,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	 * @return list of tiers visible in the morpheme table
 	 *
 	 */
-	public List<String> getVisibleTiers() {
+	public List<String> getVisibleAlignmentTiers() {
 		// use ordering and visibility from session
 		List<String> tierList = getEditor().getSession().getTierView()
 				.stream()
@@ -1371,6 +1465,23 @@ public final class TranscriptMapperEditorView extends EditorView {
 		}
 	}
 
+	public List<String> getVisibleOptionsTiers() {
+		final List<String> retVal = getVisibleAlignmentTiers();
+
+		if(getUserDb() != null) {
+			for (String tierName : getUserDb().tierNames()) {
+				// ignore hidden/metadata tiers
+				if(!retVal.contains(tierName) && !tierName.startsWith("__")) {
+					if(dbOnlyTierVisible(tierName)) {
+						retVal.add(tierName);
+					}
+				}
+			}
+		}
+
+		return retVal;
+	}
+
 	private class MorphemeTableCellRenderer extends DefaultTableCellRenderer {
 		@Override
 		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
@@ -1378,7 +1489,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 			TypeMapNode leafNode = currentState.getLeaves().get(row);
 
-			String tier = getVisibleTiers().get(column);
+			String tier = getVisibleAlignmentTiers().get(column);
 			String key = leafNode.getMorpheme(keyTier());
 			String morpheme = leafNode.getMorpheme(tier);
 
@@ -1412,17 +1523,17 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 		@Override
 		public int getColumnCount() {
-			return getVisibleTiers().size();
+			return getVisibleAlignmentTiers().size();
 		}
 
 		public String getColumnName(int colIdx) {
-			return getVisibleTiers().get(colIdx);
+			return getVisibleAlignmentTiers().get(colIdx);
 		}
 
 		@Override
 		public Object getValueAt(int rowIndex, int columnIndex) {
 			if(currentState == null) return "";
-			List<String> tierNames = getVisibleTiers();
+			List<String> tierNames = getVisibleAlignmentTiers();
 			TypeMapNode leafNode = currentState.getLeaves().get(rowIndex);
 			String tierName = (columnIndex < tierNames.size() ? tierNames.get(columnIndex) : null);
 			return (tierName == null ? "" : leafNode.getMorpheme(tierName));
@@ -1450,11 +1561,14 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 		@Override
 		public int getColumnCount() {
-			return getVisibleTiers().size();
+			return getVisibleOptionsTiers().size();
 		}
 
 		public String getColumnName(int colIdx) {
-			return getVisibleTiers().get(colIdx) + (colIdx > 0 ? " (" + colIdx + ")" : "");
+			if(colIdx > 0 && colIdx < 9 && colIdx < getVisibleAlignmentTiers().size())
+				return getVisibleOptionsTiers().get(colIdx) + (colIdx > 0 ? " (" + colIdx + ")" : "");
+			else
+				return getVisibleOptionsTiers().get(colIdx);
 		}
 
 		@Override

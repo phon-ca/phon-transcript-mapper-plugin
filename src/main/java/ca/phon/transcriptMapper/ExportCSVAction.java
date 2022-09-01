@@ -53,7 +53,7 @@ public class ExportCSVAction extends TranscriptMapperAction {
 
 	private void exportDatabaseAsCSV(String filename) {
 		final ExportCSVTask exportTask = new ExportCSVTask(getView().getUserDb(), new File(filename),
-				getView().keyTier(), getView().getVisibleTiers().toArray(new String[0]));
+				getView().keyTier(), getView().getVisibleOptionsTiers().toArray(new String[0]));
 		exportTask.setName(DESC);
 
 		getView().getEditor().getStatusBar().watchTask(exportTask);
