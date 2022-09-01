@@ -15,7 +15,8 @@
 package ca.phon.transcriptMapper;
 
 public enum TypeMapMetadataTier {
-	PROJECT_ID("__projectId");
+	PROJECT_ID("__projectId"),
+	SOURCE_PROJECT_ID("__srcProjectId");
 
 	private String tierName;
 

@@ -340,7 +340,7 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 				reportPanel.getLogBuffer().append(String.format("Scanning %s.%s...\n", sessionPath.getCorpus(), sessionPath.getSession()));
 				try {
 					final Session session = project.openSession(sessionPath.getCorpus(), sessionPath.getSession());
-					scanner.scanSession(project.getUUID(), session);
+					scanner.scanSession(project.getUUID(), view.getEditor().getProject().getUUID(), session);
 				} catch (IOException e) {
 					super.err = e;
 					LogUtil.severe(e);

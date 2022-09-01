@@ -57,7 +57,7 @@ public class AlignedMorphemesScanner {
 		return (filledTiers < 2);
 	}
 
-	public void scanSession(UUID projectId, Session session) {
+	public void scanSession(UUID srcProjectId, UUID projectId, Session session) {
 		for(Record record:session.getRecords()) {
 			for(int i = 0; i < record.numberOfGroups(); i++) {
 				Group g = record.getGroup(i);
@@ -118,6 +118,10 @@ public class AlignedMorphemesScanner {
 
 							if(projectId != null) {
 								alignedTypeMap.put(TypeMapMetadataTier.PROJECT_ID.getTierName(), projectId.toString());
+							}
+
+							if(srcProjectId != null) {
+								alignedTypeMap.put(TypeMapMetadataTier.SOURCE_PROJECT_ID.getTierName(), srcProjectId.toString());
 							}
 						}
 						if(add)
