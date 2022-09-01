@@ -58,7 +58,7 @@ public class ImportIPADictionaryTask extends PhonTask {
 						alignedTypes.put(SystemTierType.Orthography.getName(), ortho);
 						alignedTypes.put(SystemTierType.IPATarget.getName(), opt);
 						alignedTypes.put(SystemTierType.IPAActual.getName(), opt);
-						alignedTypes.put("Language", dictLang.toString());
+						alignedTypes.put("Language", dictLang.getPrimaryLanguage().getId());
 
 						alignedTypesList.add(alignedTypes);
 					}
