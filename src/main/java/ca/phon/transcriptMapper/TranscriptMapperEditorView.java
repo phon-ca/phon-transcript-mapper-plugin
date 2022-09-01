@@ -301,7 +301,14 @@ public final class TranscriptMapperEditorView extends EditorView {
 	}
 
 	@RunOnEDT
-	public void onTierViewChanged(EditorEvent ee) { updateAfterDbLoad(); }
+	public void onTierViewChanged(EditorEvent ee) {
+		if(this.morphemesTableModel != null) {
+			this.morphemesTableModel.fireTableStructureChanged();
+		}
+		if(this.alignmentOptionsTableModel != null)
+			this.alignmentOptionsTableModel.fireTableStructureChanged();
+		updateAfterDbLoad();
+	}
 
 	AlignedTypesDatabase getUserDb() {
 		final UserATDB userATDB = UserATDB.getInstance();
