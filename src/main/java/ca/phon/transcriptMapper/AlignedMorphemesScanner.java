@@ -40,6 +40,23 @@ public class AlignedMorphemesScanner {
 		return this.db;
 	}
 
+	/**
+	 * Check to make sure that at least two tiers have been filled in
+	 *
+	 * @param alignedTypes
+	 * @return true if type map alignment is 'empty'
+	 */
+	private boolean checkForEmptyAlignment(Map<String, String> alignedTypes) {
+		int filledTiers = 0;
+		for(String tierName:alignedTypes.keySet()) {
+			String val = alignedTypes.get(tierName);
+			if(val != null && val.trim().length() > 0 && !"*".equals(val)) {
+				++filledTiers;
+			}
+		}
+		return (filledTiers < 2);
+	}
+
 	public void scanSession(UUID projectId, Session session) {
 		for(Record record:session.getRecords()) {
 			for(int i = 0; i < record.numberOfGroups(); i++) {
@@ -91,6 +108,8 @@ public class AlignedMorphemesScanner {
 									}
 								}
 							}
+
+							if(!checkForEmptyAlignment(alignedTypeMap)) continue;
 
 							if(this.lang != null) {
 								alignedTypeMap.put("Language", this.lang.getId());
