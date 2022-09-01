@@ -83,13 +83,14 @@ public class ImportCSVTask extends PhonTask {
 
 			for(String[] currentRow:allRows) {
 				Map<String, String> alignedTypes = new HashMap<>();
+				boolean add = true;
 				for (int i = 0; i < cols.length; i++) {
 					String tierName = cols[i];
 					String type = (i < currentRow.length ? currentRow[i] : "");
 					alignedTypes.put(tierName, type);
 				}
 
-				if(!checkForEmptyAlignment(alignedTypes)) continue;
+				if(checkForEmptyAlignment(alignedTypes)) add = false;
 
 				if(this.overrideLanguage != null) {
 					alignedTypes.put("Language", this.overrideLanguage.getId());
@@ -99,7 +100,8 @@ public class ImportCSVTask extends PhonTask {
 					alignedTypes.put(TypeMapMetadataTier.PROJECT_ID.getTierName(), projectId.toString());
 				}
 
-				db.addAlignedTypes(alignedTypes);
+				if(add)
+					db.addAlignedTypes(alignedTypes);
 			}
 
 			super.setStatus(TaskStatus.FINISHED);

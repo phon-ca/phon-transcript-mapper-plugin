@@ -66,6 +66,7 @@ public class AlignedMorphemesScanner {
 					AlignedMorphemes alignedMorphemes = w.getExtension(AlignedMorphemes.class);
 					if(alignedMorphemes != null) {
 						Map<String, String> alignedTypeMap = new LinkedHashMap<>();
+						boolean add = true;
 						for(int k = 0; k < alignedMorphemes.getMorphemeCount(); k++) {
 							AlignedMorpheme am = alignedMorphemes.getAlignedMorpheme(k);
 							for(SystemTierType systemTier:SystemTierType.values()) {
@@ -109,7 +110,7 @@ public class AlignedMorphemesScanner {
 								}
 							}
 
-							if(!checkForEmptyAlignment(alignedTypeMap)) continue;
+							if(checkForEmptyAlignment(alignedTypeMap)) add = false;
 
 							if(this.lang != null) {
 								alignedTypeMap.put("Language", this.lang.getId());
@@ -119,7 +120,8 @@ public class AlignedMorphemesScanner {
 								alignedTypeMap.put(TypeMapMetadataTier.PROJECT_ID.getTierName(), projectId.toString());
 							}
 						}
-						this.db.addAlignedTypes(alignedTypeMap);
+						if(add)
+							this.db.addAlignedTypes(alignedTypeMap);
 					}
 				}
 			}
