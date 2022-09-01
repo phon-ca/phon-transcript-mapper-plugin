@@ -20,7 +20,6 @@ import ca.phon.app.session.SessionSelector;
 import ca.phon.project.Project;
 import ca.phon.project.exceptions.ProjectConfigurationException;
 import ca.phon.session.*;
-import ca.phon.session.alignedMorphemes.AlignedMorphemesScanner;
 import ca.phon.ui.*;
 import ca.phon.ui.action.*;
 import ca.phon.ui.decorations.DialogHeader;
@@ -30,8 +29,10 @@ import ca.phon.ui.menu.MenuBuilder;
 import ca.phon.ui.nativedialogs.*;
 import ca.phon.ui.wizard.*;
 import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
+import ca.phon.util.*;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;
+import org.jdesktop.swingx.VerticalLayout;
 
 import javax.swing.*;
 import javax.swing.event.*;
@@ -46,6 +47,8 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 	private WizardStep selectSessionStep;
 	private MultiActionButton projectButton;
 	private SessionSelector sessionSelector;
+
+	private JComboBox<LanguageEntry> languageSelectionBox;
 
 	private WizardStep reportStep;
 	private BufferPanel reportPanel;
@@ -68,6 +71,8 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 		btnStop.setForeground(Color.white);
 		btnStop.addActionListener( (e) -> close() );
 
+
+
 		this.selectSessionStep = createSelectSessionStep();
 		this.selectSessionStep.setNextStep(1);
 		addWizardStep(this.selectSessionStep);
@@ -83,6 +88,14 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 		wizardStep.setTitle("Select sessions");
 
 		final DialogHeader header = new DialogHeader("Scan project", "Select project and sessions to scan.");
+
+		final List<LanguageEntry> allLangs = new ArrayList<>(LanguageParser.getInstance().getLanguages());
+		Collections.sort(allLangs, Comparator.comparing(LanguageEntry::getName));
+		this.languageSelectionBox = new JComboBox<>(allLangs.toArray(new LanguageEntry[0]));
+		this.languageSelectionBox.setSelectedItem(null);
+		this.languageSelectionBox.setRenderer(languageEntryListCellRenderer);
+//		this.languageSelectionBox.setSelectedItem(SyllabifierLibrary.getInstance().defaultSyllabifierLanguage().getPrimaryLanguage());
+		this.languageSelectionBox.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
 
 		projectButton = new MultiActionButton();
 		projectButton.setToolTipText("Click to select project");
@@ -105,8 +118,16 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 		wizardStep.setLayout(new BorderLayout());
 		wizardStep.add(header, BorderLayout.NORTH);
 
+		final JPanel langPanel = new JPanel(new VerticalLayout());
+		langPanel.add(new JLabel("Value for 'Language' tier:"));
+		langPanel.add(this.languageSelectionBox);
+		final JPanel topPanel = new JPanel(new VerticalLayout());
+		topPanel.add(langPanel);
+		topPanel.add(projectButton);
+		topPanel.setBackground(Color.white);
+
 		final JPanel contentPanel = new JPanel(new BorderLayout());
-		contentPanel.add(projectButton, BorderLayout.NORTH);
+		contentPanel.add(topPanel, BorderLayout.NORTH);
 		contentPanel.add(new JScrollPane(sessionSelector), BorderLayout.CENTER);
 		wizardStep.add(contentPanel, BorderLayout.CENTER);
 
@@ -282,7 +303,7 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 
 			reportPanel.getLogBuffer().append(String.format("Scanning project %s (%s)\n", project.getName(), project.getLocation()));
 
-			final AlignedMorphemesScanner scanner = new AlignedMorphemesScanner(db);
+			final AlignedMorphemesScanner scanner = new AlignedMorphemesScanner(db, (LanguageEntry) languageSelectionBox.getSelectedItem());
 			for(SessionPath sessionPath:sessionSelector.getSelectedSessions()) {
 				if(isShutdown()) {
 					reportPanel.getLogBuffer().append("Project scan canceled by user");
@@ -291,7 +312,7 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 				reportPanel.getLogBuffer().append(String.format("Scanning %s.%s...\n", sessionPath.getCorpus(), sessionPath.getSession()));
 				try {
 					final Session session = project.openSession(sessionPath.getCorpus(), sessionPath.getSession());
-					scanner.scanSession(session);
+					scanner.scanSession(project.getUUID(), session);
 				} catch (IOException e) {
 					super.err = e;
 					LogUtil.severe(e);
@@ -302,6 +323,25 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 			reportPanel.getLogBuffer().append("Scan complete, you may close the window.");
 			super.setStatus(TaskStatus.FINISHED);
 		}
+	};
+
+	private final ListCellRenderer<LanguageEntry> languageEntryListCellRenderer = new ListCellRenderer<LanguageEntry>() {
+
+		private final DefaultListCellRenderer internalRenderer = new DefaultListCellRenderer();
+
+		@Override
+		public Component getListCellRendererComponent(JList<? extends LanguageEntry> list, LanguageEntry value, int index, boolean isSelected, boolean cellHasFocus) {
+			JLabel retVal = (JLabel) internalRenderer.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+
+			if(value != null) {
+				retVal.setText(String.format("%s (%s)", value.getName(), value.getId()));
+			} else {
+				retVal.setText("no language selected");
+			}
+
+			return retVal;
+		}
+
 	};
 
 }
