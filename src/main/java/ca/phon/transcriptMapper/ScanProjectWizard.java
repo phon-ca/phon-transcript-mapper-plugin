@@ -42,6 +42,11 @@ import java.util.List;
 import java.util.*;
 
 public class ScanProjectWizard extends BreadcrumbWizardFrame {
+
+	private final static String projectLangProp(Project project) {
+		return String.format("%s.scanProject.language", project.getUUID());
+	}
+
 	private BreadcrumbButton btnStop;
 
 	private WizardStep selectSessionStep;
@@ -55,14 +60,18 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 
 	private Project project;
 
+	private TranscriptMapperEditorView view;
+
 	private AlignedTypesDatabase db;
 
-	public ScanProjectWizard(Project project, AlignedTypesDatabase db, String title) {
+	public ScanProjectWizard(Project project, TranscriptMapperEditorView view, String title) {
 		super(title);
 		setWindowName(title);
+		setParentFrame(view.getEditor());
 
 		this.project = project;
-		this.db = db;
+		this.view = view;
+		this.db = view.getUserDb();
 
 		btnStop = new BreadcrumbButton();
 		btnStop.setFont(FontPreferences.getTitleFont().deriveFont(Font.BOLD));
@@ -70,8 +79,6 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 		btnStop.setBackground(Color.red);
 		btnStop.setForeground(Color.white);
 		btnStop.addActionListener( (e) -> close() );
-
-
 
 		this.selectSessionStep = createSelectSessionStep();
 		this.selectSessionStep.setNextStep(1);
@@ -83,6 +90,18 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 		addWizardStep(this.reportStep);
 	}
 
+	private LanguageEntry getPreviouslySelectedLanguage() {
+		final String langProp = projectLangProp(project);
+		final Properties props = TranscriptMapperEditorView.getSharedProps();
+
+		final String langTxt = props.getProperty(langProp, "");
+		if(langTxt.length() > 0) {
+			LanguageEntry entry = LanguageParser.getInstance().getEntryById(langTxt);
+			return entry;
+		}
+		return null;
+	}
+
 	private WizardStep createSelectSessionStep() {
 		final WizardStep wizardStep = new WizardStep();
 		wizardStep.setTitle("Select sessions");
@@ -92,7 +111,7 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 		final List<LanguageEntry> allLangs = new ArrayList<>(LanguageParser.getInstance().getLanguages());
 		Collections.sort(allLangs, Comparator.comparing(LanguageEntry::getName));
 		this.languageSelectionBox = new JComboBox<>(allLangs.toArray(new LanguageEntry[0]));
-		this.languageSelectionBox.setSelectedItem(null);
+		this.languageSelectionBox.setSelectedItem(getPreviouslySelectedLanguage());
 		this.languageSelectionBox.setRenderer(languageEntryListCellRenderer);
 //		this.languageSelectionBox.setSelectedItem(SyllabifierLibrary.getInstance().defaultSyllabifierLanguage().getPrimaryLanguage());
 		this.languageSelectionBox.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
@@ -290,6 +309,15 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 				showMessageDialog("Scan project", "Please select at least one session", MessageDialogProperties.okOptions);
 				return;
 			} else {
+				final Properties props = TranscriptMapperEditorView.getSharedProps();
+				if(languageSelectionBox.getSelectedItem() != null) {
+					props.setProperty(projectLangProp(project), ((LanguageEntry) languageSelectionBox.getSelectedItem()).getId());
+					try {
+						TranscriptMapperEditorView.saveSharedProps();
+					} catch (IOException e) {
+						LogUtil.warning(e);
+					}
+				}
 				beginProjectScan();
 			}
 		}

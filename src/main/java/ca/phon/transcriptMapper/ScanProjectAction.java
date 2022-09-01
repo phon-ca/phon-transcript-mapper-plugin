@@ -38,7 +38,7 @@ public class ScanProjectAction extends TranscriptMapperAction {
 	public void hookableActionPerformed(ActionEvent actionEvent) {
 		final Project project = getView().getEditor().getProject();
 
-		final ScanProjectWizard wizard = new ScanProjectWizard(project, getView().getUserDb(),"Scan Project") {
+		final ScanProjectWizard wizard = new ScanProjectWizard(project, getView(),"Scan Project") {
 			@Override
 			public void onFinishScan() {
 				super.onFinishScan();

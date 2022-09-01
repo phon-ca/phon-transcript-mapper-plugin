@@ -95,7 +95,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 	private static Properties _sharedProps;
 
-	private synchronized static Properties getSharedProps() {
+	synchronized static Properties getSharedProps() {
 		if(_sharedProps == null) {
 			try {
 				_sharedProps = loadSharedProps();
@@ -106,7 +106,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		return _sharedProps;
 	}
 
-	private synchronized static Properties loadSharedProps() throws IOException {
+	private static Properties loadSharedProps() throws IOException {
 		final File propsFile = new File(SHARED_PROPS_FILE);
 		Properties retVal = new Properties();
 		if(propsFile.exists()) {
@@ -115,7 +115,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		return retVal;
 	}
 
-	private synchronized static void saveSharedProps() throws IOException {
+	synchronized static void saveSharedProps() throws IOException {
 		final File propsFile = new File(SHARED_PROPS_FILE);
 		final File parentFolder = propsFile.getParentFile();
 		if(!parentFolder.exists()) {
