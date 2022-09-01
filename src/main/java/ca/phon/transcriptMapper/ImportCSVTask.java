@@ -16,6 +16,7 @@ package ca.phon.transcriptMapper;
 
 import au.com.bytecode.opencsv.CSVReader;
 import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
+import ca.phon.util.LanguageEntry;
 import ca.phon.worker.PhonTask;
 
 import java.io.*;
@@ -27,11 +28,17 @@ public class ImportCSVTask extends PhonTask {
 
 	private final File csvFile;
 
-	public ImportCSVTask(AlignedTypesDatabase db, File csvFile) {
+	private final LanguageEntry overrideLanguage;
+
+	private final UUID projectId;
+
+	public ImportCSVTask(AlignedTypesDatabase db, File csvFile, LanguageEntry overrideLanguage, UUID projectId) {
 		super();
 
 		this.db = db;
 		this.csvFile = csvFile;
+		this.overrideLanguage = overrideLanguage;
+		this.projectId = projectId;
 	}
 
 	private CSVReader createReader() throws IOException {
@@ -64,6 +71,15 @@ public class ImportCSVTask extends PhonTask {
 					String type = (i < currentRow.length ? currentRow[i] : "");
 					alignedTypes.put(tierName, type);
 				}
+
+				if(this.overrideLanguage != null) {
+					alignedTypes.put("Language", this.overrideLanguage.getId());
+				}
+
+				if(this.projectId != null) {
+					alignedTypes.put(TypeMapMetadataTier.PROJECT_ID.getTierName(), projectId.toString());
+				}
+
 				db.addAlignedTypes(alignedTypes);
 			}
 

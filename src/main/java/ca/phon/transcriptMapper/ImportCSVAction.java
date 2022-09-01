@@ -53,7 +53,8 @@ public class ImportCSVAction extends TranscriptMapperAction {
 	}
 
 	private void importDatabaseFromCSV(String filename) {
-		final ImportCSVTask importTask = new ImportCSVTask(getView().getUserDb(), new File(filename));
+		final ImportCSVTask importTask = new ImportCSVTask(getView().getUserDb(), new File(filename),
+				null, getView().getEditor().getProject().getUUID());
 		importTask.setName(DESC);
 
 		getView().getEditor().getStatusBar().watchTask(importTask);
