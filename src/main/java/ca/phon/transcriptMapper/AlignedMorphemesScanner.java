@@ -20,7 +20,8 @@ import ca.phon.orthography.OrthoElement;
 import ca.phon.session.*;
 import ca.phon.session.Record;
 import ca.phon.session.alignedMorphemes.*;
-import ca.phon.util.LanguageEntry;
+import ca.phon.syllabifier.SyllabifierLibrary;
+import ca.phon.util.*;
 
 import java.util.*;
 
@@ -58,6 +59,15 @@ public class AlignedMorphemesScanner {
 	}
 
 	public void scanSession(UUID srcProjectId, UUID projectId, Session session) {
+		final String sessionLanguages = session.getLanguage();
+		LanguageEntry primaryLang = SyllabifierLibrary.getInstance().defaultSyllabifierLanguage().getPrimaryLanguage();
+		if(sessionLanguages.length() > 0) {
+			String[] langIds = sessionLanguages.split(",");
+			if (langIds.length > 0) {
+				primaryLang = LanguageParser.getInstance().getEntryById(langIds[0]);
+			}
+		}
+
 		for(Record record:session.getRecords()) {
 			for(int i = 0; i < record.numberOfGroups(); i++) {
 				Group g = record.getGroup(i);
@@ -114,6 +124,8 @@ public class AlignedMorphemesScanner {
 
 							if(this.lang != null) {
 								alignedTypeMap.put("Language", this.lang.getId());
+							} else if(primaryLang != null) {
+								alignedTypeMap.put("Language", primaryLang.getId());
 							}
 
 							if(projectId != null) {

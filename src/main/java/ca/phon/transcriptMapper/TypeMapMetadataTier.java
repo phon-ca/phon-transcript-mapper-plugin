@@ -15,6 +15,7 @@
 package ca.phon.transcriptMapper;
 
 public enum TypeMapMetadataTier {
+	LANGUAGE("Language"),
 	PROJECT_ID("__projectId"),
 	SOURCE_PROJECT_ID("__srcProjectId");
 

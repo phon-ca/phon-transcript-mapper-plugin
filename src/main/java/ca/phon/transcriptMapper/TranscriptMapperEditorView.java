@@ -1098,13 +1098,19 @@ public final class TranscriptMapperEditorView extends EditorView {
 			}
 
 			final String sessionLanguages = getEditor().getSession().getLanguage();
-			if(!alignedTypes.containsKey("Language") && sessionLanguages.length() > 0) {
-				String[] langIds = sessionLanguages.split(",");
-				if(langIds.length > 0) {
-					LanguageEntry primaryLang = LanguageParser.getInstance().getEntryById(langIds[0]);
-					if(primaryLang != null) {
-						alignedTypes.put("Language", primaryLang.getId());
+			if(!alignedTypes.containsKey("Language")) {
+				if(sessionLanguages.length() > 0) {
+					String[] langIds = sessionLanguages.split(",");
+					if (langIds.length > 0) {
+						LanguageEntry primaryLang = LanguageParser.getInstance().getEntryById(langIds[0]);
+						if (primaryLang != null) {
+							alignedTypes.put("Language", primaryLang.getId());
+						}
 					}
+				} else {
+					// use syllabifier language
+					alignedTypes.put(TypeMapMetadataTier.LANGUAGE.getTierName(),
+							SyllabifierLibrary.getInstance().defaultSyllabifierLanguage().getPrimaryLanguage().getId());
 				}
 			}
 

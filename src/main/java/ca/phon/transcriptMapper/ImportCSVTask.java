@@ -28,16 +28,16 @@ public class ImportCSVTask extends PhonTask {
 
 	private final File csvFile;
 
-	private final LanguageEntry overrideLanguage;
+	private final LanguageEntry importLanguage;
 
 	private final UUID projectId;
 
-	public ImportCSVTask(AlignedTypesDatabase db, File csvFile, LanguageEntry overrideLanguage, UUID projectId) {
+	public ImportCSVTask(AlignedTypesDatabase db, File csvFile, LanguageEntry importLanguage, UUID projectId) {
 		super();
 
 		this.db = db;
 		this.csvFile = csvFile;
-		this.overrideLanguage = overrideLanguage;
+		this.importLanguage = importLanguage;
 		this.projectId = projectId;
 	}
 
@@ -92,8 +92,11 @@ public class ImportCSVTask extends PhonTask {
 
 				if(checkForEmptyAlignment(alignedTypes)) add = false;
 
-				if(this.overrideLanguage != null) {
-					alignedTypes.put("Language", this.overrideLanguage.getId());
+				final String currentLang = alignedTypes.get("Language");
+				if(currentLang == null || currentLang.length() == 0) {
+					if(this.importLanguage != null) {
+						alignedTypes.put(TypeMapMetadataTier.LANGUAGE.getTierName(), this.importLanguage.getId());
+					}
 				}
 
 				if(this.projectId != null) {

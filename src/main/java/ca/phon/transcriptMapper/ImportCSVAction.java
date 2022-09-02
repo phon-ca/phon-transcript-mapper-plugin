@@ -14,7 +14,9 @@
 
 package ca.phon.transcriptMapper;
 
+import ca.phon.syllabifier.SyllabifierLibrary;
 import ca.phon.ui.nativedialogs.*;
+import ca.phon.util.*;
 import ca.phon.worker.PhonWorker;
 
 import java.awt.event.ActionEvent;
@@ -53,8 +55,17 @@ public class ImportCSVAction extends TranscriptMapperAction {
 	}
 
 	private void importDatabaseFromCSV(String filename) {
+		final String sessionLanguages = getView().getEditor().getSession().getLanguage();
+		LanguageEntry primaryLang = SyllabifierLibrary.getInstance().defaultSyllabifierLanguage().getPrimaryLanguage();
+		if(sessionLanguages.length() > 0) {
+			String[] langIds = sessionLanguages.split(",");
+			if (langIds.length > 0) {
+				primaryLang = LanguageParser.getInstance().getEntryById(langIds[0]);
+			}
+		}
+
 		final ImportCSVTask importTask = new ImportCSVTask(getView().getUserDb(), new File(filename),
-				null, getView().getEditor().getProject().getUUID());
+				primaryLang, getView().getEditor().getProject().getUUID());
 		importTask.setName(DESC);
 
 		getView().getEditor().getStatusBar().watchTask(importTask);
