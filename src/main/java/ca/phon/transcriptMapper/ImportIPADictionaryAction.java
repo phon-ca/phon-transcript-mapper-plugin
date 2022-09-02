@@ -35,7 +35,8 @@ public class ImportIPADictionaryAction extends TranscriptMapperAction {
 
 	@Override
 	public void hookableActionPerformed(ActionEvent ae) {
-		final ImportIPADictionaryTask importTask = new ImportIPADictionaryTask(getView().getUserDb(), dictLang);
+		final ImportIPADictionaryTask importTask = new ImportIPADictionaryTask(getView().getUserDb(),
+				getView().getEditor().getProject().getUUID(), dictLang);
 		importTask.setName("Import IPA Dictionary '" + dictLang.toString() + "'");
 		getView().getEditor().getStatusBar().watchTask(importTask);
 

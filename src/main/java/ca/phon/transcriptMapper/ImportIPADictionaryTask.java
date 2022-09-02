@@ -27,13 +27,16 @@ public class ImportIPADictionaryTask extends PhonTask {
 
 	private final AlignedTypesDatabase db;
 
+	private final UUID projectId;
+
 	private final Language dictLang;
 
-	public ImportIPADictionaryTask(AlignedTypesDatabase db, Language dictLang) {
+	public ImportIPADictionaryTask(AlignedTypesDatabase db, UUID projectId, Language dictLang) {
 		super();
 
 		this.db = db;
 		this.dictLang = dictLang;
+		this.projectId = projectId;
 	}
 
 	@Override
@@ -59,6 +62,8 @@ public class ImportIPADictionaryTask extends PhonTask {
 						alignedTypes.put(SystemTierType.IPATarget.getName(), opt);
 						alignedTypes.put(SystemTierType.IPAActual.getName(), opt);
 						alignedTypes.put(TypeMapMetadataTier.LANGUAGE.getTierName(), dictLang.getPrimaryLanguage().getId());
+						if(projectId != null)
+							alignedTypes.put(TypeMapMetadataTier.PROJECT_ID.getTierName(), projectId.toString());
 
 						alignedTypesList.add(alignedTypes);
 					}
