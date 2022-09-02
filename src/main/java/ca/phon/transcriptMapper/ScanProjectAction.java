@@ -17,6 +17,7 @@ package ca.phon.transcriptMapper;
 import ca.phon.app.log.LogUtil;
 import ca.phon.project.Project;
 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.IOException;
@@ -42,16 +43,7 @@ public class ScanProjectAction extends TranscriptMapperAction {
 			@Override
 			public void onFinishScan() {
 				super.onFinishScan();
-				final ProjectATDB projectATDB = project.getExtension(ProjectATDB.class);
-				if(projectATDB != null) {
-					try {
-						projectATDB.saveProjectDb();
-					} catch (IOException e) {
-						Toolkit.getDefaultToolkit().beep();
-						LogUtil.severe(e);
-					}
-				}
-				getView().updateAfterDbLoad();
+				SwingUtilities.invokeLater(getView()::updateAfterDbLoad);
 			}
 		};
 		wizard.showWizard();

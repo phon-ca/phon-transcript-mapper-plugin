@@ -302,12 +302,14 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 	@RunOnEDT
 	public void onTierViewChanged(EditorEvent ee) {
-		if(this.morphemesTableModel != null) {
-			this.morphemesTableModel.fireTableStructureChanged();
-		}
-		if(this.alignmentOptionsTableModel != null)
-			this.alignmentOptionsTableModel.fireTableStructureChanged();
-		updateAfterDbLoad();
+		SwingUtilities.invokeLater(() -> {
+			if (this.alignmentOptionsTableModel != null)
+				this.alignmentOptionsTableModel.fireTableStructureChanged();
+			if (this.morphemesTableModel != null) {
+				this.morphemesTableModel.fireTableStructureChanged();
+			}
+			updateAfterDbLoad();
+		});
 	}
 
 	AlignedTypesDatabase getUserDb() {
@@ -757,8 +759,14 @@ public final class TranscriptMapperEditorView extends EditorView {
 	void updateAfterDbLoad() {
 		if(getUserDb() == null) return;
 
-		this.keyTierBox.setModel(new DefaultComboBoxModel<>(getVisibleAlignmentTiers().toArray(new String[0])));
-		this.keyTierBox.setSelectedItem(SystemTierType.Orthography.getName());
+		final String prevKeyTier = (this.keyTierBox.getSelectedItem() != null ?
+				this.keyTierBox.getSelectedItem().toString() : null);
+		final List<String> alignmentTiers = getVisibleAlignmentTiers();
+		this.keyTierBox.setModel(new DefaultComboBoxModel<>(alignmentTiers.toArray(new String[0])));
+		if(prevKeyTier != null && alignmentTiers.contains(prevKeyTier))
+			this.keyTierBox.setSelectedItem(prevKeyTier);
+		else
+			this.keyTierBox.setSelectedItem(SystemTierType.Orthography.getName());
 
 		if(getEditor().currentRecord() != null) {
 			updateStateAsync(() -> {
@@ -1042,7 +1050,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final Project project = getEditor().getProject();
 		final SessionPath sp = new SessionPath(getEditor().getSession().getCorpus(), getEditor().getSession().getName());
 		setTierHidden(project, sp, tierName, !isTierHidden(project, sp, tierName));
-		updateAfterDbLoad();
+		SwingUtilities.invokeLater(this::updateAfterDbLoad);
 	}
 
 	/**

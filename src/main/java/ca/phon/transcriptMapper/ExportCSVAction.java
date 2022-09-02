@@ -57,7 +57,7 @@ public class ExportCSVAction extends TranscriptMapperAction {
 		exportTask.setName(DESC);
 
 		getView().getEditor().getStatusBar().watchTask(exportTask);
-		PhonWorker.invokeOnNewWorker(exportTask, getView()::updateAfterDbLoad);
+		PhonWorker.invokeOnNewWorker(exportTask, () -> {});
 	}
 
 }
