@@ -1098,13 +1098,13 @@ public final class TranscriptMapperEditorView extends EditorView {
 			}
 
 			final String sessionLanguages = getEditor().getSession().getLanguage();
-			if(!alignedTypes.containsKey("Language")) {
+			if(!alignedTypes.containsKey(TypeMapMetadataTier.LANGUAGE.getTierName())) {
 				if(sessionLanguages.length() > 0) {
 					String[] langIds = sessionLanguages.split(",");
 					if (langIds.length > 0) {
 						LanguageEntry primaryLang = LanguageParser.getInstance().getEntryById(langIds[0]);
 						if (primaryLang != null) {
-							alignedTypes.put("Language", primaryLang.getId());
+							alignedTypes.put(TypeMapMetadataTier.LANGUAGE.getTierName(), primaryLang.getId());
 						}
 					}
 				} else {

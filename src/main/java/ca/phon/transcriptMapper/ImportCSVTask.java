@@ -92,7 +92,7 @@ public class ImportCSVTask extends PhonTask {
 
 				if(checkForEmptyAlignment(alignedTypes)) add = false;
 
-				final String currentLang = alignedTypes.get("Language");
+				final String currentLang = alignedTypes.get(TypeMapMetadataTier.LANGUAGE.getTierName());
 				if(currentLang == null || currentLang.length() == 0) {
 					if(this.importLanguage != null) {
 						alignedTypes.put(TypeMapMetadataTier.LANGUAGE.getTierName(), this.importLanguage.getId());

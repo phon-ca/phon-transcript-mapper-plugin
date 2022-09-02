@@ -123,9 +123,9 @@ public class AlignedMorphemesScanner {
 							if(checkForEmptyAlignment(alignedTypeMap)) add = false;
 
 							if(this.lang != null) {
-								alignedTypeMap.put("Language", this.lang.getId());
+								alignedTypeMap.put(TypeMapMetadataTier.LANGUAGE.getTierName(), this.lang.getId());
 							} else if(primaryLang != null) {
-								alignedTypeMap.put("Language", primaryLang.getId());
+								alignedTypeMap.put(TypeMapMetadataTier.LANGUAGE.getTierName(), primaryLang.getId());
 							}
 
 							if(projectId != null) {
