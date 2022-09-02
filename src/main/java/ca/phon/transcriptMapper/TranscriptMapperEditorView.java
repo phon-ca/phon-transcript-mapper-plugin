@@ -770,11 +770,13 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 		if(getEditor().currentRecord() != null) {
 			updateStateAsync(() -> {
-				if(this.alignmentOptionsTableModel != null)
-					this.alignmentOptionsTableModel.fireTableStructureChanged();
-				if(this.morphemesTableModel != null)
-					this.morphemesTableModel.fireTableStructureChanged();
-				this.updateFromCurrentState();
+				SwingUtilities.invokeLater(() -> {
+					if (this.alignmentOptionsTableModel != null)
+						this.alignmentOptionsTableModel.fireTableStructureChanged();
+					if (this.morphemesTableModel != null)
+						this.morphemesTableModel.fireTableStructureChanged();
+					this.updateFromCurrentState();
+				});
 			});
 		}
 	}
