@@ -386,7 +386,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 			}
 		});
 
-		PhonUIAction dbMenuAct = new PhonUIAction(this, "noop");
+		PhonUIAction<Void> dbMenuAct = PhonUIAction.runnable(() -> {});
 		dbMenuAct.putValue(PhonUIAction.NAME, "Database");
 		dbMenuAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Show database menu");
 		dbMenuAct.putValue(PhonUIAction.SMALL_ICON, IconManager.getInstance().getIcon("development-database", IconSize.SMALL));
@@ -414,7 +414,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 			}
 		});
 
-		PhonUIAction tiersMenuAct = new PhonUIAction(this, "noop");
+		PhonUIAction<Void> tiersMenuAct = PhonUIAction.runnable(() -> {});
 		tiersMenuAct.putValue(PhonUIAction.NAME, "Tiers");
 		tiersMenuAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Show tiers menu");
 		tiersMenuAct.putValue(PhonUIAction.SMALL_ICON, IconManager.getInstance().getIcon("misc/record", IconSize.SMALL));
@@ -466,7 +466,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		// tier visibility menu
 		for(String tierName:allTiers) {
 			if(sessionHasTier(tierName)) {
-				final PhonUIAction toggleTierVisibleAct = new PhonUIAction(this, "toggleTier", tierName);
+				final PhonUIAction<String> toggleTierVisibleAct = PhonUIAction.consumer(this::toggleTier, tierName);
 				toggleTierVisibleAct.putValue(PhonUIAction.NAME, tierName);
 				toggleTierVisibleAct.putValue(PhonUIAction.SHORT_DESCRIPTION, String.format("Toggle tier %s", tierName));
 				toggleTierVisibleAct.putValue(PhonUIAction.SELECTED_KEY, dbTierVisible(tierName));
@@ -500,12 +500,12 @@ public final class TranscriptMapperEditorView extends EditorView {
 				final JMenu dbOnlyTierMenu = builder.addMenu(".", tierName);
 				final MenuBuilder dbOnlyTierMenuBuilder = new MenuBuilder(dbOnlyTierMenu);
 
-				final PhonUIAction createTierAct = new PhonUIAction(this, "createTiers", List.of(tierName));
+				final PhonUIAction<List<String>> createTierAct = PhonUIAction.eventConsumer(this::createTiers, List.of(tierName));
 				createTierAct.putValue(PhonUIAction.NAME, "Add tier to session");
 				createTierAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Add tier " + tierName + " to session");
 				dbOnlyTierMenuBuilder.addItem(".", createTierAct);
 
-				final PhonUIAction showTierAct = new PhonUIAction(this, "toggleDbOnlyTier", tierName);
+				final PhonUIAction<String> showTierAct = PhonUIAction.eventConsumer(this::toggleDbOnlyTier, tierName);
 				showTierAct.putValue(PhonUIAction.NAME, "Show tier in alignment options table");
 				showTierAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Show tier '" + tierName + "' in alignment options table");
 				showTierAct.putValue(PhonUIAction.SELECTED_KEY, dbOnlyTierVisible(tierName));
@@ -514,7 +514,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 			}
 
 			if(dbOnlyTiers.size() > 1) {
-				final PhonUIAction createAllTiersAct = new PhonUIAction(this, "createTiers", dbOnlyTiers);
+				final PhonUIAction<List<String>> createAllTiersAct = PhonUIAction.eventConsumer(this::createTiers, dbOnlyTiers);
 				createAllTiersAct.putValue(PhonUIAction.NAME, "Add all missing tiers");
 				createAllTiersAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Add all database tiers missing from session");
 				builder.addItem(".", createAllTiersAct);
@@ -624,14 +624,14 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final InputMap inputMap = morphemesTable.getInputMap(JComponent.WHEN_FOCUSED);
 		final ActionMap actionMap = morphemesTable.getActionMap();
 
-		final PhonUIAction showMorphemeMenuAction = new PhonUIAction(this, "showMorphemeMenu");
+		final PhonUIAction<Void> showMorphemeMenuAction = PhonUIAction.eventConsumer(this::showMorphemeMenu);
 		showMorphemeMenuAction.putValue(PhonUIAction.NAME, "Show menu for selected word/morpheme");
 		final String morphemeMenuActId = "show_morpheme_menu";
 		actionMap.put(morphemeMenuActId, showMorphemeMenuAction);
 		final KeyStroke showMorphemeMenuKs = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
 		inputMap.put(showMorphemeMenuKs, morphemeMenuActId);
 
-		final PhonUIAction focusAct = new PhonUIAction(this, "onFocusAlignmentOptions", 0);
+		final PhonUIAction<Integer> focusAct = PhonUIAction.consumer(this::onFocusAlignmentOptions, 0);
 		final String focusActId = "focus_alignment_options";
 		final KeyStroke focusKs = KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0);
 		actionMap.put(focusActId, focusAct);
@@ -687,19 +687,19 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final InputMap inputMap = alignmentOptionsTable.getInputMap(JComponent.WHEN_FOCUSED);
 		final ActionMap actionMap = alignmentOptionsTable.getActionMap();
 
-		final PhonUIAction showAlignmentOptionsMenuAct = new PhonUIAction(this, "showAlignmentOptionsMenu");
+		final PhonUIAction<Void> showAlignmentOptionsMenuAct = PhonUIAction.eventConsumer(this::showAlignmentOptionsMenu);
 		final String alignmentOptionsMenuActId = "show_alignment_options_menu";
 		actionMap.put(alignmentOptionsMenuActId, showAlignmentOptionsMenuAct);
 		final KeyStroke showAlignmentOptionsMenuKs = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
 		inputMap.put(showAlignmentOptionsMenuKs, alignmentOptionsMenuActId);
 
-		final PhonUIAction focusAct = new PhonUIAction(this, "onFocusMorphemeTable", 0);
+		final PhonUIAction<Integer> focusAct = PhonUIAction.eventConsumer(this::onFocusMorphemeTable, 0);
 		final String focusActId = "focus_morpheme_table";
 		final KeyStroke focusKs = KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0);
 		actionMap.put(focusActId, focusAct);
 		inputMap.put(focusKs, focusActId);
 
-		final PhonUIAction deleteAlignedTypesAct = new PhonUIAction(this, "onDeleteAlignedTypes");
+		final PhonUIAction<Void> deleteAlignedTypesAct = PhonUIAction.eventConsumer(this::onDeleteAlignedTypes);
 		final String deleteAlignedTypesId = "delete_aligned_types";
 		actionMap.put(deleteAlignedTypesId, deleteAlignedTypesAct);
 		final KeyStroke deleteAlignedTypesKs = KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0);
@@ -708,7 +708,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		inputMap.put(deleteAlignedTypesKs2, deleteAlignedTypesId);
 
 		for(int i = 1; i < 10; i++) {
-			final PhonUIAction selectTypeAction = new PhonUIAction(this, "onSelectTierOption", Integer.valueOf(i));
+			final PhonUIAction<Integer> selectTypeAction = PhonUIAction.consumer(this::onSelectTierOption, Integer.valueOf(i));
 			final String selectTypeId = "select_tier_option_" + i;
 			final KeyStroke selectTypeKs = KeyStroke.getKeyStroke(KeyEvent.VK_0 + i, 0);
 			actionMap.put(selectTypeId, selectTypeAction);
@@ -1060,8 +1060,8 @@ public final class TranscriptMapperEditorView extends EditorView {
 	 *
 	 * @param pae
 	 */
-	public void createTiers(PhonActionEvent pae) {
-		final List<String> tierList = (List<String>) pae.getData();
+	public void createTiers(PhonActionEvent<List<String>> pae) {
+		final List<String> tierList = pae.getData();
 		final SessionFactory factory = SessionFactory.newFactory();
 		getEditor().getUndoSupport().beginUpdate();
 		for(String tierName:tierList) {
@@ -1073,8 +1073,8 @@ public final class TranscriptMapperEditorView extends EditorView {
 		getEditor().getUndoSupport().endUpdate();
 	}
 
-	public void toggleDbOnlyTier(PhonActionEvent pae) {
-		final String tierName = pae.getData().toString();
+	public void toggleDbOnlyTier(PhonActionEvent<String> pae) {
+		final String tierName = pae.getData();
 		setDbOnlyTierVisible(getEditor().getProject(), new SessionPath(getEditor().getSession().getCorpus(), getEditor().getSession().getName()),
 				tierName, !dbOnlyTierVisible(tierName));
 		if(this.alignmentOptionsTableModel != null) {
@@ -1082,12 +1082,12 @@ public final class TranscriptMapperEditorView extends EditorView {
 		}
 	}
 
-	public void onFocusMorphemeTable(PhonActionEvent pae) {
+	public void onFocusMorphemeTable(PhonActionEvent<Integer> pae) {
 		if(this.morphemesTable != null)
 			this.morphemesTable.requestFocusInWindow();
 	}
 
-	public void onAddAlignedTypes(PhonActionEvent pae) {
+	public void onAddAlignedTypes(PhonActionEvent<Void> pae) {
 		int selectedMorpheme = this.morphemesTable.getSelectedRow();
 		if(selectedMorpheme >= 0 && selectedMorpheme < this.morphemesTableModel.getRowCount()) {
 			final TypeMapNode morphemeNode = this.currentState.getLeaves().get(selectedMorpheme);
@@ -1123,7 +1123,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		}
 	}
 
-	public void onDeleteAlignedTypes(PhonActionEvent pae) {
+	public void onDeleteAlignedTypes(PhonActionEvent<Void> pae) {
 		int selectedMorpheme = this.morphemesTable.getSelectedRow();
 		if(selectedMorpheme >= 0 && selectedMorpheme < this.currentState.getLeafCount()) {
 			TypeMapNode morphemeNode = this.currentState.getLeaves().get(selectedMorpheme);
@@ -1143,7 +1143,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	 *
 	 * @param pae
 	 */
-	public void showMorphemeMenu(PhonActionEvent pae) {
+	public void showMorphemeMenu(PhonActionEvent<Void> pae) {
 		final JPopupMenu popupMenu = new JPopupMenu();
 		final MenuBuilder builder = new MenuBuilder(popupMenu);
 
@@ -1189,8 +1189,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 			final InsertAlignedMorphemesData data = new InsertAlignedMorphemesData();
 			data.moprhemeIdx = morphemeIdx;
 			data.options = options[i];
-			final PhonUIAction insertAlignedMorphemesAct = new PhonUIAction(this,
-					"insertAlignedMorphemes", data);
+			final PhonUIAction<InsertAlignedMorphemesData> insertAlignedMorphemesAct = PhonUIAction.eventConsumer(this::insertAlignedMorphemes, data);
 			insertAlignedMorphemesAct.putValue(PhonUIAction.NAME, optionTxt);
 			insertAlignedMorphemesAct.putValue(PhonUIAction.SHORT_DESCRIPTION,
 					"Insert aligned values into record, replacing current words/morphemes");
@@ -1199,7 +1198,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 		if(options.length > 10) {
 			builder.addSeparator(".", "more_options");
-			final PhonUIAction focusOptionsAct = new PhonUIAction(this, "onFocusAlignmentOptions", Integer.valueOf(10));
+			final PhonUIAction<Integer> focusOptionsAct = PhonUIAction.consumer(this::onFocusAlignmentOptions, Integer.valueOf(10));
 			focusOptionsAct.putValue(PhonUIAction.NAME, "See more below...");
 			focusOptionsAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "View more options in the Alignment Options table");
 			builder.addItem(".", focusOptionsAct);
@@ -1213,7 +1212,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		}
 		if(!this.getUserDb().hasAlignedTypes(alignedTypes)) {
 			builder.addSeparator(".", "add_alignment");
-			final PhonUIAction onAddAlignedTypesAct = new PhonUIAction(this, "onAddAlignedTypes");
+			final PhonUIAction<Void> onAddAlignedTypesAct = PhonUIAction.eventConsumer(this::onAddAlignedTypes);
 			onAddAlignedTypesAct.putValue(PhonUIAction.NAME, "Add alignment to database");
 			onAddAlignedTypesAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Add aligned types to database");
 			builder.addItem(".", onAddAlignedTypesAct);
@@ -1242,7 +1241,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		}
 	}
 
-	public void showAlignmentOptionsMenu(PhonActionEvent pae) {
+	public void showAlignmentOptionsMenu(PhonActionEvent<Void> pae) {
 		final JPopupMenu popupMenu = new JPopupMenu();
 		final MenuBuilder builder = new MenuBuilder(popupMenu);
 
@@ -1288,7 +1287,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 			eventData.morphemeIdx = morphemeIdx;
 			eventData.tierName = tierName;
 			eventData.morpheme = option;
-			final PhonUIAction insertMorphemeAct = new PhonUIAction(this, "insertMorphemeForTier", eventData);
+			final PhonUIAction<InsertMorphemeForTierData> insertMorphemeAct = PhonUIAction.eventConsumer(this::insertMorphemeForTier, eventData);
 			insertMorphemeAct.putValue(PhonUIAction.NAME, optionTxt);
 			insertMorphemeAct.putValue(PhonUIAction.SHORT_DESCRIPTION, descTxt);
 			if(i < 9)
@@ -1303,15 +1302,14 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final InsertAlignedMorphemesData data = new InsertAlignedMorphemesData();
 		data.moprhemeIdx = morphemeIdx;
 		data.options = optionSet;
-		final PhonUIAction insertAlignedMorphemesAct = new PhonUIAction(this,
-				"insertAlignedMorphemes", data);
+		final PhonUIAction<InsertAlignedMorphemesData> insertAlignedMorphemesAct = PhonUIAction.eventConsumer(this::insertAlignedMorphemes, data);
 		insertAlignedMorphemesAct.putValue(PhonUIAction.NAME, morphemeSetMenuItemText(optionSet));
 		insertAlignedMorphemesAct.putValue(PhonUIAction.SHORT_DESCRIPTION,
 				"Insert aligned values into record, replacing current words/morphemes");
 		builder.addItem(".", insertAlignedMorphemesAct);
 
 		builder.addSeparator(".", "delete");
-		final PhonUIAction deleteAlignedTypesAct = new PhonUIAction(this, "onDeleteAlignedTypes");
+		final PhonUIAction<Void> deleteAlignedTypesAct = PhonUIAction.eventConsumer(this::onDeleteAlignedTypes);
 		deleteAlignedTypesAct.putValue(PhonUIAction.NAME, "Remove alignment from database");
 		deleteAlignedTypesAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Remove aligned types from database");
 		deleteAlignedTypesAct.putValue(PhonUIAction.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0));
@@ -1349,12 +1347,8 @@ public final class TranscriptMapperEditorView extends EditorView {
 		String morpheme;
 	}
 
-	public void insertMorphemeForTier(PhonActionEvent pae) {
-		if(!(pae.getData() instanceof InsertMorphemeForTierData)) {
-			throw new IllegalArgumentException();
-		}
-
-		final InsertMorphemeForTierData data = (InsertMorphemeForTierData) pae.getData();
+	public void insertMorphemeForTier(PhonActionEvent<InsertMorphemeForTierData> pae) {
+		final InsertMorphemeForTierData data = pae.getData();
 		updateTier(data.morphemeIdx, data.tierName, data.morpheme);
 	}
 
@@ -1363,11 +1357,8 @@ public final class TranscriptMapperEditorView extends EditorView {
 		String[] options = new String[0];
 	}
 
-	public void insertAlignedMorphemes(PhonActionEvent pae) {
-		if(!(pae.getData() instanceof InsertAlignedMorphemesData)) {
-			throw new IllegalArgumentException();
-		}
-		final InsertAlignedMorphemesData data = (InsertAlignedMorphemesData) pae.getData();
+	public void insertAlignedMorphemes(PhonActionEvent<InsertAlignedMorphemesData> pae) {
+		final InsertAlignedMorphemesData data = pae.getData();
 		updateRecord(data.moprhemeIdx, getVisibleAlignmentTiers().toArray(new String[0]), data.options);
 	}
 

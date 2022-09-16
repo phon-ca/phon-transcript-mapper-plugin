@@ -119,7 +119,7 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 		projectButton = new MultiActionButton();
 		projectButton.setToolTipText("Click to select project");
 
-		final PhonUIAction openProjectAct = new PhonUIAction(this, "onOpenProject");
+		final PhonUIAction<Void> openProjectAct = PhonUIAction.eventConsumer(this::onOpenProject);
 		openProjectAct.putValue(PhonUIAction.NAME, "Select project...");
 		openProjectAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Select project to scan");
 		openProjectAct.putValue(PhonUIAction.SMALL_ICON, IconManager.getInstance().getIcon("actions/document-open", IconSize.SMALL));
@@ -228,7 +228,7 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 		sessionSelector.setSelectedSessions(sessionPaths);
 	}
 
-	public void onOpenProject(PhonActionEvent pae) {
+	public void onOpenProject(PhonActionEvent<Void> pae) {
 		showSelectProjectMenu();
 	}
 
@@ -238,14 +238,14 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 
 		final RecentProjects recentProjects = new RecentProjects();
 		for(File projectFolder:recentProjects) {
-			final PhonUIAction selectProjectAct = new PhonUIAction(this, "selectProject", projectFolder);
+			final PhonUIAction<File> selectProjectAct = PhonUIAction.consumer(this::selectProject, projectFolder);
 			selectProjectAct.putValue(PhonUIAction.NAME, projectFolder.getAbsolutePath());
 			selectProjectAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Select project folder: " + projectFolder.getAbsolutePath());
 			builder.addItem(".", selectProjectAct);
 		}
 		builder.addSeparator(".", "browse");
 
-		final PhonUIAction browseProjectAct = new PhonUIAction(this, "onBrowseForProject");
+		final PhonUIAction<Void> browseProjectAct = PhonUIAction.eventConsumer(this::onBrowseForProject);
 		browseProjectAct.putValue(PhonUIAction.NAME, "Select project folder...");
 		browseProjectAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Browse for project on disk");
 		builder.addItem(".", browseProjectAct);
@@ -265,7 +265,7 @@ public class ScanProjectWizard extends BreadcrumbWizardFrame {
 		}
 	}
 
-	public void onBrowseForProject(PhonActionEvent pae) {
+	public void onBrowseForProject(PhonActionEvent<Void> pae) {
 		final OpenDialogProperties props = new OpenDialogProperties();
 		props.setCanChooseDirectories(true);
 		props.setCanChooseFiles(false);
