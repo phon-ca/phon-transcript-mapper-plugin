@@ -14,6 +14,7 @@
 
 package ca.phon.transcriptMapper;
 
+import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
 import ca.phon.app.log.*;
 import ca.phon.app.project.*;
 import ca.phon.app.session.SessionSelector;
@@ -28,7 +29,6 @@ import ca.phon.ui.jbreadcrumb.BreadcrumbButton;
 import ca.phon.ui.menu.MenuBuilder;
 import ca.phon.ui.nativedialogs.*;
 import ca.phon.ui.wizard.*;
-import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
 import ca.phon.util.*;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;

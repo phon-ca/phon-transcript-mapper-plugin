@@ -14,11 +14,11 @@
 
 package ca.phon.transcriptMapper;
 
+import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
 import ca.phon.ipadictionary.*;
 import ca.phon.ipadictionary.spi.OrthoKeyIterator;
 import ca.phon.session.SystemTierType;
 import ca.phon.util.Language;
-import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
 import ca.phon.worker.PhonTask;
 
 import java.util.*;

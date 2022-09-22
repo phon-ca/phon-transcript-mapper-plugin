@@ -15,7 +15,6 @@
 package ca.phon.transcriptMapper;
 
 import ca.phon.orthography.*;
-import ca.phon.session.Word;
 import ca.phon.util.Tuple;
 import ca.phon.visitor.VisitorAdapter;
 import ca.phon.visitor.annotation.Visits;

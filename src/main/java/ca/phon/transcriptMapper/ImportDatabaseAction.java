@@ -14,8 +14,8 @@
 
 package ca.phon.transcriptMapper;
 
-import ca.phon.ui.nativedialogs.*;
 import ca.phon.alignedTypesDatabase.*;
+import ca.phon.ui.nativedialogs.*;
 import ca.phon.worker.PhonWorker;
 
 import java.awt.event.ActionEvent;
