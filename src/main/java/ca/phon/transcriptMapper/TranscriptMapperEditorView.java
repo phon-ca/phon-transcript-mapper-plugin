@@ -264,23 +264,18 @@ public final class TranscriptMapperEditorView extends EditorView {
 	}
 
 	private void setupEditorEvenListeners() {
-		EditorAction tierChangedEvt = new DelegateEditorAction(this, "onTierChanged");
-		getEditor().getEventManager().registerActionForEvent(EditorEventType.TIER_CHANGED_EVT, tierChangedEvt);
+		getEditor().getEventManager().registerActionForEvent(EditorEventType.TierChanged, this::onTierChanged, EditorEventManager.RunOn.AWTEventDispatchThread);
 
-		EditorAction recordChangedAct = new DelegateEditorAction(this, "onRecordChanged");
-		getEditor().getEventManager().registerActionForEvent(EditorEventType.RECORD_CHANGED_EVT, recordChangedAct);
+		getEditor().getEventManager().registerActionForEvent(EditorEventType.RecordChanged, this::onRecordChanged, EditorEventManager.RunOn.AWTEventDispatchThread);
 
-		EditorAction tierViewChangeAct = new DelegateEditorAction(this, "onTierViewChanged");
-		getEditor().getEventManager().registerActionForEvent(EditorEventType.TIER_VIEW_CHANGED_EVT, tierViewChangeAct);
+		getEditor().getEventManager().registerActionForEvent(EditorEventType.TierViewChanged, this::onTierViewChanged, EditorEventManager.RunOn.AWTEventDispatchThread);
 	}
 
-	@RunOnEDT
-	public void onRecordChanged(EditorEvent ee) {
+	private void onRecordChanged(EditorEvent<EditorEventType.RecordChangedData> ee) {
 		updateStateAsync(this::updateFromCurrentState);
 	}
 
-	@RunOnEDT
-	public void onTierChanged(EditorEvent ee) {
+	private void onTierChanged(EditorEvent<EditorEventType.TierChangeData> ee) {
 		final int selectedRow = this.morphemesTable.getSelectedRow();
 		final int selectedOption = this.alignmentOptionsTable.getSelectedRow();
 		updateStateAsync(() -> {
@@ -300,16 +295,13 @@ public final class TranscriptMapperEditorView extends EditorView {
 		});
 	}
 
-	@RunOnEDT
-	public void onTierViewChanged(EditorEvent ee) {
-		SwingUtilities.invokeLater(() -> {
-			if (this.alignmentOptionsTableModel != null)
-				this.alignmentOptionsTableModel.fireTableStructureChanged();
-			if (this.morphemesTableModel != null) {
-				this.morphemesTableModel.fireTableStructureChanged();
-			}
-			updateAfterDbLoad();
-		});
+	private void onTierViewChanged(EditorEvent<EditorEventType.TierViewChangedData> ee) {
+		if (this.alignmentOptionsTableModel != null)
+			this.alignmentOptionsTableModel.fireTableStructureChanged();
+		if (this.morphemesTableModel != null) {
+			this.morphemesTableModel.fireTableStructureChanged();
+		}
+		updateAfterDbLoad();
 	}
 
 	AlignedTypesDatabase getUserDb() {
@@ -320,26 +312,6 @@ public final class TranscriptMapperEditorView extends EditorView {
 			return userATDB.getATDB();
 		}
 	}
-
-//	private void loadUserDbAsync(Runnable onFinish) {
-//		final PhonTask task = PhonWorker.invokeOnNewWorker(this::loadUserDb, onFinish, LogUtil::warning);
-//		task.setName("Loading aligned types database");
-//		getEditor().getStatusBar().watchTask(task);
-//	}
-//
-//	private void loadUserDb() {
-//		final UserATDB userATDB = UserATDB.getInstance();
-//		if(!userATDB.isATDBLoaded()) {
-//			try {
-//				userATDB.loadATDB();
-//			} catch (IOException e) {
-//				LogUtil.severe(e);
-//			}
-//		}
-//		userATDB.addPropertyChangeListener("modified", (e) -> {
-//			updateDatabaseButtonState();
-//		});
-//	}
 
 	void saveUserDbAsync(Runnable onFinish) {
 		final PhonTask task = PhonWorker.invokeOnNewWorker(this::saveUserDb, onFinish, LogUtil::warning);
@@ -852,8 +824,12 @@ public final class TranscriptMapperEditorView extends EditorView {
 			needsRefresh |= updateTier(morphemeIdx, tiers[i], selectedTypes[i]);
 		}
 		getEditor().getUndoSupport().endUpdate();
-		if(needsRefresh)
-			getEditor().getEventManager().queueEvent(new EditorEvent(EditorEventType.RECORD_REFRESH_EVT));
+		if(needsRefresh) {
+			final EditorEvent<EditorEventType.RecordChangedData> ee =
+					new EditorEvent<>(EditorEventType.RecordRefresh, this,
+							new EditorEventType.RecordChangedData(getEditor().getCurrentRecordIndex(), getEditor().currentRecord()));
+			getEditor().getEventManager().queueEvent(ee);
+		}
 	}
 
 	private boolean updateTier(int morphemeIdx, String tier, String selectedMorpheme) {
