@@ -16,6 +16,7 @@ package ca.phon.transcriptMapper;
 
 import ca.phon.alignedTypesDatabase.*;
 import ca.phon.app.log.LogUtil;
+import ca.phon.session.SystemTierType;
 import ca.phon.util.PrefHelper;
 import org.apache.commons.io.FileUtils;
 
@@ -100,10 +101,17 @@ public final class UserATDB {
 			this.atdb = AlignedTypesDatabaseIO.readFromFile(projectDbFile);
 		} else {
 			this.atdb = (new AlignedTypesDatabaseFactory()).createDatabase();
+			setupTierDescriptionTree(this.atdb);
 		}
 		this.atdb.addDatabaseListener(listener);
 		loadLock.unlock();
 		propSupport.firePropertyChange("loaded", false, true);
+	}
+
+	private void setupTierDescriptionTree(AlignedTypesDatabase db) {
+		db.addUserTier(SystemTierType.Orthography.getName());
+		db.addUserTier(SystemTierType.IPATarget.getName());
+		db.addUserTier(SystemTierType.IPAActual.getName());
 	}
 
 	public void backupDb() throws IOException {
