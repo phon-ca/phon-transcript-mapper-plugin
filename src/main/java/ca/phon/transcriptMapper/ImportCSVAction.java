@@ -57,7 +57,7 @@ public class ImportCSVAction extends TranscriptMapperAction {
 	private void importDatabaseFromCSV(String filename) {
 		final String sessionLanguages = getView().getEditor().getSession().getLanguage();
 		LanguageEntry primaryLang = SyllabifierLibrary.getInstance().defaultSyllabifierLanguage().getPrimaryLanguage();
-		if(sessionLanguages.length() > 0) {
+		if(sessionLanguages != null && sessionLanguages.length() > 0) {
 			String[] langIds = sessionLanguages.split(",");
 			if (langIds.length > 0) {
 				primaryLang = LanguageParser.getInstance().getEntryById(langIds[0]);

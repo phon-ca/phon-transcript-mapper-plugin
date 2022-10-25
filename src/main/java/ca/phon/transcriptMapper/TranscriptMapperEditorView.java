@@ -1054,7 +1054,9 @@ public final class TranscriptMapperEditorView extends EditorView {
 		setDbOnlyTierVisible(getEditor().getProject(), new SessionPath(getEditor().getSession().getCorpus(), getEditor().getSession().getName()),
 				tierName, !dbOnlyTierVisible(tierName));
 		if(this.alignmentOptionsTableModel != null) {
+			this.updateState();
 			this.alignmentOptionsTableModel.fireTableStructureChanged();
+			this.updateFromCurrentState();
 		}
 	}
 
@@ -1075,7 +1077,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 			final String sessionLanguages = getEditor().getSession().getLanguage();
 			if(!alignedTypes.containsKey(TypeMapMetadataTier.LANGUAGE.getTierName())) {
-				if(sessionLanguages.length() > 0) {
+				if(sessionLanguages != null && sessionLanguages.length() > 0) {
 					String[] langIds = sessionLanguages.split(",");
 					if (langIds.length > 0) {
 						LanguageEntry primaryLang = LanguageParser.getInstance().getEntryById(langIds[0]);

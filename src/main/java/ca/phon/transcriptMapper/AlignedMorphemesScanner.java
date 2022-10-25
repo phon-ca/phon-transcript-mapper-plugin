@@ -61,7 +61,7 @@ public class AlignedMorphemesScanner {
 	public void scanSession(UUID srcProjectId, UUID projectId, Session session) {
 		final String sessionLanguages = session.getLanguage();
 		LanguageEntry primaryLang = SyllabifierLibrary.getInstance().defaultSyllabifierLanguage().getPrimaryLanguage();
-		if(sessionLanguages.length() > 0) {
+		if(sessionLanguages != null && sessionLanguages.length() > 0) {
 			String[] langIds = sessionLanguages.split(",");
 			if (langIds.length > 0) {
 				primaryLang = LanguageParser.getInstance().getEntryById(langIds[0]);
