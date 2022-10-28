@@ -16,6 +16,7 @@ package ca.phon.transcriptMapper;
 
 import ca.phon.alignedTypesDatabase.*;
 import ca.phon.app.log.LogUtil;
+import ca.phon.worker.*;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
@@ -40,6 +41,7 @@ public class TypeIteratorTableModel extends AbstractTableModel {
 
 		this.db = db;
 		this.cachedValues = new ArrayList<>();
+		this.typeIterator = db.typeIterator();
 	}
 
 	public AlignedTypesDatabase getDb() {
@@ -60,9 +62,10 @@ public class TypeIteratorTableModel extends AbstractTableModel {
 		return 1;
 	}
 
-	public void loadItemsAsync(int numToLoad, Consumer<Integer> onFinish) {
-		final TypeLoader loader = new TypeLoader(numToLoad, onFinish);
-		loader.execute();
+	public PhonTask loadItemsAsync(int numToLoad, Consumer<Integer> onFinish) {
+		PhonTask loadTask = new TypeLoader(numToLoad, onFinish);
+		PhonWorker.getInstance().invokeLater(loadTask);
+		return loadTask;
 	}
 
 	@Override
@@ -70,7 +73,13 @@ public class TypeIteratorTableModel extends AbstractTableModel {
 		return this.cachedValues.get(rowIndex);
 	}
 
-	private class TypeLoader extends SwingWorker<Integer, String> {
+	public void addCachedTypes(List<String> types) {
+		int numRows = cachedValues.size();
+		this.cachedValues.addAll(types);
+		fireTableRowsInserted(numRows, cachedValues.size()-1);
+	}
+
+	public class TypeLoader extends PhonTask {
 
 		private Consumer<Integer> onFinish;
 
@@ -82,32 +91,33 @@ public class TypeIteratorTableModel extends AbstractTableModel {
 		}
 
 		@Override
-		protected Integer doInBackground() throws Exception {
+		public void performTask() {
+			super.setStatus(TaskStatus.RUNNING);
+
 			int numLoaded = 0;
-			while(typeIterator.hasNext() && numLoaded < numToLoad) {
+			List<String> types = new ArrayList<>(10);
+			while(typeIterator.hasNext() && numLoaded < numToLoad && !super.isShutdown()) {
+				final String type = typeIterator.next();
+				types.add(type);
 				++numLoaded;
-				publish(typeIterator.next());
-			}
-			return numLoaded;
-		}
-
-		@Override
-		public void process(List<String> types) {
-			int numRows = cachedValues.size();
-			cachedValues.addAll(types);
-			fireTableRowsInserted(numRows, cachedValues.size());
-		}
-
-		@Override
-		public void done() {
-			if(this.onFinish != null) {
-				try {
-					this.onFinish.accept(get());
-				} catch (InterruptedException | ExecutionException e) {
-					LogUtil.warning(e);
+				if(types.size() % 10 == 0) {
+					final List<String> typesToAdd = new ArrayList<>(types);
+					SwingUtilities.invokeLater(() -> addCachedTypes(typesToAdd));
+					types.clear();
 				}
 			}
+			if(types.size() > 0) {
+				final List<String> typesToAdd = new ArrayList<>(types);
+				SwingUtilities.invokeLater(() -> addCachedTypes(typesToAdd));
+				types.clear();
+			}
+
+			final int num = numLoaded;
+			SwingUtilities.invokeLater(() -> onFinish.accept(num));
+
+			super.setStatus(TaskStatus.FINISHED);
 		}
+
 
 	}
 

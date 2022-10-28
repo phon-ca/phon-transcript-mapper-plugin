@@ -394,6 +394,9 @@ public final class TranscriptMapperEditorView extends EditorView {
 		tiersMenuAct.putValue(DropDownButton.ARROW_ICON_POSITION, SwingConstants.BOTTOM);
 		tiersMenuAct.putValue(DropDownButton.BUTTON_POPUP, tiersMenu);
 
+		PhonUIAction<Void> showTypeSearch = PhonUIAction.runnable(this::showTypeSearch);
+		showTypeSearch.putValue(PhonUIAction.NAME, "Show type search");
+
 		databaseButton = new DropDownButton(dbMenuAct);
 		databaseButton.setOnlyPopup(true);
 
@@ -402,6 +405,18 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 		toolbar.add(databaseButton);
 		toolbar.add(tiersButton);
+		toolbar.add(new JButton(showTypeSearch));
+	}
+
+	private void showTypeSearch() {
+		final SearchableTypesPanel searchableTypesPanel = new SearchableTypesPanel(getUserDb(), (type) -> {
+			return getUserDb().typeExistsInTier(type, keyTierBox.getSelectedItem().toString());
+		});
+		final JFrame testFrame = new JFrame("Test");
+		testFrame.setLayout(new BorderLayout());
+		testFrame.add(searchableTypesPanel, BorderLayout.CENTER);
+		testFrame.pack();
+		testFrame.setVisible(true);
 	}
 
 	private void setupDatabaseMenu(MenuBuilder builder) {
