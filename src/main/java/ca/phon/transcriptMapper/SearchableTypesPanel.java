@@ -14,7 +14,7 @@
 
 package ca.phon.transcriptMapper;
 
-import ca.phon.alignedTypesDatabase.AlignedTypesDatabase;
+import ca.phon.alignedTypesDatabase.*;
 import ca.phon.ui.text.PromptedTextField;
 import ca.phon.worker.*;
 import org.jdesktop.swingx.*;
@@ -32,6 +32,8 @@ import java.util.function.*;
  */
 public class SearchableTypesPanel extends JPanel {
 
+	private final static int NUM_TYPES_TO_LOAD = 100;
+
 	private AlignedTypesDatabase db;
 
 	private Predicate<String> typeFilter;
@@ -39,13 +41,12 @@ public class SearchableTypesPanel extends JPanel {
 	private PromptedTextField searchField;
 
 	private JXTable typeTable;
+	private TypeIteratorTableModel tblModel;
 
 	private ButtonGroup btnGrp;
 	private JRadioButton startsWithBtn;
 	private JRadioButton containsBtn;
 	private JRadioButton endsWithBtn;
-
-	private JXBusyLabel busyLabel;
 
 	private PhonTask typeLoader = null;
 
@@ -62,10 +63,9 @@ public class SearchableTypesPanel extends JPanel {
 
 	private void init() {
 		searchField = new PromptedTextField("Search");
-		searchField.getDocument().addDocumentListener(serchFieldListener);
+		searchField.getDocument().addDocumentListener(searchFieldListener);
 
 		btnGrp = new ButtonGroup();
-		final JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEADING));
 		startsWithBtn = new JRadioButton("starts with");
 		startsWithBtn.setSelected(true);
 		btnGrp.add(startsWithBtn);
@@ -78,25 +78,21 @@ public class SearchableTypesPanel extends JPanel {
 		endsWithBtn.setSelected(false);
 		btnGrp.add(endsWithBtn);
 
-		btnPanel.add(startsWithBtn);
-		btnPanel.add(containsBtn);
-		btnPanel.add(endsWithBtn);
+		final ActionListener btnListener = (e) -> {
+			updateIterator();
+		};
+		startsWithBtn.addActionListener(btnListener);
+		containsBtn.addActionListener(btnListener);
+		endsWithBtn.addActionListener(btnListener);
 
-		final TypeIteratorTableModel tblModel = new TypeIteratorTableModel(db);
-		tblModel.setTypeIterator(db.typeIterator((type) -> db.typeExistsInTier(type, "Orthography")));
+		tblModel = new TypeIteratorTableModel(db);
+		tblModel.setTypeIterator(db.typeIterator(this::checkTypeFilter));
 		typeTable = new JXTable(tblModel);
 		typeTable.setSortable(false);
 		typeTable.setColumnControlVisible(false);
-		typeTable.setVisibleRowCount(20);
+		typeTable.setVisibleRowCount(8);
 		final JScrollPane typeScroller = new JScrollPane(typeTable);
 
-		final int numToLoad = 100;
-		final Consumer<Integer> finishLoad = (numLoaded) -> {
-			typeLoader = null;
-			if(numLoaded != numToLoad) {
-				finishedLoad = true;
-			}
-		};
 		typeScroller.getVerticalScrollBar().addAdjustmentListener(new AdjustmentListener() {
 			@Override
 			public void adjustmentValueChanged(AdjustmentEvent e) {
@@ -105,32 +101,103 @@ public class SearchableTypesPanel extends JPanel {
 				if(tblRow > 0) {
 					if(tblRow >= tblModel.getRowCount() - 30) {
 						if(typeLoader == null) {
-							typeLoader = tblModel.loadItemsAsync(numToLoad, finishLoad);
+							typeLoader = tblModel.loadItemsAsync(NUM_TYPES_TO_LOAD, SearchableTypesPanel.this::onFinishLoad);
 						}
 					}
 				}
 			}
 		});
-		typeLoader = tblModel.loadItemsAsync(numToLoad, finishLoad);
+		typeLoader = tblModel.loadItemsAsync(NUM_TYPES_TO_LOAD, this::onFinishLoad);
+
+		final JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEADING));
+		btnPanel.add(startsWithBtn);
+		btnPanel.add(containsBtn);
+		btnPanel.add(endsWithBtn);
+		btnPanel.setOpaque(false);
 
 		JPanel topPanel = new JPanel(new VerticalLayout());
 		topPanel.add(searchField);
 		topPanel.add(btnPanel);
+		topPanel.setOpaque(false);
 
 		setLayout(new BorderLayout());
 		add(topPanel, BorderLayout.NORTH);
 		add(typeScroller, BorderLayout.CENTER);
+
+		addPropertyChangeListener("db", (e) -> updateIterator());
+		addPropertyChangeListener("typeFilter", (e) -> updateIterator());
 	}
 
-	private DocumentListener serchFieldListener = new DocumentListener() {
+	public AlignedTypesDatabase getDb() {
+		return this.db;
+	}
+
+	public void setDb(AlignedTypesDatabase db) {
+		final AlignedTypesDatabase oldDb = this.db;
+		this.db = db;
+		firePropertyChange("db", oldDb, db);
+	}
+
+	public Predicate<String> getTypeFilter() {
+		return this.typeFilter;
+	}
+
+	public void setTypeFilter(Predicate<String> typeFilter) {
+		final Predicate<String> oldFilter = this.typeFilter;
+		this.typeFilter = typeFilter;
+		firePropertyChange("typeFilter", oldFilter, typeFilter);
+	}
+
+	private boolean checkTypeFilter(String type) {
+		return (typeFilter != null ? typeFilter.test(type) : true);
+	}
+
+	private void onFinishLoad(Integer numLoaded) {
+		typeLoader = null;
+		if(numLoaded != NUM_TYPES_TO_LOAD) {
+			finishedLoad = true;
+		}
+	}
+
+	private void updateIterator() {
+		final String query = searchField.getText();
+		final boolean prefixSearch = startsWithBtn.isSelected();
+		final boolean containsSearch = containsBtn.isSelected();
+		final boolean endsWithSearch = endsWithBtn.isSelected();
+
+		if(typeLoader != null) {
+			typeLoader.shutdown();
+		}
+		setupIterator(query, prefixSearch, containsSearch, endsWithSearch);
+	}
+
+	private void setupIterator(String query, boolean prefixSearch, boolean containsSearch, boolean endsWithSearch) {
+		if(query.trim().length() == 0) {
+			tblModel.setTypeIterator(db.typeIterator(this::checkTypeFilter));
+		} else {
+			if(prefixSearch) {
+				tblModel.setTypeIterator(db.typesWithPrefix(query, this::checkTypeFilter));
+			} else if(containsSearch) {
+				tblModel.setTypeIterator(db.typesContaining(query, this::checkTypeFilter));
+			} else if(endsWithSearch) {
+				tblModel.setTypeIterator(db.typesWithSuffix(query, this::checkTypeFilter));
+			}
+		}
+		this.finishedLoad = false;
+		typeLoader = tblModel.loadItemsAsync(NUM_TYPES_TO_LOAD, this::onFinishLoad);
+	}
+
+	private DocumentListener searchFieldListener = new DocumentListener() {
 		@Override
 		public void insertUpdate(DocumentEvent e) {
-
+			if(searchField.getState() == PromptedTextField.FieldState.INPUT)
+				updateIterator();
 		}
 
 		@Override
 		public void removeUpdate(DocumentEvent e) {
-
+			if(searchField.getState() == PromptedTextField.FieldState.INPUT)
+				updateIterator();
 		}
 
 		@Override

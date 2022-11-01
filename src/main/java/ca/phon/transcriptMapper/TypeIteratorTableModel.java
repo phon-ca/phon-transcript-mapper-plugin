@@ -15,13 +15,11 @@
 package ca.phon.transcriptMapper;
 
 import ca.phon.alignedTypesDatabase.*;
-import ca.phon.app.log.LogUtil;
 import ca.phon.worker.*;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 /**
@@ -35,6 +33,8 @@ public class TypeIteratorTableModel extends AbstractTableModel {
 	private final AlignedTypesDatabase db;
 
 	private TypeIterator typeIterator;
+
+	private boolean showTiers = false;
 
 	public TypeIteratorTableModel(AlignedTypesDatabase db) {
 		super();
@@ -50,6 +50,23 @@ public class TypeIteratorTableModel extends AbstractTableModel {
 
 	public void setTypeIterator(TypeIterator itr) {
 		this.typeIterator = itr;
+		reset();
+	}
+
+	public boolean isShowTiers() {
+		return this.showTiers;
+	}
+
+	public void setShowTiers(boolean showTiers) {
+		this.showTiers = showTiers;
+		super.fireTableStructureChanged();
+	}
+
+	public void reset() {
+		int numRows = this.cachedValues.size();
+		this.cachedValues.clear();
+		if(numRows > 0)
+			super.fireTableRowsDeleted(0, numRows-1);
 	}
 
 	@Override
@@ -59,7 +76,14 @@ public class TypeIteratorTableModel extends AbstractTableModel {
 
 	@Override
 	public int getColumnCount() {
-		return 1;
+		return (showTiers ? 2 : 1);
+	}
+
+	@Override
+	public String getColumnName(int col) {
+		if(col == 0) return "Type";
+		else if(col == 1) return "Tier(s)";
+		else return super.getColumnName(col);
 	}
 
 	public PhonTask loadItemsAsync(int numToLoad, Consumer<Integer> onFinish) {
@@ -70,6 +94,19 @@ public class TypeIteratorTableModel extends AbstractTableModel {
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
+		final String type = this.cachedValues.get(rowIndex);
+		if(columnIndex == 0) return type;
+		else if(columnIndex == 1) {
+			StringBuilder tierNames = new StringBuilder();
+			for(String tierName:db.tierNames()) {
+				if(db.typeExistsInTier(type, tierName)) {
+					if (tierNames.length() > 0)
+						tierNames.append(", ");
+					tierNames.append(tierName);
+				}
+			}
+			return tierNames.toString();
+		}
 		return this.cachedValues.get(rowIndex);
 	}
 

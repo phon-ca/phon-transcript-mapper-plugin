@@ -69,6 +69,12 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 	private JComboBox<String> keyTierBox;
 
+	private ButtonGroup modeBtnGrp;
+	private JRadioButton searchAndInsertBtn;
+	private JRadioButton modifyRecordBtn;
+
+	private SearchableTypesPanel searchableTypesPanel;
+
 	private JLabel morphemesLabel;
 
 	private MorphemesTableModel morphemesTableModel;
@@ -532,6 +538,22 @@ public final class TranscriptMapperEditorView extends EditorView {
 		morphemeSelectionPanel.add(keyTierBox, new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, row));
 
 		++row;
+		modeBtnGrp = new ButtonGroup();
+		modifyRecordBtn = new JRadioButton("Morpheme list");
+		modifyRecordBtn.setSelected(true);
+		modeBtnGrp.add(modifyRecordBtn);
+
+		searchAndInsertBtn = new JRadioButton("Search");
+		searchAndInsertBtn.setSelected(false);
+		modeBtnGrp.add(searchAndInsertBtn);
+
+		final JPanel modePanel = new JPanel(new FlowLayout(FlowLayout.LEADING));
+		modePanel.setOpaque(false);
+		modePanel.add(modifyRecordBtn);
+		modePanel.add(searchAndInsertBtn);
+		morphemeSelectionPanel.add(modePanel, new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, row));
+
+		++row;
 		JSeparator sep = new JSeparator(SwingConstants.HORIZONTAL);
 		morphemeSelectionPanel.add(sep, new TierDataConstraint(TierDataConstraint.FULL_TIER_COLUMN, row));
 
@@ -542,7 +564,26 @@ public final class TranscriptMapperEditorView extends EditorView {
 		morphemeSelectionPanel.add(morphemesLabel, new TierDataConstraint(TierDataConstraint.TIER_LABEL_COLUMN, row));
 
 		setupMorphemesTable();
-		morphemeSelectionPanel.add(new JScrollPane(morphemesTable), new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, row));
+		final JScrollPane morphemeTableScroller = new JScrollPane(morphemesTable);
+		final int morphemeTableRow = row;
+		morphemeSelectionPanel.add(morphemeTableScroller, new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, morphemeTableRow));
+
+		final ActionListener modeListener = (e) -> {
+			if(searchAndInsertBtn.isSelected()) {
+				morphemeSelectionPanel.remove(morphemeTableScroller);
+				morphemeSelectionPanel.add(searchableTypesPanel, new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, morphemeTableRow));
+			} else {
+				morphemeSelectionPanel.remove(searchableTypesPanel);
+				morphemeSelectionPanel.add(morphemeTableScroller, new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, morphemeTableRow));
+			}
+			revalidate();
+			repaint();
+		};
+		modifyRecordBtn.addActionListener(modeListener);
+		searchAndInsertBtn.addActionListener(modeListener);
+		searchableTypesPanel = new SearchableTypesPanel(new AlignedTypesDatabaseFactory().createDatabase(),
+				(type) -> getUserDb().typeExistsInTier(type, keyTier()));
+		searchableTypesPanel.setOpaque(false);
 
 		++row;
 		alignmentOptionsLabel = new JLabel("Alignment Options");
@@ -744,7 +785,9 @@ public final class TranscriptMapperEditorView extends EditorView {
 	}
 
 	void updateAfterDbLoad() {
-		if(getUserDb() == null) return;
+		final AlignedTypesDatabase db = getUserDb();
+		if(db == null) return;
+
 
 		final String prevKeyTier = (this.keyTierBox.getSelectedItem() != null ?
 				this.keyTierBox.getSelectedItem().toString() : null);
@@ -754,6 +797,8 @@ public final class TranscriptMapperEditorView extends EditorView {
 			this.keyTierBox.setSelectedItem(prevKeyTier);
 		else
 			this.keyTierBox.setSelectedItem(SystemTierType.Orthography.getName());
+
+		searchableTypesPanel.setDb(db);
 
 		if(getEditor().currentRecord() != null) {
 			updateStateAsync(() -> {
