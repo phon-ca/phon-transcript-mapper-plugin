@@ -15,6 +15,7 @@
 package ca.phon.transcriptMapper;
 
 import ca.phon.alignedTypesDatabase.*;
+import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.text.PromptedTextField;
 import ca.phon.worker.*;
 import org.jdesktop.swingx.*;
@@ -64,6 +65,7 @@ public class SearchableTypesPanel extends JPanel {
 	private void init() {
 		searchField = new PromptedTextField("Search");
 		searchField.getDocument().addDocumentListener(searchFieldListener);
+		searchField.setFont(FontPreferences.getTierFont());
 
 		btnGrp = new ButtonGroup();
 		startsWithBtn = new JRadioButton("starts with");
@@ -88,9 +90,10 @@ public class SearchableTypesPanel extends JPanel {
 		tblModel = new TypeIteratorTableModel(db);
 		tblModel.setTypeIterator(db.typeIterator(this::checkTypeFilter));
 		typeTable = new JXTable(tblModel);
+		typeTable.setFont(FontPreferences.getTierFont());
 		typeTable.setSortable(false);
 		typeTable.setColumnControlVisible(false);
-		typeTable.setVisibleRowCount(8);
+		typeTable.setVisibleRowCount(10);
 		final JScrollPane typeScroller = new JScrollPane(typeTable);
 
 		typeScroller.getVerticalScrollBar().addAdjustmentListener(new AdjustmentListener() {

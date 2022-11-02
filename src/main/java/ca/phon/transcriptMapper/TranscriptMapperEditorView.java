@@ -36,7 +36,7 @@ import ca.phon.ui.menu.MenuBuilder;
 import ca.phon.util.*;
 import ca.phon.util.icons.*;
 import ca.phon.worker.*;
-import org.jdesktop.swingx.JXTable;
+import org.jdesktop.swingx.*;
 
 import javax.swing.*;
 import javax.swing.event.*;
@@ -74,8 +74,6 @@ public final class TranscriptMapperEditorView extends EditorView {
 	private JRadioButton modifyRecordBtn;
 
 	private SearchableTypesPanel searchableTypesPanel;
-
-	private JLabel morphemesLabel;
 
 	private MorphemesTableModel morphemesTableModel;
 
@@ -400,9 +398,6 @@ public final class TranscriptMapperEditorView extends EditorView {
 		tiersMenuAct.putValue(DropDownButton.ARROW_ICON_POSITION, SwingConstants.BOTTOM);
 		tiersMenuAct.putValue(DropDownButton.BUTTON_POPUP, tiersMenu);
 
-		PhonUIAction<Void> showTypeSearch = PhonUIAction.runnable(this::showTypeSearch);
-		showTypeSearch.putValue(PhonUIAction.NAME, "Show type search");
-
 		databaseButton = new DropDownButton(dbMenuAct);
 		databaseButton.setOnlyPopup(true);
 
@@ -411,18 +406,6 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 		toolbar.add(databaseButton);
 		toolbar.add(tiersButton);
-		toolbar.add(new JButton(showTypeSearch));
-	}
-
-	private void showTypeSearch() {
-		final SearchableTypesPanel searchableTypesPanel = new SearchableTypesPanel(getUserDb(), (type) -> {
-			return getUserDb().typeExistsInTier(type, keyTierBox.getSelectedItem().toString());
-		});
-		final JFrame testFrame = new JFrame("Test");
-		testFrame.setLayout(new BorderLayout());
-		testFrame.add(searchableTypesPanel, BorderLayout.CENTER);
-		testFrame.pack();
-		testFrame.setVisible(true);
 	}
 
 	private void setupDatabaseMenu(MenuBuilder builder) {
@@ -538,30 +521,31 @@ public final class TranscriptMapperEditorView extends EditorView {
 		morphemeSelectionPanel.add(keyTierBox, new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, row));
 
 		++row;
+		JSeparator sep = new JSeparator(SwingConstants.HORIZONTAL);
+		morphemeSelectionPanel.add(sep, new TierDataConstraint(TierDataConstraint.FULL_TIER_COLUMN, row));
+
+		++row;
 		modeBtnGrp = new ButtonGroup();
 		modifyRecordBtn = new JRadioButton("Morpheme list");
+		modifyRecordBtn.setFont(FontPreferences.getTitleFont());
 		modifyRecordBtn.setSelected(true);
 		modeBtnGrp.add(modifyRecordBtn);
 
 		searchAndInsertBtn = new JRadioButton("Search");
 		searchAndInsertBtn.setSelected(false);
+		searchAndInsertBtn.setFont(FontPreferences.getTitleFont());
 		modeBtnGrp.add(searchAndInsertBtn);
 
-		final JPanel modePanel = new JPanel(new FlowLayout(FlowLayout.LEADING));
+		final JPanel modePanel = new JPanel(new GridBagLayout());
+		final GridBagConstraints gbc = new GridBagConstraints();
+		gbc.anchor = GridBagConstraints.EAST;
+		gbc.gridx = 0;
+		gbc.gridy = 0;
 		modePanel.setOpaque(false);
-		modePanel.add(modifyRecordBtn);
-		modePanel.add(searchAndInsertBtn);
-		morphemeSelectionPanel.add(modePanel, new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, row));
-
-		++row;
-		JSeparator sep = new JSeparator(SwingConstants.HORIZONTAL);
-		morphemeSelectionPanel.add(sep, new TierDataConstraint(TierDataConstraint.FULL_TIER_COLUMN, row));
-
-		++row;
-		morphemesLabel = new JLabel("Words/Morphemes");
-		morphemesLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-		morphemesLabel.setFont(FontPreferences.getTitleFont());
-		morphemeSelectionPanel.add(morphemesLabel, new TierDataConstraint(TierDataConstraint.TIER_LABEL_COLUMN, row));
+		modePanel.add(modifyRecordBtn, gbc);
+		++gbc.gridy;
+		modePanel.add(searchAndInsertBtn, gbc);
+		morphemeSelectionPanel.add(modePanel, new TierDataConstraint(TierDataConstraint.TIER_LABEL_COLUMN, row));
 
 		setupMorphemesTable();
 		final JScrollPane morphemeTableScroller = new JScrollPane(morphemesTable);
@@ -609,10 +593,11 @@ public final class TranscriptMapperEditorView extends EditorView {
 				return c;
 			}
 		};
+		morphemesTable.setFont(FontPreferences.getTierFont());
 		morphemesTable.setDefaultRenderer(Object.class, new MorphemeTableCellRenderer());
 		morphemesTable.setSortable(false);
 		morphemesTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		morphemesTable.setVisibleRowCount(8);
+		morphemesTable.setVisibleRowCount(10);
 
 		morphemesTable.getSelectionModel().addListSelectionListener(e -> {
 			updateAlignmentOptions();
@@ -678,8 +663,9 @@ public final class TranscriptMapperEditorView extends EditorView {
 				return c;
 			}
 		};
+		alignmentOptionsTable.setFont(FontPreferences.getTierFont());
 		alignmentOptionsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		alignmentOptionsTable.setVisibleRowCount(8);
+		alignmentOptionsTable.setVisibleRowCount(10);
 		alignmentOptionsTable.setSortable(false);
 
 		final MouseAdapter ctxHandler = new MouseAdapter() {
