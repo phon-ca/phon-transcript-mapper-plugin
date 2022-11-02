@@ -53,6 +53,10 @@ public class SearchableTypesPanel extends JPanel {
 
 	private boolean finishedLoad = false;
 
+	public final static String SELECTED_TYPE = SearchableTypesPanel.class.getTypeName() + ".selectedType";
+
+	private String selectedType;
+
 	public SearchableTypesPanel(AlignedTypesDatabase db, Predicate<String> typeFilter) {
 		super();
 
@@ -94,6 +98,15 @@ public class SearchableTypesPanel extends JPanel {
 		typeTable.setSortable(false);
 		typeTable.setColumnControlVisible(false);
 		typeTable.setVisibleRowCount(10);
+		typeTable.getSelectionModel().addListSelectionListener((e) -> {
+			final String oldSelectedType = this.selectedType;
+			final int selectedIdx = e.getFirstIndex();
+			if(selectedIdx < 0)
+				selectedType = null;
+			else
+				selectedType = (String)tblModel.getValueAt(selectedIdx, 0);
+			firePropertyChange(SELECTED_TYPE, oldSelectedType, selectedType);
+		});
 		final JScrollPane typeScroller = new JScrollPane(typeTable);
 
 		typeScroller.getVerticalScrollBar().addAdjustmentListener(new AdjustmentListener() {
@@ -129,6 +142,10 @@ public class SearchableTypesPanel extends JPanel {
 
 		addPropertyChangeListener("db", (e) -> updateIterator());
 		addPropertyChangeListener("typeFilter", (e) -> updateIterator());
+	}
+
+	public String getSelectedType() {
+		return this.selectedType;
 	}
 
 	public AlignedTypesDatabase getDb() {

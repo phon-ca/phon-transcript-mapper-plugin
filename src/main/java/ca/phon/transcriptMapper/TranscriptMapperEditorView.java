@@ -552,6 +552,13 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final int morphemeTableRow = row;
 		morphemeSelectionPanel.add(morphemeTableScroller, new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, morphemeTableRow));
 
+		searchableTypesPanel = new SearchableTypesPanel(new AlignedTypesDatabaseFactory().createDatabase(),
+				(type) -> getUserDb().typeExistsInTier(type, keyTier()));
+		searchableTypesPanel.addPropertyChangeListener(SearchableTypesPanel.SELECTED_TYPE, (e) -> {
+			updateAlignmentOptions();
+		});
+		searchableTypesPanel.setOpaque(false);
+
 		final ActionListener modeListener = (e) -> {
 			if(searchAndInsertBtn.isSelected()) {
 				morphemeSelectionPanel.remove(morphemeTableScroller);
@@ -565,9 +572,6 @@ public final class TranscriptMapperEditorView extends EditorView {
 		};
 		modifyRecordBtn.addActionListener(modeListener);
 		searchAndInsertBtn.addActionListener(modeListener);
-		searchableTypesPanel = new SearchableTypesPanel(new AlignedTypesDatabaseFactory().createDatabase(),
-				(type) -> getUserDb().typeExistsInTier(type, keyTier()));
-		searchableTypesPanel.setOpaque(false);
 
 		++row;
 		alignmentOptionsLabel = new JLabel("Alignment Options");
@@ -752,7 +756,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	}
 
 	private void updateAlignmentOptions() {
-		if(alignmentOptionsTableModel != null) {
+		if(modifyRecordBtn.isSelected()) {
 			final int selectedMorpheme = morphemesTable.getSelectedRow();
 			if(selectedMorpheme >= 0) {
 				final String[][] alignmentOptions = alignmentOptionsForMorpheme(selectedMorpheme);
@@ -760,9 +764,15 @@ public final class TranscriptMapperEditorView extends EditorView {
 			} else {
 				alignmentOptionsTableModel.setAlignmentRows(new String[0][]);
 			}
+		} else if(searchAndInsertBtn.isSelected()) {
+			final String morpheme = searchableTypesPanel.getSelectedType();
+			List<String> tierList = getVisibleOptionsTiers();
+			Map<String, String[]> alignedTypes =
+					getUserDb().alignedTypesForTier(keyTier(), morpheme, tierList);
+			final String[][] alignmentOptions = alignmentOptionsForMorpheme(morpheme, alignedTypes);
+			alignmentOptionsTableModel.setAlignmentRows(alignmentOptions);
 		}
 	}
-
 	public void updateDatabaseButtonState() {
 		if(UserATDB.getInstance().isModified())
 			databaseButton.setText("Database *");
@@ -1345,16 +1355,19 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 		final String keyTier = keyTier();
 		final String morpheme = leafNode.getMorpheme(keyTier);
+		return alignmentOptionsForMorpheme(morpheme, leafNode.getAlignedMorphemeOptions());
+	}
+
+	private String[][] alignmentOptionsForMorpheme(String morpheme, Map<String, String[]> alignmentOptions) {
 		if(morpheme.length() == 0)
 			return new String[0][];
-		final Map<String, String[]> alignmentOptions = leafNode.getAlignedMorphemeOptions();
 
 		final List<String> visibleTiers = getVisibleOptionsTiers();
 		final String[][] arrays = new String[visibleTiers.size()][];
 
 		int idx = 0;
 		for(String tierName:visibleTiers) {
-			if(keyTier.equals(tierName))
+			if(keyTier().equals(tierName))
 				arrays[idx++] = new String[]{morpheme};
 			else
 				arrays[idx++] = (alignmentOptions.containsKey(tierName) ? alignmentOptions.get(tierName) : new String[0]);
