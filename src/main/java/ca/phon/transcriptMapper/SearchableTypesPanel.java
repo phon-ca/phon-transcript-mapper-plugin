@@ -101,7 +101,7 @@ public class SearchableTypesPanel extends JPanel {
 		typeTable.getSelectionModel().addListSelectionListener((e) -> {
 			if(e.getValueIsAdjusting()) return;
 			final String oldSelectedType = this.selectedType;
-			final int selectedIdx = e.getFirstIndex();
+			final int selectedIdx = e.getLastIndex();
 			if(selectedIdx < 0 || selectedIdx >= tblModel.getRowCount())
 				selectedType = null;
 			else
