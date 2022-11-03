@@ -99,9 +99,10 @@ public class SearchableTypesPanel extends JPanel {
 		typeTable.setColumnControlVisible(false);
 		typeTable.setVisibleRowCount(10);
 		typeTable.getSelectionModel().addListSelectionListener((e) -> {
+			if(e.getValueIsAdjusting()) return;
 			final String oldSelectedType = this.selectedType;
 			final int selectedIdx = e.getFirstIndex();
-			if(selectedIdx < 0)
+			if(selectedIdx < 0 || selectedIdx >= tblModel.getRowCount())
 				selectedType = null;
 			else
 				selectedType = (String)tblModel.getValueAt(selectedIdx, 0);
@@ -115,7 +116,7 @@ public class SearchableTypesPanel extends JPanel {
 				if(finishedLoad) return;
 				final int tblRow = typeTable.rowAtPoint(new Point(0, typeScroller.getVerticalScrollBar().getValue()));
 				if(tblRow > 0) {
-					if(tblRow >= tblModel.getRowCount() - 30) {
+					if(tblRow >= tblModel.getRowCount() - (2 * typeTable.getVisibleRowCount())) {
 						if(typeLoader == null) {
 							typeLoader = tblModel.loadItemsAsync(NUM_TYPES_TO_LOAD, SearchableTypesPanel.this::onFinishLoad);
 						}
@@ -142,6 +143,10 @@ public class SearchableTypesPanel extends JPanel {
 
 		addPropertyChangeListener("db", (e) -> updateIterator());
 		addPropertyChangeListener("typeFilter", (e) -> updateIterator());
+	}
+
+	public JTable getTypeTable() {
+		return this.typeTable;
 	}
 
 	public String getSelectedType() {
@@ -179,7 +184,7 @@ public class SearchableTypesPanel extends JPanel {
 		}
 	}
 
-	private void updateIterator() {
+	public void updateIterator() {
 		final String query = searchField.getText();
 		final boolean prefixSearch = startsWithBtn.isSelected();
 		final boolean containsSearch = containsBtn.isSelected();

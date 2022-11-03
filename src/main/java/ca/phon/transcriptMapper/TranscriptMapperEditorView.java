@@ -509,6 +509,8 @@ public final class TranscriptMapperEditorView extends EditorView {
 				this.morphemesTableModel.fireTableStructureChanged();
 			if(this.alignmentOptionsTableModel != null)
 				this.alignmentOptionsTableModel.fireTableStructureChanged();
+			if(this.searchableTypesPanel != null)
+				this.searchableTypesPanel.updateIterator();
 		});
 
 		morphemeSelectionPanel = new TierDataLayoutPanel();
@@ -552,12 +554,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final int morphemeTableRow = row;
 		morphemeSelectionPanel.add(morphemeTableScroller, new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, morphemeTableRow));
 
-		searchableTypesPanel = new SearchableTypesPanel(new AlignedTypesDatabaseFactory().createDatabase(),
-				(type) -> getUserDb().typeExistsInTier(type, keyTier()));
-		searchableTypesPanel.addPropertyChangeListener(SearchableTypesPanel.SELECTED_TYPE, (e) -> {
-			updateAlignmentOptions();
-		});
-		searchableTypesPanel.setOpaque(false);
+		setupSearchPanel();
 
 		final ActionListener modeListener = (e) -> {
 			if(searchAndInsertBtn.isSelected()) {
@@ -583,6 +580,49 @@ public final class TranscriptMapperEditorView extends EditorView {
 		morphemeSelectionPanel.add(new JScrollPane(alignmentOptionsTable), new TierDataConstraint(TierDataConstraint.FLAT_TIER_COLUMN, row));
 
 		add(new JScrollPane(morphemeSelectionPanel), BorderLayout.CENTER);
+	}
+
+	private void setupSearchPanel() {
+		searchableTypesPanel = new SearchableTypesPanel(new AlignedTypesDatabaseFactory().createDatabase(),
+				(type) -> getUserDb().typeExistsInTier(type, keyTier()));
+		searchableTypesPanel.addPropertyChangeListener(SearchableTypesPanel.SELECTED_TYPE, (e) -> {
+			updateAlignmentOptions();
+		});
+		searchableTypesPanel.setOpaque(false);
+
+		final JTable typeTable = searchableTypesPanel.getTypeTable();
+		final MouseAdapter ctxHandler = new MouseAdapter() {
+
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if(e.isPopupTrigger()) {
+					showCtxMenu(e);
+				}
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				if(e.isPopupTrigger()) {
+					showCtxMenu(e);
+				}
+			}
+
+			private void showCtxMenu(MouseEvent e) {
+				final int row = typeTable.rowAtPoint(e.getPoint());
+				if(row >= 0 && row < typeTable.getRowCount()) {
+					typeTable.getSelectionModel().setSelectionInterval(row, row);
+
+					final String type = (String)typeTable.getModel().getValueAt(row, 0);
+					final Map<String, String[]> alignedTypes = getUserDb().alignedTypesForTier(keyTier(), type);
+					final String[][] optionsForMorpheme = alignmentOptionsForMorpheme(type, alignedTypes);
+					final JPopupMenu menu = new JPopupMenu();
+					setupMorphemeMenu(new MenuBuilder(menu), currentState.getLeafCount(), optionsForMorpheme);
+					menu.show(typeTable, e.getX(), e.getY());
+				}
+			}
+
+		};
+		typeTable.addMouseListener(ctxHandler);
 	}
 
 	private void setupMorphemesTable() {
@@ -694,7 +734,9 @@ public final class TranscriptMapperEditorView extends EditorView {
 					alignmentOptionsTable.getSelectionModel().setSelectionInterval(row, row);
 
 					final JPopupMenu menu = new JPopupMenu();
-					setupAlignmentOptionsMenu(new MenuBuilder(menu), morphemesTable.getSelectedRow(), row, alignmentOptionsTableModel.alignmentRows);
+					int morphemeIdx =
+							(modifyRecordBtn.isSelected() ? morphemesTable.getSelectedRow() : currentState.getLeafCount());
+					setupAlignmentOptionsMenu(new MenuBuilder(menu), morphemeIdx, row, alignmentOptionsTableModel.alignmentRows);
 					menu.show(alignmentOptionsTable, e.getX(), e.getY());
 				}
 			}
@@ -765,7 +807,8 @@ public final class TranscriptMapperEditorView extends EditorView {
 				alignmentOptionsTableModel.setAlignmentRows(new String[0][]);
 			}
 		} else if(searchAndInsertBtn.isSelected()) {
-			final String morpheme = searchableTypesPanel.getSelectedType();
+			String morpheme = searchableTypesPanel.getSelectedType();
+			if(morpheme == null) morpheme = "";
 			List<String> tierList = getVisibleOptionsTiers();
 			Map<String, String[]> alignedTypes =
 					getUserDb().alignedTypesForTier(keyTier(), morpheme, tierList);
@@ -783,7 +826,6 @@ public final class TranscriptMapperEditorView extends EditorView {
 	void updateAfterDbLoad() {
 		final AlignedTypesDatabase db = getUserDb();
 		if(db == null) return;
-
 
 		final String prevKeyTier = (this.keyTierBox.getSelectedItem() != null ?
 				this.keyTierBox.getSelectedItem().toString() : null);
@@ -1238,7 +1280,12 @@ public final class TranscriptMapperEditorView extends EditorView {
 			builder.addItem(".", focusOptionsAct);
 		}
 
-		final TypeMapNode morphemeNode = this.currentState.getLeaves().get(morphemeIdx);
+		if(morphemeIdx >= this.currentState.getLeafCount()) {
+			TypeMapNode morphemeNode = new TypeMapNode(this.currentState.getLeafCount(), new LinkedHashMap<>());
+			this.currentState.getChild(this.currentState.childCount()-1).addChild(morphemeNode);
+		}
+		TypeMapNode morphemeNode = this.currentState.getLeaves().get(morphemeIdx);
+
 		final Map<String, String> alignedTypes = new LinkedHashMap<>();
 		for(String tierName:getVisibleAlignmentTiers()) {
 			final String morpheme = morphemeNode.getMorpheme(tierName);
@@ -1305,9 +1352,12 @@ public final class TranscriptMapperEditorView extends EditorView {
 		String[] optionSet = (selectedSet < options.length ? options[selectedSet] : new String[0]);
 		List<String> visibleTiers = getVisibleAlignmentTiers();
 
+		if(morphemeIdx < 0) return;
+
 		final List<TypeMapNode> leafNodes = this.currentState.getLeaves();
-		if(morphemeIdx >= leafNodes.size()) return;
-		final TypeMapNode leafNode = leafNodes.get(morphemeIdx);
+//		if(morphemeIdx >= leafNodes.size()) return;
+		final TypeMapNode leafNode =
+				(morphemeIdx > 0 && morphemeIdx < leafNodes.size() ? leafNodes.get(morphemeIdx) : null);
 
 		for(int i = 1; i < visibleTiers.size(); i++) {
 			final String tierName = visibleTiers.get(i);
@@ -1315,7 +1365,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 			if(option.length() == 0) continue;
 
-			final String optionTxt = String.format("%s: %s \u2192 %s", tierName, leafNode.getMorpheme(tierName), option);
+			final String optionTxt = String.format("%s: %s \u2192 %s", tierName, (leafNode == null ? "" : leafNode.getMorpheme(tierName)), option);
 			final String descTxt = String.format("Insert/Replace morpheme for tier %s", tierName);
 			final InsertMorphemeForTierData eventData = new InsertMorphemeForTierData();
 			eventData.morphemeIdx = morphemeIdx;
