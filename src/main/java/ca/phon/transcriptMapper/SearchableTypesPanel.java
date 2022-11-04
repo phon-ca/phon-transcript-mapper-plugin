@@ -110,16 +110,13 @@ public class SearchableTypesPanel extends JPanel {
 		});
 		final JScrollPane typeScroller = new JScrollPane(typeTable);
 
-		typeScroller.getVerticalScrollBar().addAdjustmentListener(new AdjustmentListener() {
-			@Override
-			public void adjustmentValueChanged(AdjustmentEvent e) {
-				if(finishedLoad) return;
-				final int tblRow = typeTable.rowAtPoint(new Point(0, typeScroller.getVerticalScrollBar().getValue()));
-				if(tblRow > 0) {
-					if(tblRow >= tblModel.getRowCount() - (2 * typeTable.getVisibleRowCount())) {
-						if(typeLoader == null) {
-							typeLoader = tblModel.loadItemsAsync(NUM_TYPES_TO_LOAD, SearchableTypesPanel.this::onFinishLoad);
-						}
+		typeScroller.getViewport().addChangeListener((e) -> {
+			if(finishedLoad) return;
+			final int tblRow = typeTable.rowAtPoint(typeScroller.getViewport().getViewPosition());
+			if(tblRow > 0) {
+				if(tblRow >= tblModel.getRowCount() - (2 * typeTable.getVisibleRowCount())) {
+					if(typeLoader == null) {
+						typeLoader = tblModel.loadItemsAsync(NUM_TYPES_TO_LOAD, SearchableTypesPanel.this::onFinishLoad);
 					}
 				}
 			}
