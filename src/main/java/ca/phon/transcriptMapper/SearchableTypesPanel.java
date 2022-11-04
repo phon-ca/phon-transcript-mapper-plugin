@@ -108,8 +108,8 @@ public class SearchableTypesPanel extends JPanel {
 				selectedType = (String)tblModel.getValueAt(selectedIdx, 0);
 			firePropertyChange(SELECTED_TYPE, oldSelectedType, selectedType);
 		});
-		final JScrollPane typeScroller = new JScrollPane(typeTable);
 
+		final JScrollPane typeScroller = new JScrollPane(typeTable);
 		typeScroller.getViewport().addChangeListener((e) -> {
 			if(finishedLoad) return;
 			final int tblRow = typeTable.rowAtPoint(typeScroller.getViewport().getViewPosition());

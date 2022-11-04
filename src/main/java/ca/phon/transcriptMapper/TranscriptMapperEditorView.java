@@ -1051,8 +1051,8 @@ public final class TranscriptMapperEditorView extends EditorView {
 	private TypeMapNode stateFromRecord(Record record) {
 		final TypeMapNode root = new TypeMapNode(-1);
 
-		final AlignedTypesDatabase projectDb = getUserDb();
-		if(projectDb == null) return root;
+		final AlignedTypesDatabase db = getUserDb();
+		if(db == null) return root;
 
 		final String keyTier = keyTier();
 		if(keyTier == null) return root;
@@ -1064,34 +1064,41 @@ public final class TranscriptMapperEditorView extends EditorView {
 			root.addChild(grpNode);
 			for(int widx = 0; widx < grp.getAlignedWordCount(); widx++) {
 				Word wrd = grp.getAlignedWord(widx);
-				TypeMapNode wrdNode = new TypeMapNode(widx);
-				grpNode.addChild(' ', wrdNode);
-
-				AlignedMorphemes morphemes = wrd.getExtension(AlignedMorphemes.class);
-				if(morphemes != null) {
-					for(int midx = 0; midx < morphemes.getMorphemeCount(); midx++) {
-						AlignedMorpheme morpheme = morphemes.getAlignedMorpheme(midx);
-
-						Map<String, String> currentMorphemes = new HashMap<>();
-						for(String tierName:tierList) {
-							currentMorphemes.put(tierName, morpheme.getMorphemeText(tierName));
-						}
-						Map<String, String[]> alignedTypes =
-								projectDb.alignedTypesForTier(keyTier, currentMorphemes.get(keyTier), tierList);
-
-						TypeMapNode morphemeNode = new TypeMapNode(midx, currentMorphemes, alignedTypes);
-
-						// start of word
-						char ch = '\u0000';
-						if(midx > 0) {
-							int orthoIdx = morpheme.getOrthographyWordLocation();
-							int chIdx = orthoIdx - 1;
-							ch = (chIdx >= 0 ? wrd.getOrthography().toString().charAt(chIdx) : '\u0000');
-						}
-
-						wrdNode.addChild(ch, morphemeNode);
-					}
+				Map<String, String> currentWords = new HashMap<>();
+				for(String tierName:tierList) {
+					Object tierValue = wrd.getTier(tierName);
+					currentWords.put(tierName, tierValue != null ? tierValue.toString() : "");
 				}
+				Map<String, String[]> alignedTypes = db.alignedTypesForTier(keyTier, currentWords.get(keyTier), tierList);
+
+				TypeMapNode wrdNode = new TypeMapNode(widx, currentWords, alignedTypes);
+				grpNode.addChild(widx == 0 ? '\u0000' : ' ', wrdNode);
+
+//				AlignedMorphemes morphemes = wrd.getExtension(AlignedMorphemes.class);
+//				if(morphemes != null) {
+//					for(int midx = 0; midx < morphemes.getMorphemeCount(); midx++) {
+//						AlignedMorpheme morpheme = morphemes.getAlignedMorpheme(midx);
+//
+//						Map<String, String> currentMorphemes = new HashMap<>();
+//						for(String tierName:tierList) {
+//							currentMorphemes.put(tierName, morpheme.getMorphemeText(tierName));
+//						}
+//						Map<String, String[]> alignedTypes =
+//								db.alignedTypesForTier(keyTier, currentMorphemes.get(keyTier), tierList);
+//
+//						TypeMapNode morphemeNode = new TypeMapNode(midx, currentMorphemes, alignedTypes);
+//
+//						// start of word
+//						char ch = '\u0000';
+//						if(midx > 0) {
+//							int orthoIdx = morpheme.getOrthographyWordLocation();
+//							int chIdx = orthoIdx - 1;
+//							ch = (chIdx >= 0 ? wrd.getOrthography().toString().charAt(chIdx) : '\u0000');
+//						}
+//
+//						wrdNode.addChild(ch, morphemeNode);
+//					}
+//				}
 			}
 		}
 
