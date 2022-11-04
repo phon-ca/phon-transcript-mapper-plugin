@@ -75,7 +75,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 	private SearchableTypesPanel searchableTypesPanel;
 
-	private MorphemesTableModel morphemesTableModel;
+	private WordTableModel morphemesTableModel;
 
 	private JXTable morphemesTable;
 
@@ -626,7 +626,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	}
 
 	private void setupMorphemesTable() {
-		morphemesTableModel = new MorphemesTableModel();
+		morphemesTableModel = new WordTableModel();
 		morphemesTable = new JXTable(morphemesTableModel) {
 			public Component prepareRenderer(TableCellRenderer renderer, int row, int column)
 			{
@@ -638,7 +638,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 			}
 		};
 		morphemesTable.setFont(FontPreferences.getTierFont());
-		morphemesTable.setDefaultRenderer(Object.class, new MorphemeTableCellRenderer());
+		morphemesTable.setDefaultRenderer(Object.class, new WordTableCellRenderer());
 		morphemesTable.setSortable(false);
 		morphemesTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		morphemesTable.setVisibleRowCount(10);
@@ -1269,10 +1269,10 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 		for (int i = 0; i < options.length && i < 10; i++) {
 			final String optionTxt = morphemeSetMenuItemText(options[i]);
-			final InsertAlignedMorphemesData data = new InsertAlignedMorphemesData();
-			data.moprhemeIdx = morphemeIdx;
+			final InsertAlignedWordsData data = new InsertAlignedWordsData();
+			data.wordIndex = morphemeIdx;
 			data.options = options[i];
-			final PhonUIAction<InsertAlignedMorphemesData> insertAlignedMorphemesAct = PhonUIAction.eventConsumer(this::insertAlignedMorphemes, data);
+			final PhonUIAction<InsertAlignedWordsData> insertAlignedMorphemesAct = PhonUIAction.eventConsumer(this::insertAlignedWords, data);
 			insertAlignedMorphemesAct.putValue(PhonUIAction.NAME, optionTxt);
 			insertAlignedMorphemesAct.putValue(PhonUIAction.SHORT_DESCRIPTION,
 					"Insert aligned values into record, replacing current words/morphemes");
@@ -1374,11 +1374,11 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 			final String optionTxt = String.format("%s: %s \u2192 %s", tierName, (leafNode == null ? "" : leafNode.getMorpheme(tierName)), option);
 			final String descTxt = String.format("Insert/Replace morpheme for tier %s", tierName);
-			final InsertMorphemeForTierData eventData = new InsertMorphemeForTierData();
-			eventData.morphemeIdx = morphemeIdx;
+			final InsertWordForTierData eventData = new InsertWordForTierData();
+			eventData.wordIndex = morphemeIdx;
 			eventData.tierName = tierName;
-			eventData.morpheme = option;
-			final PhonUIAction<InsertMorphemeForTierData> insertMorphemeAct = PhonUIAction.eventConsumer(this::insertMorphemeForTier, eventData);
+			eventData.word = option;
+			final PhonUIAction<InsertWordForTierData> insertMorphemeAct = PhonUIAction.eventConsumer(this::insertWordForTier, eventData);
 			insertMorphemeAct.putValue(PhonUIAction.NAME, optionTxt);
 			insertMorphemeAct.putValue(PhonUIAction.SHORT_DESCRIPTION, descTxt);
 			if(i < 9)
@@ -1390,10 +1390,10 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final String headerTxt = morphemeSetMenuItemText(getVisibleAlignmentTiers().toArray(new String[0]));
 		builder.addItem(".", headerTxt).setEnabled(false);
 
-		final InsertAlignedMorphemesData data = new InsertAlignedMorphemesData();
-		data.moprhemeIdx = morphemeIdx;
+		final InsertAlignedWordsData data = new InsertAlignedWordsData();
+		data.wordIndex = morphemeIdx;
 		data.options = optionSet;
-		final PhonUIAction<InsertAlignedMorphemesData> insertAlignedMorphemesAct = PhonUIAction.eventConsumer(this::insertAlignedMorphemes, data);
+		final PhonUIAction<InsertAlignedWordsData> insertAlignedMorphemesAct = PhonUIAction.eventConsumer(this::insertAlignedWords, data);
 		insertAlignedMorphemesAct.putValue(PhonUIAction.NAME, morphemeSetMenuItemText(optionSet));
 		insertAlignedMorphemesAct.putValue(PhonUIAction.SHORT_DESCRIPTION,
 				"Insert aligned values into record, replacing current words/morphemes");
@@ -1435,25 +1435,25 @@ public final class TranscriptMapperEditorView extends EditorView {
 		return product;
 	}
 
-	private class InsertMorphemeForTierData {
-		int morphemeIdx = 0;
+	private class InsertWordForTierData {
+		int wordIndex = 0;
 		String tierName;
-		String morpheme;
+		String word;
 	}
 
-	public void insertMorphemeForTier(PhonActionEvent<InsertMorphemeForTierData> pae) {
-		final InsertMorphemeForTierData data = pae.getData();
-		updateTier(data.morphemeIdx, data.tierName, data.morpheme);
+	public void insertWordForTier(PhonActionEvent<InsertWordForTierData> pae) {
+		final InsertWordForTierData data = pae.getData();
+		updateTier(data.wordIndex, data.tierName, data.word);
 	}
 
-	private class InsertAlignedMorphemesData {
-		int moprhemeIdx = 0;
+	private class InsertAlignedWordsData {
+		int wordIndex = 0;
 		String[] options = new String[0];
 	}
 
-	public void insertAlignedMorphemes(PhonActionEvent<InsertAlignedMorphemesData> pae) {
-		final InsertAlignedMorphemesData data = pae.getData();
-		updateRecord(data.moprhemeIdx, getVisibleAlignmentTiers().toArray(new String[0]), data.options);
+	public void insertAlignedWords(PhonActionEvent<InsertAlignedWordsData> pae) {
+		final InsertAlignedWordsData data = pae.getData();
+		updateRecord(data.wordIndex, getVisibleAlignmentTiers().toArray(new String[0]), data.options);
 	}
 
 	/**
@@ -1603,7 +1603,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		return retVal;
 	}
 
-	private class MorphemeTableCellRenderer extends DefaultTableCellRenderer {
+	private class WordTableCellRenderer extends DefaultTableCellRenderer {
 		@Override
 		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 			JLabel retVal = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
@@ -1630,9 +1630,9 @@ public final class TranscriptMapperEditorView extends EditorView {
 		}
 	}
 
-	private class MorphemesTableModel extends AbstractTableModel {
+	private class WordTableModel extends AbstractTableModel {
 
-		public MorphemesTableModel() {
+		public WordTableModel() {
 			super();
 		}
 
