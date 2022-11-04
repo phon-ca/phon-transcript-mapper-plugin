@@ -23,9 +23,9 @@ class TypeMapNode {
 	// index of group/word/morpheme
 	private int index;
 
-	private Map<String, String> currentAlignedMorphemes;
+	private Map<String, String> currentAlignedTypes;
 
-	private Map<String, String[]> alignedMorphemeOptions;
+	private Map<String, String[]> alignedTypeOptions;
 
 	private List<Tuple<Character, TypeMapNode>> children = new ArrayList<>();
 
@@ -33,15 +33,15 @@ class TypeMapNode {
 		this(idx, null, null);
 	}
 
-	public TypeMapNode(int idx, Map<String, String> currentAlignedMorphemes) {
-		this(idx, currentAlignedMorphemes, null);
+	public TypeMapNode(int idx, Map<String, String> currentAlignedTypes) {
+		this(idx, currentAlignedTypes, null);
 	}
 
-	public TypeMapNode(int idx, Map<String, String> currentAlignedMorphemes, Map<String, String[]> alignedMorphemeOptions) {
+	public TypeMapNode(int idx, Map<String, String> currentAlignedTypes, Map<String, String[]> alignedTypeOptions) {
 		super();
 		this.index = idx;
-		this.currentAlignedMorphemes = currentAlignedMorphemes;
-		this.alignedMorphemeOptions = alignedMorphemeOptions;
+		this.currentAlignedTypes = currentAlignedTypes;
+		this.alignedTypeOptions = alignedTypeOptions;
 	}
 
 	public boolean isRoot() {
@@ -53,23 +53,23 @@ class TypeMapNode {
 	}
 
 	public boolean isTerminated() {
-		return this.currentAlignedMorphemes != null;
+		return this.currentAlignedTypes != null;
 	}
 
-	public String getMorpheme(String tierName) {
-		return (this.currentAlignedMorphemes == null ? null : this.currentAlignedMorphemes.get(tierName));
+	public String getType(String tierName) {
+		return (this.currentAlignedTypes == null ? null : this.currentAlignedTypes.get(tierName));
 	}
 
-	public void setCurrentAlignedMorphemes(Map<String, String> currentAlignedMorphemes) {
-		this.currentAlignedMorphemes = currentAlignedMorphemes;
+	public void setCurrentAlignedTypes(Map<String, String> currentAlignedTypes) {
+		this.currentAlignedTypes = currentAlignedTypes;
 	}
 
-	public Map<String, String[]> getAlignedMorphemeOptions() {
-		return this.alignedMorphemeOptions;
+	public Map<String, String[]> getAlignedTypeOptions() {
+		return this.alignedTypeOptions;
 	}
 
-	public void setAlignedMorphemeOptions(Map<String, String[]> alignedMorphemeOptions) {
-		this.alignedMorphemeOptions = alignedMorphemeOptions;
+	public void setAlignedTypeOptions(Map<String, String[]> alignedTypeOptions) {
+		this.alignedTypeOptions = alignedTypeOptions;
 	}
 
 	public int childCount() {
