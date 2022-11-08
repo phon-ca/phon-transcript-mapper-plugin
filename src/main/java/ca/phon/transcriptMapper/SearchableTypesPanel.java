@@ -116,7 +116,7 @@ public class SearchableTypesPanel extends JPanel {
 		typeTable.getSelectionModel().addListSelectionListener((e) -> {
 			if(e.getValueIsAdjusting()) return;
 			final String oldSelectedType = this.selectedType;
-			final int selectedIdx = e.getLastIndex();
+			final int selectedIdx = typeTable.getSelectedRow();
 			if(selectedIdx < 0 || selectedIdx >= tblModel.getRowCount())
 				selectedType = null;
 			else
@@ -157,6 +157,7 @@ public class SearchableTypesPanel extends JPanel {
 		++gbc.gridy;
 		gbc.gridx = 0;
 		gbc.gridwidth = 3;
+		gbc.weightx = 1.0;
 		btnPanel.add(caseSensitiveBox, gbc);
 		btnPanel.setOpaque(false);
 
