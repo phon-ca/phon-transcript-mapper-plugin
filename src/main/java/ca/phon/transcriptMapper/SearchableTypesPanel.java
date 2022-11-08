@@ -17,6 +17,7 @@ package ca.phon.transcriptMapper;
 import ca.phon.alignedTypesDatabase.*;
 import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.text.PromptedTextField;
+import ca.phon.util.PrefHelper;
 import ca.phon.worker.*;
 import org.jdesktop.swingx.*;
 import org.pushingpixels.substance.internal.contrib.randelshofer.quaqua.colorchooser.ColorSliderTextFieldHandler;
@@ -44,10 +45,14 @@ public class SearchableTypesPanel extends JPanel {
 	private JXTable typeTable;
 	private TypeIteratorTableModel tblModel;
 
+	private final static String PLAIN_TEXT_SEARCH_PROP = TranscriptMapperEditorView.class.getTypeName() + ".plainTextSearch";
 	private ButtonGroup btnGrp;
 	private JRadioButton startsWithBtn;
 	private JRadioButton containsBtn;
 	private JRadioButton endsWithBtn;
+
+	private final static String CASE_SENSITIVE_PROP = TranscriptMapperEditorView.class.getName() + ".caseSensitive";
+	private JCheckBox caseSensitiveBox;
 
 	private PhonTask typeLoader = null;
 
@@ -71,25 +76,35 @@ public class SearchableTypesPanel extends JPanel {
 		searchField.getDocument().addDocumentListener(searchFieldListener);
 		searchField.setFont(FontPreferences.getTierFont());
 
+		final String plainTextSearch = PrefHelper.get(PLAIN_TEXT_SEARCH_PROP, "starts with");
 		btnGrp = new ButtonGroup();
 		startsWithBtn = new JRadioButton("starts with");
-		startsWithBtn.setSelected(true);
+		startsWithBtn.setSelected(plainTextSearch.equals(startsWithBtn.getText()));
 		btnGrp.add(startsWithBtn);
 
 		containsBtn = new JRadioButton("contains");
-		containsBtn.setSelected(false);
+		containsBtn.setSelected(plainTextSearch.equals(containsBtn.getText()));
 		btnGrp.add(containsBtn);
 
 		endsWithBtn = new JRadioButton("ends with");
-		endsWithBtn.setSelected(false);
+		endsWithBtn.setSelected(plainTextSearch.equals(endsWithBtn.getText()));
 		btnGrp.add(endsWithBtn);
 
 		final ActionListener btnListener = (e) -> {
+			PrefHelper.getUserPreferences().put(PLAIN_TEXT_SEARCH_PROP, ((JRadioButton)e.getSource()).getText());
 			updateIterator();
 		};
 		startsWithBtn.addActionListener(btnListener);
 		containsBtn.addActionListener(btnListener);
 		endsWithBtn.addActionListener(btnListener);
+
+		final boolean caseSensitive = PrefHelper.getBoolean(CASE_SENSITIVE_PROP, true);
+		caseSensitiveBox = new JCheckBox("case sensitive");
+		caseSensitiveBox.setSelected(caseSensitive);
+		caseSensitiveBox.addActionListener((e) -> {
+			PrefHelper.getUserPreferences().putBoolean(CASE_SENSITIVE_PROP, caseSensitiveBox.isSelected());
+			updateIterator();
+		});
 
 		tblModel = new TypeIteratorTableModel(db);
 		tblModel.setTypeIterator(db.typeIterator(this::checkTypeFilter));
@@ -123,10 +138,26 @@ public class SearchableTypesPanel extends JPanel {
 		});
 		typeLoader = tblModel.loadItemsAsync(NUM_TYPES_TO_LOAD, this::onFinishLoad);
 
-		final JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEADING));
-		btnPanel.add(startsWithBtn);
-		btnPanel.add(containsBtn);
-		btnPanel.add(endsWithBtn);
+		final JPanel btnPanel = new JPanel(new GridBagLayout());
+		final GridBagConstraints gbc = new GridBagConstraints();
+		gbc.anchor = GridBagConstraints.WEST;
+		gbc.gridx = 0;
+		gbc.gridy = 0;
+		gbc.gridheight = 1;
+		gbc.gridwidth = 1;
+		btnPanel.add(startsWithBtn, gbc);
+		++gbc.gridx;
+		btnPanel.add(containsBtn, gbc);
+		++gbc.gridx;
+		btnPanel.add(endsWithBtn, gbc);
+		++gbc.gridx;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.weightx = 1.0;
+		btnPanel.add(Box.createHorizontalGlue(), gbc);
+		++gbc.gridy;
+		gbc.gridx = 0;
+		gbc.gridwidth = 3;
+		btnPanel.add(caseSensitiveBox, gbc);
 		btnPanel.setOpaque(false);
 
 		JPanel topPanel = new JPanel(new VerticalLayout());
@@ -186,23 +217,24 @@ public class SearchableTypesPanel extends JPanel {
 		final boolean prefixSearch = startsWithBtn.isSelected();
 		final boolean containsSearch = containsBtn.isSelected();
 		final boolean endsWithSearch = endsWithBtn.isSelected();
+		final boolean caseSensitive = caseSensitiveBox.isSelected();
 
 		if(typeLoader != null) {
 			typeLoader.shutdown();
 		}
-		setupIterator(query, prefixSearch, containsSearch, endsWithSearch);
+		setupIterator(query, prefixSearch, containsSearch, endsWithSearch, caseSensitive);
 	}
 
-	private void setupIterator(String query, boolean prefixSearch, boolean containsSearch, boolean endsWithSearch) {
+	private void setupIterator(String query, boolean prefixSearch, boolean containsSearch, boolean endsWithSearch, boolean caseSensitive) {
 		if(query.trim().length() == 0) {
 			tblModel.setTypeIterator(db.typeIterator(this::checkTypeFilter));
 		} else {
 			if(prefixSearch) {
-				tblModel.setTypeIterator(db.typesWithPrefix(query, this::checkTypeFilter));
+				tblModel.setTypeIterator(db.typesWithPrefix(query, caseSensitive, this::checkTypeFilter));
 			} else if(containsSearch) {
-				tblModel.setTypeIterator(db.typesContaining(query, this::checkTypeFilter));
+				tblModel.setTypeIterator(db.typesContaining(query, caseSensitive, this::checkTypeFilter));
 			} else if(endsWithSearch) {
-				tblModel.setTypeIterator(db.typesWithSuffix(query, this::checkTypeFilter));
+				tblModel.setTypeIterator(db.typesWithSuffix(query, caseSensitive, this::checkTypeFilter));
 			}
 		}
 		this.finishedLoad = false;
