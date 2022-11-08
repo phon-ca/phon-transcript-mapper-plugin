@@ -207,10 +207,10 @@ public class SearchableTypesPanel extends JPanel {
 	}
 
 	private void onFinishLoad(Integer numLoaded) {
-		typeLoader = null;
-		if(numLoaded != NUM_TYPES_TO_LOAD) {
+		if(typeLoader != null && !typeLoader.isShutdown() && numLoaded != NUM_TYPES_TO_LOAD) {
 			finishedLoad = true;
 		}
+		typeLoader = null;
 	}
 
 	public void updateIterator() {
