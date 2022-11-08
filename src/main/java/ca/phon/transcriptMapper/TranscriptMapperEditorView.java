@@ -127,7 +127,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		getSharedProps().store(new OutputStreamWriter(new FileOutputStream(propsFile)), LocalDateTime.now().toString());
 	}
 
-	private static String tierVisiblityProp(Project project, SessionPath sessionPath) {
+	private static String tierVisibilityProp(Project project, SessionPath sessionPath) {
 		final String prop = String.format("%s.%s.%s.hiddenTiers",
 				project.getUUID(), sessionPath.getCorpus(), sessionPath.getSession());
 		return prop;
@@ -142,7 +142,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	private synchronized static void setTierVisible(Project project, SessionPath sessionPath,
 	                                               String tierName, boolean visible) {
 		final Properties sharedProps = getSharedProps();
-		final String tierVisiblityProp = tierVisiblityProp(project, sessionPath);
+		final String tierVisiblityProp = tierVisibilityProp(project, sessionPath);
 
 		String hiddenTiers = sharedProps.getProperty(tierVisiblityProp, "");
 		final List<String> tierNames = new ArrayList<>();
@@ -194,7 +194,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	private synchronized static void setTierHidden(Project project, SessionPath sessionPath,
 	                                               String tierName, boolean hidden) {
 		final Properties sharedProps = getSharedProps();
-		final String tierVisiblityProp = tierVisiblityProp(project, sessionPath);
+		final String tierVisiblityProp = tierVisibilityProp(project, sessionPath);
 
 		String hiddenTiers = sharedProps.getProperty(tierVisiblityProp, "");
 		final List<String> tierNames = new ArrayList<>();
@@ -219,7 +219,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 	private synchronized static boolean isTierHidden(Project project, SessionPath sessionPath, String tierName) {
 		final Properties sharedProps = getSharedProps();
-		final String tierVisiblityProp = tierVisiblityProp(project, sessionPath);
+		final String tierVisiblityProp = tierVisibilityProp(project, sessionPath);
 
 		String hiddenTiers = sharedProps.getProperty(tierVisiblityProp, "");
 		final List<String> tierNames = new ArrayList<>();
@@ -527,7 +527,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 		++row;
 		modeBtnGrp = new ButtonGroup();
-		modifyRecordBtn = new JRadioButton("Morpheme list");
+		modifyRecordBtn = new JRadioButton("Word list");
 		modifyRecordBtn.setFont(FontPreferences.getTitleFont());
 		modifyRecordBtn.setSelected(true);
 		modeBtnGrp.add(modifyRecordBtn);
@@ -917,7 +917,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	private void updateRecord(int morphemeIdx, String[] tiers, String[] selectedTypes) {
 		boolean needsRefresh = false;
 		getEditor().getUndoSupport().beginUpdate();
-		for(int i = 0; i < selectedTypes.length; i++) {
+		for(int i = 0; i < tiers.length; i++) {
 			needsRefresh |= updateTier(morphemeIdx, tiers[i], selectedTypes[i]);
 		}
 		getEditor().getUndoSupport().endUpdate();
