@@ -527,7 +527,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 		++row;
 		modeBtnGrp = new ButtonGroup();
-		modifyRecordBtn = new JRadioButton("Word list");
+		modifyRecordBtn = new JRadioButton("Record data");
 		modifyRecordBtn.setFont(FontPreferences.getTitleFont());
 		modifyRecordBtn.setSelected(true);
 		modeBtnGrp.add(modifyRecordBtn);
@@ -538,13 +538,23 @@ public final class TranscriptMapperEditorView extends EditorView {
 		modeBtnGrp.add(searchAndInsertBtn);
 
 		final JPanel modePanel = new JPanel(new GridBagLayout());
+		modePanel.setOpaque(false);
 		final GridBagConstraints gbc = new GridBagConstraints();
 		gbc.anchor = GridBagConstraints.EAST;
 		gbc.gridx = 0;
 		gbc.gridy = 0;
-		modePanel.setOpaque(false);
+		gbc.weightx = 1.0;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		modePanel.add(Box.createHorizontalGlue(), gbc);
+		++gbc.gridx;
+		gbc.weightx = 0.0;
 		modePanel.add(modifyRecordBtn, gbc);
 		++gbc.gridy;
+		gbc.gridx = 0;
+		gbc.weightx = 1.0;
+		modePanel.add(Box.createHorizontalGlue(), gbc);
+		++gbc.gridx;
+		gbc.weightx = 0.0;
 		modePanel.add(searchAndInsertBtn, gbc);
 		typeSelectionPanel.add(modePanel, new TierDataConstraint(TierDataConstraint.TIER_LABEL_COLUMN, row));
 
@@ -632,7 +642,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 				Component c = super.prepareRenderer(renderer, row, column);
 				// alternate row color based on group index
 				if (!isRowSelected(row))
-					c.setBackground(tableRowToGroupIndex(row) % 2 == 0 ? getBackground() : PhonGuiConstants.PHON_UI_STRIP_COLOR);
+					c.setBackground(wordIndexToGroupIndex(row) % 2 == 0 ? getBackground() : PhonGuiConstants.PHON_UI_STRIP_COLOR);
 				return c;
 			}
 		};
@@ -766,7 +776,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		inputMap.put(deleteAlignedTypesKs, deleteAlignedTypesId);
 		inputMap.put(deleteAlignedTypesKs2, deleteAlignedTypesId);
 
-		for(int i = 1; i < 10; i++) {
+		for(int i = 0; i < 10; i++) {
 			final PhonUIAction<Integer> selectTypeAction = PhonUIAction.consumer(this::onSelectTierOption, Integer.valueOf(i));
 			final String selectTypeId = "select_tier_option_" + i;
 			final KeyStroke selectTypeKs = KeyStroke.getKeyStroke(KeyEvent.VK_0 + i, 0);
@@ -933,7 +943,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		if(selectedWord.length() == 0) return false;
 
 		boolean needsRefresh = false;
-		int gIdx = tableRowToGroupIndex(wordIndex);
+		int gIdx = wordIndexToGroupIndex(wordIndex);
 		int wIdx = 0;
 		for(int i = 0; i < gIdx; i++)
 			wIdx += currentState.getChild(i).getLeafCount();
@@ -953,6 +963,10 @@ public final class TranscriptMapperEditorView extends EditorView {
 					builder.append('*');
 			}
 		}
+		if(wIdx == wordIndex) {
+			if(builder.length() > 0) builder.append(' ');
+			builder.append(selectedWord);
+		}
 
 		final Record currentRecord = getEditor().currentRecord();
 		final SystemTierType systemTier = SystemTierType.tierFromString(tier);
@@ -967,6 +981,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 					}
 					final OrthographyWordReplacementVisitor visitor = new OrthographyWordReplacementVisitor(wordIndex, selectedWord, currentWordIndex);
 					currentOrtho.accept(visitor);
+					visitor.appendTail();
 					final Orthography newOrtho = visitor.getOrthography();
 					if(!currentOrtho.toString().equals(newOrtho.toString())) {
 						final TierEdit<Orthography> edit =
@@ -1050,7 +1065,18 @@ public final class TranscriptMapperEditorView extends EditorView {
 				Word wrd = grp.getAlignedWord(widx);
 				Map<String, String> currentWords = new HashMap<>();
 				for(String tierName:tierList) {
-					Object tierValue = wrd.getTier(tierName);
+					Object tierValue = null;
+					SystemTierType systemTier = SystemTierType.tierFromString(tierName);
+					if(systemTier != null) {
+						switch (systemTier) {
+							case Orthography -> {tierValue = wrd.getOrthography();}
+							case IPATarget -> {tierValue = wrd.getIPATarget();}
+							case IPAActual ->  {tierValue = wrd.getIPAActual();}
+							default -> {tierValue = wrd.getTier(tierName);}
+						}
+					} else {
+						tierValue = wrd.getTier(tierName);
+					}
 					currentWords.put(tierName, tierValue != null ? tierValue.toString() : "");
 				}
 				Map<String, String[]> alignedTypes = db.alignedTypesForTier(keyTier, currentWords.get(keyTier), tierList);
@@ -1236,9 +1262,9 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final List<String> visibleTiers = getVisibleAlignmentTiers();
 		final StringBuilder builder = new StringBuilder();
 
-		for(int i = 1; i < visibleTiers.size(); i++) {
+		for(int i = 0; i < visibleTiers.size(); i++) {
 			final String option = optionSet[i];
-			if(i > 1)
+			if(i > 0)
 				builder.append(" \u2194 ");
 			builder.append(option);
 		}
@@ -1297,18 +1323,21 @@ public final class TranscriptMapperEditorView extends EditorView {
 	}
 
 	public void onSelectTierOption(Integer tierNum) {
-		final int selectedWord = this.wordTable.getSelectedRow();
-		if(selectedWord < 0 || selectedWord >= this.currentState.getLeafCount()) return;
+		int selectedWord = this.wordTable.getSelectedRow();
+		if(selectedWord < 0) {
+			selectedWord = currentState.getLeafCount();
+		}
 
 		final int selectedOption = this.alignmentOptionsTable.getSelectedRow();
 		if(selectedOption < 0 || selectedOption >= this.alignmentOptionsTableModel.alignmentRows.length) return;
 
 		final String[] types = this.alignmentOptionsTableModel.alignmentRows[selectedOption];
-		if(tierNum > 0 && tierNum < getVisibleAlignmentTiers().size()) {
+		if(tierNum >= 0 && tierNum < getVisibleAlignmentTiers().size()) {
 			final String tierName = getVisibleAlignmentTiers().get(tierNum);
 			final String selectedType = types[tierNum];
 
 			updateTier(selectedWord, tierName, selectedType);
+			updateStateAsync(this::updateFromCurrentState);
 		}
 	}
 
@@ -1347,7 +1376,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final TypeMapNode leafNode =
 				(wordIndex > 0 && wordIndex < leafNodes.size() ? leafNodes.get(wordIndex) : null);
 
-		for(int i = 1; i < visibleTiers.size(); i++) {
+		for(int i = 0; i < visibleTiers.size(); i++) {
 			final String tierName = visibleTiers.get(i);
 			final String option = optionSet[i];
 
@@ -1362,7 +1391,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 			final PhonUIAction<InsertWordForTierData> insertWordAct = PhonUIAction.eventConsumer(this::insertWordForTier, eventData);
 			insertWordAct.putValue(PhonUIAction.NAME, optionTxt);
 			insertWordAct.putValue(PhonUIAction.SHORT_DESCRIPTION, descTxt);
-			if(i < 9)
+			if(i <= 9)
 				insertWordAct.putValue(PhonUIAction.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_0 + i, 0));
 			builder.addItem(".", insertWordAct);
 		}
@@ -1425,6 +1454,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	public void insertWordForTier(PhonActionEvent<InsertWordForTierData> pae) {
 		final InsertWordForTierData data = pae.getData();
 		updateTier(data.wordIndex, data.tierName, data.word);
+		updateStateAsync(this::updateFromCurrentState);
 	}
 
 	private class InsertAlignedWordsData {
@@ -1435,7 +1465,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	public void insertAlignedWords(PhonActionEvent<InsertAlignedWordsData> pae) {
 		final InsertAlignedWordsData data = pae.getData();
 		updateRecord(data.wordIndex, getVisibleAlignmentTiers().toArray(new String[0]), data.options);
-		updateState();
+		updateStateAsync(this::updateFromCurrentState);
 	}
 
 	/**
@@ -1518,22 +1548,22 @@ public final class TranscriptMapperEditorView extends EditorView {
 	}
 
 	/**
-	 * Determine group index from morpheme table row
+	 * Determine group index from morpheme table word
 	 *
-	 * @param row
+	 * @param word
 	 *
-	 * @return group index for provided row
+	 * @return group index for provided word
 	 */
-	public int tableRowToGroupIndex(int row) {
+	public int wordIndexToGroupIndex(int word) {
 		if(this.currentState == null) return -1;
 		int offset = 0;
 		for(int gidx = 0; gidx < this.currentState.childCount(); gidx++) {
 			TypeMapNode groupNode = this.currentState.getChild(gidx);
-			if(row < offset + groupNode.getLeafCount())
+			if(word < offset + groupNode.getLeafCount())
 				return gidx;
 			offset += groupNode.getLeafCount();
 		}
-		return -1;
+		return this.currentState.childCount()-1;
 	}
 
 	/**
@@ -1668,8 +1698,8 @@ public final class TranscriptMapperEditorView extends EditorView {
 		}
 
 		public String getColumnName(int colIdx) {
-			if(colIdx > 0 && colIdx < 9 && colIdx < getVisibleAlignmentTiers().size())
-				return getVisibleOptionsTiers().get(colIdx) + (colIdx > 0 ? " (" + colIdx + ")" : "");
+			if(colIdx >= 0 && colIdx < 10 && colIdx < getVisibleAlignmentTiers().size())
+				return getVisibleOptionsTiers().get(colIdx) + "(" + colIdx + ")";
 			else
 				return getVisibleOptionsTiers().get(colIdx);
 		}

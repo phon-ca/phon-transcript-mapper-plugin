@@ -29,6 +29,8 @@ public class OrthographyWordReplacementVisitor extends VisitorAdapter<OrthoEleme
 
 	private int currentWordIndex = -1;
 
+	private int lastWordIndex = 0;
+
 	private OrthographyBuilder builder;
 
 	public OrthographyWordReplacementVisitor(int wordIndex, String word, int currentWordIndex) {
@@ -39,17 +41,6 @@ public class OrthographyWordReplacementVisitor extends VisitorAdapter<OrthoEleme
 		this.builder = new OrthographyBuilder();
 	}
 
-//	private List<Tuple<Character, OrthoWord>> flattenWordnet(OrthoWordnet wordnet) {
-//		List<Tuple<Character, OrthoWord>> retVal = new ArrayList<>();
-//		if(wordnet.getWord1() instanceof OrthoWordnet) {
-//			retVal.addAll(flattenWordnet((OrthoWordnet) wordnet.getWord1()));
-//		} else {
-//			retVal.add(new Tuple<>('\u0000', wordnet.getWord1()));
-//		}
-//		retVal.add(new Tuple<>(wordnet.getMarker().getMarker(), wordnet.getWord2()));
-//		return retVal;
-//	}
-
 	@Override
 	public void fallbackVisit(OrthoElement orthoElement) {
 		if(currentWordIndex == wordIndex) {
@@ -58,25 +49,32 @@ public class OrthographyWordReplacementVisitor extends VisitorAdapter<OrthoEleme
 		builder.append(orthoElement);
 	}
 
-//	@Visits
-//	public void visitWordNet(OrthoWordnet wordnet) {
-//		var morphemeList = flattenWordnet(wordnet);
-//		if(wordIndex >= currentWordIndex && wordIndex < currentWordIndex + morphemeList.size()) {
-//			// replace specific morpheme, recreate wordnet
-//			OrthoWord lastWord = (currentWordIndex++ == wordIndex ? new OrthoWord(word) : morphemeList.get(0).getObj2());
-//			for(int i = 1; i < morphemeList.size(); i++) {
-//				OrthoWord currentWord =
-//						(currentWordIndex++ == wordIndex ? new OrthoWord(word) : morphemeList.get(i).getObj2());
-//				Character marker = morphemeList.get(i).getObj1();
-//				OrthoWordnet wn = new OrthoWordnet(lastWord, currentWord, OrthoWordnetMarker.fromMarker(marker));
-//				lastWord = wn;
-//			}
-//			builder.append(lastWord);
-//		} else {
-//			currentWordIndex += morphemeList.size();
-//			builder.append(wordnet);
-//		}
-//	}
+	@Visits
+	public void visitPunct(OrthoPunct punct) {
+		if(currentWordIndex == wordIndex) {
+			builder.append(word);
+		}
+		switch(punct.getType()) {
+			case PERIOD:
+			case QUESTION:
+				appendTail();
+				break;
+
+			default:
+				break;
+		}
+		builder.append(punct);
+	}
+
+	public void appendTail() {
+		if(currentWordIndex < wordIndex) {
+			while (currentWordIndex++ < wordIndex) {
+				builder.append("xxx");
+			}
+			builder.append(word);
+    		++currentWordIndex;
+		}
+	}
 
 	@Visits
 	public void orthoWord(OrthoWord word) {
@@ -91,6 +89,7 @@ public class OrthographyWordReplacementVisitor extends VisitorAdapter<OrthoEleme
 				builder.append(word);
 			}
 		}
+		++lastWordIndex;
 	}
 
 	public Orthography getOrthography() {
