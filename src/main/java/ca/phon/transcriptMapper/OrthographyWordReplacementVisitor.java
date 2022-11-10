@@ -29,6 +29,8 @@ public class OrthographyWordReplacementVisitor extends VisitorAdapter<OrthoEleme
 
 	private int currentWordIndex = -1;
 
+	private int currentEleIndex = 0;
+
 	private int lastWordIndex = 0;
 
 	private OrthographyBuilder builder;
@@ -47,32 +49,23 @@ public class OrthographyWordReplacementVisitor extends VisitorAdapter<OrthoEleme
 			builder.append(word);
 		}
 		builder.append(orthoElement);
-	}
-
-	@Visits
-	public void visitPunct(OrthoPunct punct) {
-		if(currentWordIndex == wordIndex) {
-			builder.append(word);
-		}
-		switch(punct.getType()) {
-			case PERIOD:
-			case QUESTION:
-				appendTail();
-				break;
-
-			default:
-				break;
-		}
-		builder.append(punct);
+		++currentEleIndex;
 	}
 
 	public void appendTail() {
 		if(currentWordIndex < wordIndex) {
+			final Orthography currentOrtho = builder.toOrthography();
+			builder.clear();
+			for(int i = 0; i <= lastWordIndex; i++) {
+				builder.append(currentOrtho.elementAt(i));
+			}
 			while (currentWordIndex++ < wordIndex) {
 				builder.append("xxx");
 			}
 			builder.append(word);
-    		++currentWordIndex;
+			for(int i = lastWordIndex+1; i < currentOrtho.length(); i++) {
+				builder.append(currentOrtho.elementAt(i));
+			}
 		}
 	}
 
@@ -89,7 +82,7 @@ public class OrthographyWordReplacementVisitor extends VisitorAdapter<OrthoEleme
 				builder.append(word);
 			}
 		}
-		++lastWordIndex;
+		lastWordIndex = currentEleIndex++;
 	}
 
 	public Orthography getOrthography() {
