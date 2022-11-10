@@ -15,6 +15,7 @@
 package ca.phon.transcriptMapper;
 
 import ca.phon.alignedTypesDatabase.*;
+import ca.phon.app.log.LogUtil;
 import ca.phon.ui.fonts.FontPreferences;
 import ca.phon.ui.text.PromptedTextField;
 import ca.phon.util.PrefHelper;
@@ -206,11 +207,12 @@ public class SearchableTypesPanel extends JPanel {
 		return (typeFilter != null ? typeFilter.test(type) : true);
 	}
 
-	private void onFinishLoad(Integer numLoaded) {
+	private void onFinishLoad(TypeIteratorTableModel.TypeLoader typeLoader, Integer numLoaded) {
 		if(typeLoader != null && !typeLoader.isShutdown() && numLoaded != NUM_TYPES_TO_LOAD) {
 			finishedLoad = true;
 		}
-		typeLoader = null;
+		if(this.typeLoader == typeLoader)
+			this.typeLoader = null;
 	}
 
 	public void updateIterator() {

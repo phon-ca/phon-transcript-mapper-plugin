@@ -947,7 +947,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 				builder.append(selectedWord);
 			} else {
 				final String cval = childNode.getType(tier);
-				if(cval.length() > 0)
+				if(cval == null || cval.length() > 0)
 					builder.append(childNode.getType(tier));
 				else
 					builder.append('*');

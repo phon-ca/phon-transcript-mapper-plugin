@@ -20,7 +20,7 @@ import ca.phon.worker.*;
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.util.*;
-import java.util.function.Consumer;
+import java.util.function.*;
 
 /**
  * Table model for {@link javax.swing.JTable} which accepts a database type iterator
@@ -86,7 +86,7 @@ public class TypeIteratorTableModel extends AbstractTableModel {
 		else return super.getColumnName(col);
 	}
 
-	public PhonTask loadItemsAsync(int numToLoad, Consumer<Integer> onFinish) {
+	public PhonTask loadItemsAsync(int numToLoad, BiConsumer<TypeLoader, Integer> onFinish) {
 		PhonTask loadTask = new TypeLoader(numToLoad, onFinish);
 		PhonWorker.getInstance().invokeLater(loadTask);
 		return loadTask;
@@ -118,11 +118,11 @@ public class TypeIteratorTableModel extends AbstractTableModel {
 
 	public class TypeLoader extends PhonTask {
 
-		private Consumer<Integer> onFinish;
+		private BiConsumer<TypeLoader, Integer> onFinish;
 
 		private final int numToLoad;
 
-		public TypeLoader(int numToLoad, Consumer<Integer> onFinish) {
+		public TypeLoader(int numToLoad, BiConsumer<TypeLoader, Integer> onFinish) {
 			this.numToLoad = numToLoad;
 			this.onFinish = onFinish;
 		}
@@ -150,7 +150,7 @@ public class TypeIteratorTableModel extends AbstractTableModel {
 			}
 
 			final int num = numLoaded;
-			SwingUtilities.invokeLater(() -> onFinish.accept(num));
+			SwingUtilities.invokeLater(() -> onFinish.accept(this, num));
 
 			super.setStatus(TaskStatus.FINISHED);
 		}
