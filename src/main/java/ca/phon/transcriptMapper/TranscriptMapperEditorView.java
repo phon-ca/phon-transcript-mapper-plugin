@@ -1221,8 +1221,8 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final int selectedRow = this.wordTable.getSelectedRow();
 
 		if(selectedRow >= 0) {
-			final String[][] optionsForMorpheme = alignmentOptionsForWord(selectedRow);
-			setupWordMenu(builder, selectedRow, optionsForMorpheme);
+			final String[][] optionsForWord = alignmentOptionsForWord(selectedRow);
+			setupWordMenu(builder, selectedRow, optionsForWord);
 
 			int ypos = 0;
 			for (int i = 0; i <= selectedRow; i++) {
@@ -1435,6 +1435,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	public void insertAlignedWords(PhonActionEvent<InsertAlignedWordsData> pae) {
 		final InsertAlignedWordsData data = pae.getData();
 		updateRecord(data.wordIndex, getVisibleAlignmentTiers().toArray(new String[0]), data.options);
+		updateState();
 	}
 
 	/**
