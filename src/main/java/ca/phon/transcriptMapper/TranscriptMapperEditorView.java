@@ -1321,23 +1321,24 @@ public final class TranscriptMapperEditorView extends EditorView {
 			builder.addItem(".", focusOptionsAct);
 		}
 
-		if(wordIndex >= this.currentState.getLeafCount()) {
-			TypeMapNode wordNode = new TypeMapNode(this.currentState.getLeafCount(), new LinkedHashMap<>());
-			this.currentState.getChild(this.currentState.childCount()-1).addChild(wordNode);
-		}
-		TypeMapNode morphemeNode = this.currentState.getLeaves().get(wordIndex);
-
-		final Map<String, String> alignedTypes = new LinkedHashMap<>();
-		for(String tierName:getVisibleAlignmentTiers()) {
-			final String morpheme = morphemeNode.getType(tierName);
-			alignedTypes.put(tierName, "*".equals(morpheme) ? "" : morphemeNode.getType(tierName));
-		}
-		if(!this.getUserDb().hasAlignedTypes(alignedTypes)) {
-			builder.addSeparator(".", "add_alignment");
-			final PhonUIAction<Void> onAddAlignedTypesAct = PhonUIAction.eventConsumer(this::onAddAlignedTypes);
-			onAddAlignedTypesAct.putValue(PhonUIAction.NAME, "Add alignment to database");
-			onAddAlignedTypesAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Add aligned types to database");
-			builder.addItem(".", onAddAlignedTypesAct);
+//		if(wordIndex >= this.currentState.getLeafCount()) {
+//			TypeMapNode wordNode = new TypeMapNode(this.currentState.getLeafCount(), new LinkedHashMap<>());
+//			this.currentState.getChild(this.currentState.childCount()-1).addChild(wordNode);
+//		}
+		TypeMapNode wordNode = wordIndex >= this.currentState.getLeafCount() ? null : this.currentState.getLeaves().get(wordIndex);
+		if(wordNode != null) {
+			final Map<String, String> alignedTypes = new LinkedHashMap<>();
+			for (String tierName : getVisibleAlignmentTiers()) {
+				final String morpheme = wordNode.getType(tierName);
+				alignedTypes.put(tierName, "*".equals(morpheme) ? "" : wordNode.getType(tierName));
+			}
+			if (!this.getUserDb().hasAlignedTypes(alignedTypes)) {
+				builder.addSeparator(".", "add_alignment");
+				final PhonUIAction<Void> onAddAlignedTypesAct = PhonUIAction.eventConsumer(this::onAddAlignedTypes);
+				onAddAlignedTypesAct.putValue(PhonUIAction.NAME, "Add alignment to database");
+				onAddAlignedTypesAct.putValue(PhonUIAction.SHORT_DESCRIPTION, "Add aligned types to database");
+				builder.addItem(".", onAddAlignedTypesAct);
+			}
 		}
 	}
 
