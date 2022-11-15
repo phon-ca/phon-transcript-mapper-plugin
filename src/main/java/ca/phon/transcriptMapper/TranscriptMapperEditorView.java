@@ -632,6 +632,13 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 		};
 		typeTable.addMouseListener(ctxHandler);
+
+		final PhonUIAction<Void> showWordMenuAction = PhonUIAction.eventConsumer(this::showSearchWordMenu);
+		showWordMenuAction.putValue(PhonUIAction.NAME, "Show menu for selected word/morpheme");
+		final String showWordMenuId = "show_morpheme_menu";
+		searchableTypesPanel.getTypeTable().getActionMap().put(showWordMenuId, showWordMenuAction);
+		final KeyStroke showWordMenuKs = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
+		searchableTypesPanel.getTypeTable().getInputMap(JComponent.WHEN_FOCUSED).put(showWordMenuKs, showWordMenuId);
 	}
 
 	private void setupWordTable() {
@@ -690,12 +697,12 @@ public final class TranscriptMapperEditorView extends EditorView {
 		final InputMap inputMap = wordTable.getInputMap(JComponent.WHEN_FOCUSED);
 		final ActionMap actionMap = wordTable.getActionMap();
 
-		final PhonUIAction<Void> showMorphemeMenuAction = PhonUIAction.eventConsumer(this::showWordMenu);
-		showMorphemeMenuAction.putValue(PhonUIAction.NAME, "Show menu for selected word/morpheme");
-		final String morphemeMenuActId = "show_morpheme_menu";
-		actionMap.put(morphemeMenuActId, showMorphemeMenuAction);
-		final KeyStroke showMorphemeMenuKs = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
-		inputMap.put(showMorphemeMenuKs, morphemeMenuActId);
+		final PhonUIAction<Void> showWordMenuAction = PhonUIAction.eventConsumer(this::showWordMenu);
+		showWordMenuAction.putValue(PhonUIAction.NAME, "Show menu for selected word/morpheme");
+		final String showWordMenuId = "show_morpheme_menu";
+		actionMap.put(showWordMenuId, showWordMenuAction);
+		final KeyStroke showWordMenuKs = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
+		inputMap.put(showWordMenuKs, showWordMenuId);
 
 		final PhonUIAction<Integer> focusAct = PhonUIAction.consumer(this::onFocusAlignmentOptions, 0);
 		final String focusActId = "focus_alignment_options";
@@ -1235,7 +1242,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 	 *
 	 * @param pae
 	 */
-	public void showWordMenu(PhonActionEvent<Void> pae) {
+	private void showWordMenu(PhonActionEvent<Void> pae) {
 		final JPopupMenu popupMenu = new JPopupMenu();
 		final MenuBuilder builder = new MenuBuilder(popupMenu);
 
@@ -1258,6 +1265,24 @@ public final class TranscriptMapperEditorView extends EditorView {
 		}
 	}
 
+	private void showSearchWordMenu(PhonActionEvent<Void> pae) {
+		final int row = searchableTypesPanel.getTypeTable().getSelectedRow();
+
+		if(row >= 0) {
+			final String type = (String) searchableTypesPanel.getTypeTable().getModel().getValueAt(row, 0);
+			final Map<String, String[]> alignedTypes = getUserDb().alignedTypesForTier(keyTier(), type);
+			final String[][] optionsForMorpheme = alignmentOptionsForType(type, alignedTypes);
+			final JPopupMenu menu = new JPopupMenu();
+			setupWordMenu(new MenuBuilder(menu), currentState.getLeafCount(), optionsForMorpheme);
+
+			int ypos = 0;
+			for (int i = 0; i <= row; i++) {
+				ypos += wordTable.getRowHeight(i);
+			}
+			menu.show(searchableTypesPanel.getTypeTable(), 0, ypos);
+		}
+	}
+
 	private String wordSetMenuItemText(String[] optionSet) {
 		final List<String> visibleTiers = getVisibleAlignmentTiers();
 		final StringBuilder builder = new StringBuilder();
@@ -1272,7 +1297,7 @@ public final class TranscriptMapperEditorView extends EditorView {
 		return builder.toString();
 	}
 
-	private void setupWordMenu(MenuBuilder builder, int wordIndex, String[][] options) {
+	private void setupWordMenu(MenuBuilder builder, int wordIndex, String [][] options) {
 		final String headerTxt = wordSetMenuItemText(getVisibleAlignmentTiers().toArray(new String[0]));
 		builder.addItem(".", headerTxt).setEnabled(false);
 
@@ -1419,7 +1444,6 @@ public final class TranscriptMapperEditorView extends EditorView {
 
 	private String[][] alignmentOptionsForWord(int wordIndex) {
 		final TypeMapNode leafNode = this.currentState.getLeaves().get(wordIndex);
-
 		final String keyTier = keyTier();
 		final String morpheme = leafNode.getType(keyTier);
 		return alignmentOptionsForType(morpheme, leafNode.getAlignedTypeOptions());
