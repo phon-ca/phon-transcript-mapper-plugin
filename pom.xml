@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ca.phon</groupId>
 	<artifactId>phon-transcript-mapper-plugin</artifactId>
-	<version>4-SNAPSHOT</version>
+	<version>4</version>
 
 	<distributionManagement>
 		<repository>
